@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daily Levels — BTC &amp; ETH</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>Daily Levels</h1>
+    <p class="subtitle">Key price levels for BTC &amp; ETH, recalculated once a day.</p>
+  </header>
+
+  <div id="stale-banner" class="stale-banner" hidden></div>
+
+  <main>
+    <div class="controls">
+      <div class="toggle-group" id="asset-toggle" role="group" aria-label="Asset">
+        <button type="button" data-asset="btc" class="toggle-btn active">BTC</button>
+        <button type="button" data-asset="eth" class="toggle-btn">ETH</button>
+      </div>
+      <div class="toggle-group" id="range-toggle" role="group" aria-label="Timeframe">
+        <button type="button" data-range="4h" class="toggle-btn active">4H</button>
+        <button type="button" data-range="1d" class="toggle-btn">Daily</button>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <span id="generated-label">Levels calculated —</span>
+      <span id="price-label" class="price-label">—</span>
+    </div>
+
+    <div id="chart-container" class="chart-container"></div>
+    <div id="chart-legend" class="chart-legend">
+      <span class="legend-item"><i class="swatch support"></i>Support</span>
+      <span class="legend-item"><i class="swatch resistance"></i>Resistance</span>
+      <span class="legend-item"><i class="swatch flip"></i>Flip (must hold)</span>
+    </div>
+
+    <section class="levels-table-section">
+      <h2>Level table</h2>
+      <div class="table-wrapper">
+        <table id="levels-table">
+          <thead>
+            <tr>
+              <th>Level</th>
+              <th>Price</th>
+              <th>Distance</th>
+              <th>Type</th>
+              <th>Strength</th>
+            </tr>
+          </thead>
+          <tbody id="levels-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="explainer">
+      <h2>How these are calculated</h2>
+      <p>
+        Every level on this page comes from one day's worth of real BTC and ETH
+        trade data, recalculated once a day at 5:00&nbsp;AM Central and held fixed
+        until the next run. Nothing here is a buy or sell signal — it's a map of
+        prices worth watching:
+      </p>
+      <ul>
+        <li><strong>Volume profile (POC / VAH / VAL)</strong> — where the most trading
+          volume has happened over the last 60 days. POC is the single busiest
+          price; VAH/VAL bound the zone containing 70% of that volume.</li>
+        <li><strong>Range high / low</strong> — the highest and lowest price traded
+          in that same 60-day window.</li>
+        <li><strong>Golden pocket</strong> — the 61.8%–65% retracement of the most
+          recent sizeable price swing (8%+), a zone traders commonly watch for
+          reactions.</li>
+        <li><strong>Prior week / month high-low, current week / month open</strong> —
+          fixed calendar reference points.</li>
+        <li><strong>Flip level</strong> — an old high or low that price has since
+          closed through, so it's now expected to act the opposite way (old
+          resistance holding as support, or vice versa).</li>
+        <li><strong>Confluence</strong> — levels within 0.5% of each other are merged
+          into one zone; the more levels agree, the higher the "strength".</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Informational only. Not financial advice.</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

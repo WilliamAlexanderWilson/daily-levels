@@ -1,0 +1,128 @@
+{
+  "generated_at_utc": "2026-10-04T23:20:32.793287+00:00",
+  "generated_at_central": "2026-10-04T18:20:32.793287-05:00",
+  "price": 85412.8,
+  "config": {
+    "range_days": 60,
+    "volume_bin_pct": 0.0025,
+    "value_area_pct": 0.7,
+    "pivot_n": 5,
+    "min_swing_pct": 8.0,
+    "golden_pocket_range": [
+      0.618,
+      0.65
+    ],
+    "pivot_lookback_days": 365,
+    "confluence_merge_pct": 0.005
+  },
+  "levels": [
+    {
+      "name": "Range low",
+      "price_low": 62490.0,
+      "price_high": 62490.0,
+      "type": "support",
+      "distance_pct": -26.837663675702007,
+      "strength": 1,
+      "is_flip": false
+    },
+    {
+      "name": "VAL",
+      "price_low": 74447.792,
+      "price_high": 74447.792,
+      "type": "support",
+      "distance_pct": -12.837663675702004,
+      "strength": 1,
+      "is_flip": false
+    },
+    {
+      "name": "Prior month low",
+      "price_low": 74891.5,
+      "price_high": 74891.5,
+      "type": "support",
+      "distance_pct": -12.318177135042994,
+      "strength": 1,
+      "is_flip": false
+    },
+    {
+      "name": "POC",
+      "price_low": 77330.474,
+      "price_high": 77330.474,
+      "type": "support",
+      "distance_pct": -9.462663675702004,
+      "strength": 1,
+      "is_flip": false
+    },
+    {
+      "name": "Golden pocket",
+      "price_low": 79285.81999999999,
+      "price_high": 79687.5864,
+      "type": "support",
+      "distance_pct": -6.938183504111812,
+      "strength": 1,
+      "is_flip": false
+    },
+    {
+      "name": "Prior week low",
+      "price_low": 80839.5,
+      "price_high": 80839.5,
+      "type": "support",
+      "distance_pct": -5.354349699342491,
+      "strength": 1,
+      "is_flip": false
+    },
+    {
+      "name": "Flip support",
+      "price_low": 82790.9,
+      "price_high": 82790.9,
+      "type": "support",
+      "distance_pct": -3.069680422606458,
+      "strength": 1,
+      "is_flip": true
+    },
+    {
+      "name": "Current month open",
+      "price_low": 83564.7,
+      "price_high": 83564.7,
+      "type": "support",
+      "distance_pct": -2.1637272165296135,
+      "strength": 1,
+      "is_flip": false
+    },
+    {
+      "name": "Current week open + VAH",
+      "price_low": 84444.2,
+      "price_high": 84483.796,
+      "type": "support",
+      "distance_pct": -1.11084287132609,
+      "strength": 2,
+      "is_flip": false
+    },
+    {
+      "name": "Range high + Prior week high + Prior month high",
+      "price_low": 87446.7,
+      "price_high": 87446.7,
+      "type": "resistance",
+      "distance_pct": 2.381259015042235,
+      "strength": 3,
+      "is_flip": false
+    },
+    {
+      "name": "Flip resistance",
+      "price_low": 89225.0,
+      "price_high": 89225.0,
+      "type": "resistance",
+      "distance_pct": 4.463265459041264,
+      "strength": 1,
+      "is_flip": true
+    }
+  ],
+  "golden_pocket_leg": {
+    "zone_low": 79285.81999999999,
+    "zone_high": 79687.5864,
+    "swing_pct": 16.7645193379756,
+    "leg_start_price": 74891.5,
+    "leg_start_date": "2026-09-15T00:00:00+00:00",
+    "leg_end_price": 87446.7,
+    "leg_end_date": "2026-09-21T00:00:00+00:00"
+  }
+}
