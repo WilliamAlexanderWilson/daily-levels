@@ -72,7 +72,7 @@ body {
 }
 
 main {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 1rem;
 }
@@ -127,7 +127,7 @@ main {
 .chart-container {
   position: relative;
   width: 100%;
-  height: 420px;
+  height: 720px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -240,7 +240,7 @@ tr.current-price-row td {
 
 @media (max-width: 480px) {
   .chart-container {
-    height: 320px;
+    height: 480px;
   }
   table {
     font-size: 0.78rem;
