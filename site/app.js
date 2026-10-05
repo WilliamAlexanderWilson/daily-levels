@@ -49,22 +49,42 @@
   // The chart (candles) is always fetched live, straight from Kraken -
   // only the levels come from the once-a-day static snapshot. Shared by
   // the initial render and the live poll below.
-  async function fetchKrakenCandles(pair, interval) {
-    const url = `${KRAKEN_OHLC_URL}?pair=${encodeURIComponent(pair)}&interval=${interval}&assetVersion=1`;
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Kraken OHLC fetch failed: ${res.status}`);
-    const payload = await res.json();
-    if (payload.error && payload.error.length) throw new Error(`Kraken error: ${payload.error.join(", ")}`);
-    const rows = payload.result && payload.result[pair];
-    if (!rows) throw new Error("Kraken response missing expected pair data");
-    return rows.map((row) => ({
-      time: row[0],
-      open: +row[1],
-      high: +row[2],
-      low: +row[3],
-      close: +row[4],
-      volume: +row[6],
-    }));
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  // Kraken (behind Cloudflare) will occasionally fail a request with no
+  // CORS header at all - observed in practice after a burst of requests
+  // in a short window (e.g. clicking through several timeframes quickly,
+  // on top of the live poll's own requests). A plain fetch failure like
+  // that is usually gone on the very next attempt, so retry with a short
+  // backoff before surfacing it as a real failure - same pattern as the
+  // daily engine's own fetch_candles() retry on the Python side.
+  async function fetchKrakenCandles(pair, interval, retries = 3) {
+    let lastErr;
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const url = `${KRAKEN_OHLC_URL}?pair=${encodeURIComponent(pair)}&interval=${interval}&assetVersion=1`;
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`Kraken OHLC fetch failed: ${res.status}`);
+        const payload = await res.json();
+        if (payload.error && payload.error.length) throw new Error(`Kraken error: ${payload.error.join(", ")}`);
+        const rows = payload.result && payload.result[pair];
+        if (!rows) throw new Error("Kraken response missing expected pair data");
+        return rows.map((row) => ({
+          time: row[0],
+          open: +row[1],
+          high: +row[2],
+          low: +row[3],
+          close: +row[4],
+          volume: +row[6],
+        }));
+      } catch (err) {
+        lastErr = err;
+        if (attempt < retries - 1) await sleep(600 * (attempt + 1));
+      }
+    }
+    throw lastErr;
   }
 
   // --- chart ---
@@ -562,17 +582,25 @@
   // --- main load ---
 
   async function loadAndRender() {
+    const asset = state.asset;
+    const range = state.range;
     try {
       const [levelsData, candles] = await Promise.all([
-        fetchJson(levelsUrl(state.asset)),
-        fetchKrakenCandles(ASSET_PAIRS[state.asset], RANGE_INTERVALS[state.range]),
+        fetchJson(levelsUrl(asset)),
+        fetchKrakenCandles(ASSET_PAIRS[asset], RANGE_INTERVALS[range]),
       ]);
 
+      // if the user switched asset/range again while this was in flight,
+      // a newer loadAndRender() call either already finished or is about
+      // to - drawing this now-stale result would stomp it.
+      if (state.asset !== asset || state.range !== range) return;
+
       renderHeader(levelsData);
-      renderChart(candles, state.range, levelsData.config.range_days);
+      renderChart(candles, range, levelsData.config.range_days);
       renderLevels(levelsData.levels);
       renderTable(levelsData.levels, levelsData.price);
     } catch (err) {
+      if (state.asset !== asset || state.range !== range) return;
       console.error(err);
       const banner = document.getElementById("stale-banner");
       banner.hidden = false;
