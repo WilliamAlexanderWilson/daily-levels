@@ -2,6 +2,10 @@
   "use strict";
 
   const STALE_HOURS = 26;
+  const LIVE_POLL_MS = 15000;
+  const KRAKEN_OHLC_URL = "https://api.kraken.com/0/public/OHLC";
+  const ASSET_PAIRS = { btc: "BTC/USD", eth: "ETH/USD" };
+  const RANGE_INTERVALS = { "4h": 240, "1d": 1440 };
 
   const state = {
     asset: "btc",
@@ -211,6 +215,88 @@
     chart.timeScale().fitContent();
   }
 
+  // --- live price polling ---
+  //
+  // The daily snapshot (levels + the candles baked into site/data) only
+  // updates once a day at 5 AM Central - that's deliberate, it's what
+  // keeps the levels themselves fixed as a stable reference rather than a
+  // moving target. But the chart itself can tick live: Kraken's public
+  // OHLC endpoint sends CORS headers that allow browser-side requests
+  // (verified against api.kraken.com directly), so we can poll it from
+  // here with no server and no API key, same as the daily engine does.
+  // Only the last 1-2 candles get updated in place - the historical
+  // candles and every level line stay exactly as of the daily run.
+
+  let liveBadgeShown = false;
+
+  async function pollLiveCandle() {
+    const asset = state.asset;
+    const range = state.range;
+    const pair = ASSET_PAIRS[asset];
+    const interval = RANGE_INTERVALS[range];
+
+    try {
+      const url = `${KRAKEN_OHLC_URL}?pair=${encodeURIComponent(pair)}&interval=${interval}&assetVersion=1`;
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) return;
+      const payload = await res.json();
+      if (payload.error && payload.error.length) return;
+      const rows = payload.result && payload.result[pair];
+      if (!rows || rows.length === 0) return;
+
+      // the toggle may have moved on to a different asset/range while this
+      // request was in flight - if so, drop the result rather than draw it
+      // onto the wrong series.
+      if (state.asset !== asset || state.range !== range) return;
+
+      // last 2 rows: the current forming candle, plus the previous one in
+      // case it just closed between polls and we'd otherwise miss its
+      // final close.
+      const recent = rows.slice(-2);
+      let lastClose = null;
+
+      for (const row of recent) {
+        const [time, open, , , close] = row; // high/low read positionally below
+        const high = row[2];
+        const low = row[3];
+        const volume = row[6];
+        const point = { time: toTimePoint({ time }, range) };
+
+        candleSeries.update({
+          ...point,
+          open: +open,
+          high: +high,
+          low: +low,
+          close: +close,
+        });
+        volumeSeries.update({
+          ...point,
+          value: +volume,
+          color: +close >= +open ? cssVar("--support") : cssVar("--resistance"),
+        });
+        lastClose = +close;
+      }
+
+      if (lastClose !== null) {
+        document.getElementById("price-label").textContent = lastClose.toLocaleString(undefined, {
+          maximumFractionDigits: 2,
+        });
+      }
+
+      if (!liveBadgeShown) {
+        document.getElementById("live-badge").hidden = false;
+        liveBadgeShown = true;
+      }
+    } catch (err) {
+      console.error("live poll failed", err);
+    }
+  }
+
+  function startLivePolling() {
+    pollLiveCandle();
+    setInterval(pollLiveCandle, LIVE_POLL_MS);
+  }
+
   // --- table ---
 
   function renderTable(levels, currentPrice) {
@@ -307,7 +393,7 @@
         state.asset = btn.dataset.asset;
         setActiveButtons();
         writeHash();
-        loadAndRender();
+        loadAndRender().then(pollLiveCandle);
       });
     });
     document.querySelectorAll("#range-toggle .toggle-btn").forEach((btn) => {
@@ -315,7 +401,7 @@
         state.range = btn.dataset.range;
         setActiveButtons();
         writeHash();
-        loadAndRender();
+        loadAndRender().then(pollLiveCandle);
       });
     });
   }
@@ -344,5 +430,5 @@
   readHash();
   setActiveButtons();
   wireToggles();
-  loadAndRender();
+  loadAndRender().then(startLivePolling);
 })();
