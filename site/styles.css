@@ -180,6 +180,34 @@ main {
   pointer-events: none;
 }
 
+.level-label-leader {
+  position: absolute;
+  left: 1px;
+  width: 3px;
+  border-radius: 2px;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.level-label {
+  position: absolute;
+  left: 6px;
+  max-width: 48%;
+  transform: translateY(-50%);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.5;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  z-index: 2;
+}
+
 .chart-legend {
   display: flex;
   justify-content: center;

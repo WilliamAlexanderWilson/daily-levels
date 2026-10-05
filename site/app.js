@@ -56,8 +56,8 @@
   let candleSeries = null;
   let volumeSeries = null;
   const activePriceLines = [];
-  const zoneOverlayEls = [];
-  let currentZones = []; // {low, high, color} for repositioning on redraw
+  const overlayEls = [];
+  let currentMarkers = []; // {low, high, mid, color, label, isZone} for repositioning on redraw
   let lastLiveUnixTime = null; // guards against feeding series.update() a time older than its last bar
 
   function ensureChart() {
@@ -99,8 +99,8 @@
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
-    chart.timeScale().subscribeVisibleLogicalRangeChange(renderZoneOverlays);
-    window.addEventListener("resize", renderZoneOverlays);
+    chart.timeScale().subscribeVisibleLogicalRangeChange(renderOverlays);
+    window.addEventListener("resize", renderOverlays);
   }
 
   function clearPriceLines() {
@@ -110,10 +110,10 @@
     activePriceLines.length = 0;
   }
 
-  function clearZoneOverlays() {
-    for (const el of zoneOverlayEls) el.remove();
-    zoneOverlayEls.length = 0;
-    currentZones = [];
+  function clearOverlays() {
+    for (const el of overlayEls) el.remove();
+    overlayEls.length = 0;
+    currentMarkers = [];
   }
 
   function styleForLevel(level) {
@@ -128,13 +128,20 @@
 
   function renderLevels(levels) {
     clearPriceLines();
-    clearZoneOverlays();
+    clearOverlays();
 
     for (const level of levels) {
       const style = styleForLevel(level);
       const isZone = level.price_high > level.price_low;
-      const label = `${level.name}${isZone ? "" : ""} (${level.strength})`;
+      const label = `${level.name} (${level.strength})`;
 
+      // No inline title on the price line itself - that label renders
+      // wherever the line is, which is usually right where the latest
+      // (most interesting) candles are, burying exactly the price action
+      // you want to compare it against. The compact price tag stays on
+      // the right axis; the name instead renders as a left-anchored
+      // overlay (below) so the line, and where it crosses candles, stays
+      // visible across the whole chart width.
       if (isZone) {
         const top = candleSeries.createPriceLine({
           price: level.price_high,
@@ -142,18 +149,17 @@
           lineWidth: style.lineWidth,
           lineStyle: style.lineStyle,
           axisLabelVisible: true,
-          title: label,
+          title: "",
         });
         const bottom = candleSeries.createPriceLine({
           price: level.price_low,
           color: style.color,
           lineWidth: style.lineWidth,
           lineStyle: style.lineStyle,
-          axisLabelVisible: false,
+          axisLabelVisible: true,
           title: "",
         });
         activePriceLines.push(top, bottom);
-        currentZones.push({ low: level.price_low, high: level.price_high, color: style.color });
       } else {
         const line = candleSeries.createPriceLine({
           price: level.price_low,
@@ -161,35 +167,121 @@
           lineWidth: style.lineWidth,
           lineStyle: style.lineStyle,
           axisLabelVisible: true,
-          title: label,
+          title: "",
         });
         activePriceLines.push(line);
       }
+
+      currentMarkers.push({
+        low: level.price_low,
+        high: level.price_high,
+        mid: (level.price_low + level.price_high) / 2,
+        color: style.color,
+        label,
+        isZone,
+      });
     }
 
-    renderZoneOverlays();
+    renderOverlays();
   }
 
-  function renderZoneOverlays() {
+  const LABEL_MIN_GAP_PX = 20; // tags closer than this get pushed apart
+
+  // Resolves overlaps by clustering nearby labels and centering each
+  // cluster on its own natural (average) position, rather than cascading
+  // every later label downward from the topmost one. A forward-only
+  // cascade drifts badly on a short chart (mobile) when several labels
+  // cluster near the top - it can push a label tens of pixels from its
+  // actual line, past other, unrelated lines. Centering keeps each
+  // cluster's drift local to where it actually is.
+  function declutter(items, minGap) {
+    const sorted = [...items].sort((a, b) => a.y - b.y);
+    const clusters = [];
+    for (const item of sorted) {
+      const last = clusters[clusters.length - 1];
+      if (last && item.y - last[last.length - 1].y < minGap) {
+        last.push(item);
+      } else {
+        clusters.push([item]);
+      }
+    }
+
+    const placed = [];
+    for (const cluster of clusters) {
+      const n = cluster.length;
+      const avgY = cluster.reduce((sum, it) => sum + it.y, 0) / n;
+      const totalSpan = (n - 1) * minGap;
+      const start = avgY - totalSpan / 2;
+      cluster.forEach((it, i) => placed.push({ ...it, trueY: it.y, y: start + i * minGap }));
+    }
+
+    // clustering can still leave two adjacent clusters' centered spans
+    // touching - one more forward pass guarantees no residual overlap.
+    placed.sort((a, b) => a.y - b.y);
+    for (let i = 1; i < placed.length; i++) {
+      const minY = placed[i - 1].y + minGap;
+      if (placed[i].y < minY) placed[i].y = minY;
+    }
+    return placed;
+  }
+
+  function renderOverlays() {
     const container = document.getElementById("chart-container");
-    for (const el of zoneOverlayEls) el.remove();
-    zoneOverlayEls.length = 0;
+    for (const el of overlayEls) el.remove();
+    overlayEls.length = 0;
 
     if (!candleSeries) return;
 
-    for (const zone of currentZones) {
-      const yTop = candleSeries.priceToCoordinate(zone.high);
-      const yBottom = candleSeries.priceToCoordinate(zone.low);
+    // zone shading draws at its exact price - only the text tags get
+    // decluttered below.
+    for (const marker of currentMarkers) {
+      if (!marker.isZone) continue;
+      const yTop = candleSeries.priceToCoordinate(marker.high);
+      const yBottom = candleSeries.priceToCoordinate(marker.low);
       if (yTop === null || yBottom === null) continue;
 
-      const el = document.createElement("div");
-      el.className = "zone-overlay";
-      el.style.top = `${yTop}px`;
-      el.style.height = `${Math.max(1, yBottom - yTop)}px`;
-      el.style.background = zone.color;
-      el.style.opacity = "0.12";
-      container.appendChild(el);
-      zoneOverlayEls.push(el);
+      const band = document.createElement("div");
+      band.className = "zone-overlay";
+      band.style.top = `${yTop}px`;
+      band.style.height = `${Math.max(1, yBottom - yTop)}px`;
+      band.style.background = marker.color;
+      band.style.opacity = "0.12";
+      container.appendChild(band);
+      overlayEls.push(band);
+    }
+
+    // Several levels often cluster within a few % of each other, which
+    // can be a tiny sliver of pixels once zoomed out (e.g. the Daily view
+    // spanning a 2-year price range) - without this pass their text tags
+    // would stack directly on top of each other.
+    const rawPositions = currentMarkers
+      .map((marker) => ({ marker, y: candleSeries.priceToCoordinate(marker.mid) }))
+      .filter((p) => p.y !== null);
+    const placements = declutter(rawPositions, LABEL_MIN_GAP_PX);
+
+    for (const { marker, y, trueY } of placements) {
+      // dense clusters (common on a short/mobile chart) can still need to
+      // push a label a visible distance from its real line - a leader
+      // connects the two so it's never ambiguous which line a tag belongs
+      // to, even when displaced.
+      if (Math.abs(y - trueY) > 1) {
+        const leader = document.createElement("div");
+        leader.className = "level-label-leader";
+        leader.style.top = `${Math.min(y, trueY)}px`;
+        leader.style.height = `${Math.abs(y - trueY)}px`;
+        leader.style.background = marker.color;
+        container.appendChild(leader);
+        overlayEls.push(leader);
+      }
+
+      const tag = document.createElement("div");
+      tag.className = "level-label";
+      tag.style.top = `${y}px`;
+      tag.style.background = marker.color;
+      tag.textContent = marker.label;
+      tag.title = marker.label;
+      container.appendChild(tag);
+      overlayEls.push(tag);
     }
   }
 
