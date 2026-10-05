@@ -46,6 +46,10 @@
     return `data/${asset}_levels.json`;
   }
 
+  function scorecardUrl(asset) {
+    return `data/${asset}_scorecard.json`;
+  }
+
   // The chart (candles) is always fetched live, straight from Kraken -
   // only the levels come from the once-a-day static snapshot. Shared by
   // the initial render and the live poll below.
@@ -476,7 +480,19 @@
 
   // --- table ---
 
-  function renderTable(levels, currentPrice) {
+  function holdRateCellText(level, scorecard) {
+    if (!scorecard) return "—";
+    const parts = [];
+    for (const kind of level.name.split(" + ")) {
+      const s = scorecard[kind];
+      if (!s || s.hold_rate_pct === null || s.hold_rate_pct === undefined) continue;
+      const flag = s.low_confidence ? "*" : "";
+      parts.push(`${s.hold_rate_pct.toFixed(0)}%${flag} (n=${s.resolved})`);
+    }
+    return parts.length ? parts.join(" / ") : "—";
+  }
+
+  function renderTable(levels, currentPrice, scorecard) {
     const tbody = document.getElementById("levels-table-body");
     tbody.innerHTML = "";
 
@@ -507,6 +523,7 @@
         <td>${level.distance_pct >= 0 ? "+" : ""}${level.distance_pct.toFixed(2)}%</td>
         <td class="type-cell">${level.is_flip ? "flip" : level.type}</td>
         <td>${level.strength}</td>
+        <td class="hold-rate-cell">${holdRateCellText(level, scorecard)}</td>
       `;
       tbody.appendChild(tr);
     }
@@ -522,6 +539,7 @@
     tr.innerHTML = `
       <td colspan="2">— current price —</td>
       <td>${currentPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+      <td></td>
       <td></td>
       <td></td>
     `;
@@ -550,6 +568,35 @@
       banner.textContent = `Data is ${hoursOld.toFixed(0)} hours old and may be stale — the daily run may have failed.`;
     } else {
       banner.hidden = true;
+    }
+  }
+
+  // --- scorecard table ---
+
+  function renderScorecardTable(scorecard) {
+    const tbody = document.getElementById("scorecard-table-body");
+    tbody.innerHTML = "";
+
+    if (!scorecard || Object.keys(scorecard).length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6">Scorecard not available yet.</td></tr>`;
+      return;
+    }
+
+    const pct = (v) => (v === null || v === undefined ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`);
+
+    const rows = Object.entries(scorecard).sort((a, b) => b[1].resolved - a[1].resolved);
+    for (const [kind, s] of rows) {
+      const tr = document.createElement("tr");
+      if (s.low_confidence) tr.className = "low-confidence-row";
+      tr.innerHTML = `
+        <td>${kind}${s.low_confidence ? " *" : ""}</td>
+        <td>${s.touches}</td>
+        <td>${s.resolved}</td>
+        <td>${s.hold_rate_pct === null ? "—" : `${s.hold_rate_pct.toFixed(1)}%`}</td>
+        <td>${pct(s.avg_move_after_hold_pct)}</td>
+        <td>${pct(s.avg_move_after_break_pct)}</td>
+      `;
+      tbody.appendChild(tr);
     }
   }
 
@@ -598,7 +645,20 @@
       renderHeader(levelsData);
       renderChart(candles, range, levelsData.config.range_days);
       renderLevels(levelsData.levels);
-      renderTable(levelsData.levels, levelsData.price);
+
+      // The scorecard is a nice-to-have, not core - if it's missing (first
+      // rollout before a backtest has run, or a fetch hiccup) the levels
+      // table and chart should still render fine, just without hold rates.
+      let scorecard = null;
+      try {
+        scorecard = await fetchJson(scorecardUrl(asset));
+      } catch (err) {
+        console.error("scorecard unavailable", err);
+      }
+      if (state.asset !== asset || state.range !== range) return;
+
+      renderTable(levelsData.levels, levelsData.price, scorecard);
+      renderScorecardTable(scorecard);
     } catch (err) {
       if (state.asset !== asset || state.range !== range) return;
       console.error(err);

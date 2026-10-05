@@ -40,3 +40,17 @@ CONFLUENCE_MERGE_PCT = 0.005  # merge levels within 0.5% of each other into one 
 # --- Output ---
 DATA_DIR = "site/data"
 HISTORY_DIR = "site/data/history"
+
+# --- Backtest / scorecard ---
+# Kraken caps history at 720 candles regardless of date range, same limit
+# that applies live (confirmed against the API). That's ~2 years of daily
+# candles but only ~120 days of 4h candles - too thin to replay the
+# volume-profile levels (POC/VAH/VAL/Range) on their native 4h timeframe
+# with any real sample size. The backtest computes those specific levels
+# from daily candles instead, same methodology, coarser bins, far deeper
+# replay history. The live engine (src/levels/engine.py) is untouched -
+# this only affects the backtest's own approximation.
+BACKTEST_FORWARD_DAYS = 10      # how many days forward to watch for touch/hold/break
+BACKTEST_HOLD_MOVE_PCT = 2.0    # price must move this far from the level to count as "held"
+BACKTEST_BREAK_CLOSE_PCT = 1.0  # a daily close this far beyond the level counts as "broken"
+BACKTEST_MIN_TOUCHES_CONFIDENT = 30  # fewer resolved touches than this is flagged low-confidence

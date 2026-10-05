@@ -1,14 +1,13 @@
 # Daily Levels — BTC & ETH key-level dashboard
 
-A small site that shows a candlestick chart for BTC and ETH with
+A small site that shows a live candlestick chart for BTC and ETH with
 automatically calculated key price levels drawn and labeled on it. Levels
 are recalculated once a day at 5:00 AM US Central and held fixed until the
-next run. **This is a map of levels, not a signal service — no buy/sell
-calls.**
+next run; the chart itself ticks live, independent of that daily
+calculation. **This is a map of levels, not a signal service — no
+buy/sell calls.**
 
-Phase 1 (this repo, right now): the level engine, the static site, and the
-GitHub Action that runs it daily. Phase 2 (not built yet): a historical
-level scorecard, multi-range confluence, a daily diff, and Telegram alerts.
+Live: https://williamalexanderwilson.github.io/daily-levels/
 
 ## How it works
 
@@ -21,10 +20,17 @@ level scorecard, multi-range confluence, a daily diff, and Telegram alerts.
    profile / pivot / golden pocket / reference-level / flip-level
    calculations, merges nearby levels into confluence zones, and writes the
    result as JSON into `site/data/`.
-3. The Action commits those JSON files straight to the repo.
-4. The static site in `site/` (hosted on GitHub Pages) reads that JSON and
-   renders the chart, levels, and table. There is no server and no
-   database — the page only ever reads files that are already in the repo.
+3. The same Action run also replays history day by day (`src/backtest/`)
+   to build a hold-rate scorecard — how often each level type has
+   historically held vs. broken when touched — and writes that alongside.
+4. The Action commits those JSON files to the repo, then deploys the site
+   to GitHub Pages itself (see "Why Pages deploys from the workflow"
+   below).
+5. The static site in `site/` reads the levels/scorecard JSON for its
+   lines, labels, and table — that part only updates once a day. The
+   **chart's candles are fetched live, directly from Kraken, from the
+   browser** (polled every 15s) — there is no server and no database
+   anywhere in this.
 
 ## Local setup
 
@@ -33,8 +39,11 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# run the engine for real (writes into site/data/)
+# run the level engine for real (writes into site/data/)
 python -m src.run --force
+
+# run the backtest scorecard for real (writes into site/data/)
+python -m src.backtest.cli
 
 # run the tests
 python -m pytest
@@ -46,30 +55,89 @@ cd site && python3 -m http.server 8000
 
 `--force` skips the 5 AM Central gate, which is what you want for a manual
 local run — without it, `src/run.py` only runs during that hour and exits
-immediately otherwise.
+immediately otherwise. `src.backtest.cli` isn't time-gated at all; it
+replays history, not "now," so it's safe to run anytime.
 
-## Enabling GitHub Pages
+## Why Pages deploys from the workflow, not "deploy from a branch"
 
-1. Push this repo to GitHub.
-2. In the repo's Settings → Pages, set **Source** to "Deploy from a
-   branch", branch `main`, folder `/site`.
-3. The site will be live at `https://<your-username>.github.io/<repo>/`
-   within a minute or two of the first push.
+GitHub Pages' classic "deploy from a branch" source only serves `/` or
+`/docs`, not `/site`. Pages is instead configured with `build_type:
+workflow`, and `update-levels.yml` deploys it directly after committing
+new data (`actions/upload-pages-artifact` + `actions/deploy-pages`). That
+also sidesteps a real gotcha: a push made with the default `GITHUB_TOKEN`
+(the Action's own commit) does **not** trigger another workflow's `on:
+push` — GitHub suppresses that to prevent recursive runs — so a separate
+"deploy on push" workflow would never actually fire after the daily data
+update. `deploy-pages.yml` still exists for the case of editing `site/`
+directly and pushing it yourself with your own credentials, which does
+trigger normally.
 
-Because the Action commits new JSON to `main`, every daily run also
-triggers a new Pages deployment automatically — no separate deploy step.
+To (re)enable Pages on a fork or a new repo:
+
+```bash
+gh api -X POST repos/<owner>/<repo>/pages -f "build_type=workflow"
+```
 
 ## Triggering a manual run
 
 GitHub → Actions → "Update levels" → **Run workflow**. This calls
 `python -m src.run --force`, bypassing the 5 AM Central gate, so it always
-does a real fetch-and-recalculate regardless of when you click it.
+does a real fetch-and-recalculate regardless of when you click it, then
+runs the backtest and deploys.
 
 You can also trigger it from the CLI:
 
 ```bash
 gh workflow run update-levels.yml
 ```
+
+## The live chart vs. the daily levels
+
+These are two independent systems that happen to share one page:
+
+- **Levels** (the lines, zones, and tables) come from the once-a-day
+  snapshot in `site/data/{asset}_levels.json` and `_scorecard.json`. Fixed
+  until the next 5 AM run — that's deliberate, it's what makes them a
+  stable reference instead of a moving target.
+- **The chart** (candles, current price) is fetched directly from Kraken
+  by the browser (`fetchKrakenCandles` in `site/app.js`), for whichever of
+  the seven timeframes (1m/5m/15m/30m/1h/4h/Daily) is selected, polled
+  every 15s. Kraken's public OHLC endpoint sends CORS headers that allow
+  this with no server and no API key — confirmed directly against
+  `api.kraken.com`. It occasionally fails a request with no CORS header at
+  all after a burst of requests in a short window (observed in practice,
+  Cloudflare-fronted); `fetchKrakenCandles` retries 3x with backoff to
+  absorb that.
+- The 4H view's default zoom frames exactly the `RANGE_DAYS`-day window
+  the volume-profile levels are computed from (read from the levels JSON's
+  own `config` block, not duplicated as a constant), so those lines land
+  on the actual high/low on screen. The other timeframes use `fitContent()`.
+
+## The hold-rate scorecard
+
+`src/backtest/` replays the level engine day by day over the full ~2 years
+of daily history Kraken's API allows, using **only** data that would have
+existed as of each replayed day (`src/backtest/replay.py` — no lookahead,
+proven by `tests/test_backtest_replay.py`). For every level touched, it
+classifies the outcome over the following 10 days as a **hold** (price
+moved `BACKTEST_HOLD_MOVE_PCT` away from the level before any close landed
+`BACKTEST_BREAK_CLOSE_PCT` beyond it) or a **break** (the reverse
+happened first); if neither resolves within the window, it's
+"inconclusive" and excluded from the hold rate rather than forced into
+either bucket.
+
+One real constraint: Kraken caps history at 720 candles regardless of
+interval, so 4h candles only reach back ~120 days — too thin to backtest
+the volume-profile levels (POC/VAH/VAL/Range) on their native timeframe
+with a usable sample size. `src/backtest/engine.py` computes those specific
+levels from **daily** candles instead, same methodology, coarser bins, far
+deeper replay history (~720 days vs. ~60). The live engine is untouched —
+this is a backtest-only approximation, and the scorecard flags anything
+under `BACKTEST_MIN_TOUCHES_CONFIDENT` (30) resolved touches as
+low-confidence.
+
+This is historical frequency, not a prediction — the site says so right
+next to the table.
 
 ## Config (`config.py`)
 
@@ -88,6 +156,9 @@ it. The ones worth knowing about up front:
 | `CONFLUENCE_MERGE_PCT` | Levels within this % of each other are merged into one zone. |
 | `STALE_AFTER_HOURS` | How old `generated_at` can get before the site shows a stale-data warning. |
 | `RUN_HOUR_LOCAL` | The Central-time hour `src/run.py` treats as "the daily run" (5 AM). |
+| `BACKTEST_FORWARD_DAYS` | How many days forward the scorecard watches for a touch to resolve as hold/break. |
+| `BACKTEST_HOLD_MOVE_PCT` / `BACKTEST_BREAK_CLOSE_PCT` | The hold vs. break thresholds, as % away from / beyond the level. |
+| `BACKTEST_MIN_TOUCHES_CONFIDENT` | Resolved touches below this get flagged low-confidence. |
 
 ## Data source: Kraken
 
@@ -104,6 +175,9 @@ If a run fails partway through, nothing in `site/data/` is touched —
 writes in `src/output.py` are atomic (write-to-temp, then rename), and a
 failed asset simply isn't written, so the site keeps showing yesterday's
 data (with the stale-data banner kicking in after `STALE_AFTER_HOURS`).
+The browser-side `fetchKrakenCandles` in `site/app.js` has its own,
+separate retry logic for the live chart — see "The live chart vs. the
+daily levels" above.
 
 ## Repo layout
 
@@ -111,7 +185,7 @@ data (with the stale-data banner kicking in after `STALE_AFTER_HOURS`).
 config.py                   # every tunable, one place
 src/
   fetch.py                  # Kraken access — the only file that knows the source
-  run.py                    # entry point: runs the engine for every asset, writes output
+  run.py                    # entry point: runs the level engine for every asset, writes output
   output.py                 # atomic JSON writes + history append
   levels/
     volume_profile.py       # POC / VAH / VAL
@@ -120,12 +194,20 @@ src/
     reference_levels.py      # prior week/month high-low, current week/month open
     flip_level.py             # old resistance/support flipped the other way
     confluence.py             # merges nearby levels, tags type/distance/strength
-    engine.py                  # orchestrates all of the above per asset
+    engine.py                  # orchestrates all of the above per asset (live, 4h+daily)
+  backtest/
+    engine.py                 # daily-candle-only approximation of the level engine, for replay depth
+    replay.py                  # day-by-day replay with the no-lookahead guarantee
+    outcomes.py                 # touch/hold/break classification for one level
+    scorecard.py                 # aggregates outcomes per level type per asset
+    cli.py                        # entry point: python -m src.backtest.cli
 tests/                        # unit tests with hand-built fixtures + one real-response fixture
 site/                         # static HTML/CSS/JS, hosted on GitHub Pages
-  data/                      # JSON written by the Action; the page only reads this
+  app.js                     # live chart (direct Kraken polling) + renders the daily levels/scorecard
+  data/                      # JSON written by the Action; the page reads levels/scorecard from here
 .github/workflows/
-  update-levels.yml          # the daily cron (+ manual trigger)
+  update-levels.yml          # the daily cron: level engine + backtest + commit + Pages deploy
+  deploy-pages.yml           # redeploys Pages on a direct push to site/** (e.g. editing the site by hand)
 ```
 
 ## Disclaimer

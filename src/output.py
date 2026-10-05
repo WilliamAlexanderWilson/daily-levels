@@ -11,7 +11,7 @@ import pandas as pd
 from config import DATA_DIR, HISTORY_DIR
 
 
-def _atomic_write_json(path: str, data: dict | list) -> None:
+def atomic_write_json(path: str, data: dict | list) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp_path = f"{path}.tmp"
     with open(tmp_path, "w") as f:
@@ -38,15 +38,15 @@ def write_asset_outputs(asset_key: str, engine_result: dict) -> None:
     build_asset_levels: {"result": ..., "candles_4h": ..., "candles_1d": ...}."""
     result = engine_result["result"]
 
-    _atomic_write_json(f"{DATA_DIR}/{asset_key}_levels.json", result)
-    _atomic_write_json(
+    atomic_write_json(f"{DATA_DIR}/{asset_key}_levels.json", result)
+    atomic_write_json(
         f"{DATA_DIR}/{asset_key}_candles_4h.json",
         _candles_to_json(engine_result["candles_4h"]),
     )
-    _atomic_write_json(
+    atomic_write_json(
         f"{DATA_DIR}/{asset_key}_candles_1d.json",
         _candles_to_json(engine_result["candles_1d"]),
     )
 
     today = result["generated_at_central"][:10]
-    _atomic_write_json(f"{HISTORY_DIR}/{asset_key}/{today}.json", result)
+    atomic_write_json(f"{HISTORY_DIR}/{asset_key}/{today}.json", result)

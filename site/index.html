@@ -58,9 +58,37 @@
               <th>Distance</th>
               <th>Type</th>
               <th>Strength</th>
+              <th>Hist. hold rate</th>
             </tr>
           </thead>
           <tbody id="levels-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="levels-table-section">
+      <h2>Historical scorecard</h2>
+      <p class="scorecard-note">
+        Replays this level engine day by day over roughly the last two years
+        of real data, using only data that would have been available that
+        day (no lookahead). For each level type: how often it was touched,
+        and once touched, how often price held vs. broke within the next 10
+        days. <strong>Past behavior, not a prediction</strong> — below 30
+        resolved touches is flagged low-confidence.
+      </p>
+      <div class="table-wrapper">
+        <table id="scorecard-table">
+          <thead>
+            <tr>
+              <th>Level type</th>
+              <th>Touches</th>
+              <th>Resolved</th>
+              <th>Hold rate</th>
+              <th>Avg move after hold</th>
+              <th>Avg move after break</th>
+            </tr>
+          </thead>
+          <tbody id="scorecard-table-body"></tbody>
         </table>
       </div>
     </section>

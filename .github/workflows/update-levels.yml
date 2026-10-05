@@ -42,6 +42,13 @@ jobs:
             python -m src.run
           fi
 
+      - name: Run backtest scorecard
+        # Not gated on the 5am hour like the level engine - it replays
+        # history, not "now", so it's deterministic per calendar day and
+        # safe to run on every trigger. The commit step below only pushes
+        # if something actually changed.
+        run: python -m src.backtest.cli
+
       - name: Commit and push data
         id: commit
         run: |
