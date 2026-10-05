@@ -58,6 +58,7 @@
   const activePriceLines = [];
   const zoneOverlayEls = [];
   let currentZones = []; // {low, high, color} for repositioning on redraw
+  let lastLiveUnixTime = null; // guards against feeding series.update() a time older than its last bar
 
   function ensureChart() {
     if (chart) return;
@@ -84,6 +85,11 @@
       wickDownColor: cssVar("--resistance"),
       priceScaleId: "right",
       scaleMargins: { top: 0.08, bottom: 0.3 },
+      // an unlabeled horizontal line at the last close would just clutter
+      // the chart next to our own named level lines; the small price tag
+      // on the axis (lastValueVisible, left on) is enough of a "you are
+      // here" marker.
+      priceLineVisible: false,
     });
 
     volumeSeries = chart.addSeries(LightweightCharts.HistogramSeries, {
@@ -213,6 +219,10 @@
     candleSeries.setData(candleData);
     volumeSeries.setData(volumeData);
     chart.timeScale().fitContent();
+
+    // a fresh setData() resets what counts as "the last bar" - any
+    // in-flight live poll's monotonic guard needs to reset with it.
+    lastLiveUnixTime = null;
   }
 
   // --- live price polling ---
@@ -227,7 +237,22 @@
   // Only the last 1-2 candles get updated in place - the historical
   // candles and every level line stay exactly as of the daily run.
 
-  let liveBadgeShown = false;
+  const LIVE_STALE_AFTER_MISSES = 2; // ~30s of failed polls before flagging the badge
+
+  let consecutiveMisses = 0;
+
+  function setLiveBadge(status) {
+    // status: "live" | "reconnecting"
+    const badge = document.getElementById("live-badge");
+    badge.hidden = false;
+    badge.classList.toggle("is-stale", status === "reconnecting");
+    badge.querySelector(".live-label").textContent = status === "reconnecting" ? "Reconnecting" : "Live";
+  }
+
+  function noteLiveMiss() {
+    consecutiveMisses += 1;
+    if (consecutiveMisses >= LIVE_STALE_AFTER_MISSES) setLiveBadge("reconnecting");
+  }
 
   async function pollLiveCandle() {
     const asset = state.asset;
@@ -238,15 +263,15 @@
     try {
       const url = `${KRAKEN_OHLC_URL}?pair=${encodeURIComponent(pair)}&interval=${interval}&assetVersion=1`;
       const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) return;
+      if (!res.ok) return noteLiveMiss();
       const payload = await res.json();
-      if (payload.error && payload.error.length) return;
+      if (payload.error && payload.error.length) return noteLiveMiss();
       const rows = payload.result && payload.result[pair];
-      if (!rows || rows.length === 0) return;
+      if (!rows || rows.length === 0) return noteLiveMiss();
 
       // the toggle may have moved on to a different asset/range while this
       // request was in flight - if so, drop the result rather than draw it
-      // onto the wrong series.
+      // onto the wrong series. Not a failure, so don't touch the miss count.
       if (state.asset !== asset || state.range !== range) return;
 
       // last 2 rows: the current forming candle, plus the previous one in
@@ -256,10 +281,17 @@
       let lastClose = null;
 
       for (const row of recent) {
-        const [time, open, , , close] = row; // high/low read positionally below
+        const [time, open] = row;
         const high = row[2];
         const low = row[3];
+        const close = row[4];
         const volume = row[6];
+
+        // series.update() throws if fed a time older than its current last
+        // bar (e.g. a stale row left over from a reconnect, or any other
+        // ordering surprise) - skip rather than risk it.
+        if (lastLiveUnixTime !== null && time < lastLiveUnixTime) continue;
+
         const point = { time: toTimePoint({ time }, range) };
 
         candleSeries.update({
@@ -274,6 +306,7 @@
           value: +volume,
           color: +close >= +open ? cssVar("--support") : cssVar("--resistance"),
         });
+        lastLiveUnixTime = time;
         lastClose = +close;
       }
 
@@ -283,12 +316,11 @@
         });
       }
 
-      if (!liveBadgeShown) {
-        document.getElementById("live-badge").hidden = false;
-        liveBadgeShown = true;
-      }
+      consecutiveMisses = 0;
+      setLiveBadge("live");
     } catch (err) {
       console.error("live poll failed", err);
+      noteLiveMiss();
     }
   }
 

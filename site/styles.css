@@ -149,6 +149,15 @@ main {
   animation: live-pulse 1.6s ease-in-out infinite;
 }
 
+.live-badge.is-stale {
+  color: var(--flip);
+}
+
+.live-badge.is-stale .live-dot {
+  background: var(--flip);
+  animation: live-pulse 0.7s ease-in-out infinite;
+}
+
 @keyframes live-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
