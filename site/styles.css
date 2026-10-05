@@ -107,6 +107,17 @@ main {
   color: #fff;
 }
 
+.range-select {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 .meta-row {
   display: flex;
   justify-content: space-between;
@@ -245,6 +256,11 @@ main {
   border-top-color: var(--flip);
   border-top-style: dotted;
   border-top-width: 4px;
+}
+
+.swatch.current {
+  border-top-color: var(--accent);
+  border-top-style: dotted;
 }
 
 .levels-table-section h2,

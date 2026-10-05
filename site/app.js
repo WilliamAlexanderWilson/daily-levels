@@ -5,7 +5,7 @@
   const LIVE_POLL_MS = 15000;
   const KRAKEN_OHLC_URL = "https://api.kraken.com/0/public/OHLC";
   const ASSET_PAIRS = { btc: "BTC/USD", eth: "ETH/USD" };
-  const RANGE_INTERVALS = { "4h": 240, "1d": 1440 };
+  const RANGE_INTERVALS = { "1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240, "1d": 1440 };
 
   const state = {
     asset: "btc",
@@ -15,7 +15,8 @@
   function readHash() {
     const params = new URLSearchParams(location.hash.replace(/^#/, ""));
     if (params.get("asset") === "eth") state.asset = "eth";
-    if (params.get("range") === "1d") state.range = "1d";
+    const range = params.get("range");
+    if (range && RANGE_INTERVALS[range]) state.range = range;
   }
 
   function writeHash() {
@@ -45,9 +46,25 @@
     return `data/${asset}_levels.json`;
   }
 
-  function candlesUrl(asset, range) {
-    const suffix = range === "1d" ? "1d" : "4h";
-    return `data/${asset}_candles_${suffix}.json`;
+  // The chart (candles) is always fetched live, straight from Kraken -
+  // only the levels come from the once-a-day static snapshot. Shared by
+  // the initial render and the live poll below.
+  async function fetchKrakenCandles(pair, interval) {
+    const url = `${KRAKEN_OHLC_URL}?pair=${encodeURIComponent(pair)}&interval=${interval}&assetVersion=1`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Kraken OHLC fetch failed: ${res.status}`);
+    const payload = await res.json();
+    if (payload.error && payload.error.length) throw new Error(`Kraken error: ${payload.error.join(", ")}`);
+    const rows = payload.result && payload.result[pair];
+    if (!rows) throw new Error("Kraken response missing expected pair data");
+    return rows.map((row) => ({
+      time: row[0],
+      open: +row[1],
+      high: +row[2],
+      low: +row[3],
+      close: +row[4],
+      volume: +row[6],
+    }));
   }
 
   // --- chart ---
@@ -85,11 +102,13 @@
       wickDownColor: cssVar("--resistance"),
       priceScaleId: "right",
       scaleMargins: { top: 0.08, bottom: 0.3 },
-      // an unlabeled horizontal line at the last close would just clutter
-      // the chart next to our own named level lines; the small price tag
-      // on the axis (lastValueVisible, left on) is enough of a "you are
-      // here" marker.
-      priceLineVisible: false,
+      // a persistent "where is price right now" line, always visible -
+      // its own color + dotted style keeps it visually distinct from the
+      // solid support / dashed resistance / large-dashed flip lines.
+      priceLineVisible: true,
+      priceLineColor: cssVar("--accent"),
+      priceLineWidth: 1,
+      priceLineStyle: LightweightCharts.LineStyle.Dotted,
     });
 
     volumeSeries = chart.addSeries(LightweightCharts.HistogramSeries, {
@@ -334,9 +353,12 @@
       chart.timeScale().fitContent();
     }
 
-    // a fresh setData() resets what counts as "the last bar" - any
-    // in-flight live poll's monotonic guard needs to reset with it.
-    lastLiveUnixTime = null;
+    // Seed the guard to the last rendered candle's true time rather than
+    // nulling it out - nulling disabled the guard entirely for the very
+    // next poll, which could then "update" an older candle from its own
+    // last-2-rows batch before the current one, hitting the exact
+    // older-than-last-bar error this guard exists to prevent.
+    lastLiveUnixTime = candles.length ? candles[candles.length - 1].time : null;
   }
 
   // --- live price polling ---
@@ -375,13 +397,8 @@
     const interval = RANGE_INTERVALS[range];
 
     try {
-      const url = `${KRAKEN_OHLC_URL}?pair=${encodeURIComponent(pair)}&interval=${interval}&assetVersion=1`;
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) return noteLiveMiss();
-      const payload = await res.json();
-      if (payload.error && payload.error.length) return noteLiveMiss();
-      const rows = payload.result && payload.result[pair];
-      if (!rows || rows.length === 0) return noteLiveMiss();
+      const rows = await fetchKrakenCandles(pair, interval);
+      if (!rows.length) return noteLiveMiss();
 
       // the toggle may have moved on to a different asset/range while this
       // request was in flight - if so, drop the result rather than draw it
@@ -394,34 +411,28 @@
       const recent = rows.slice(-2);
       let lastClose = null;
 
-      for (const row of recent) {
-        const [time, open] = row;
-        const high = row[2];
-        const low = row[3];
-        const close = row[4];
-        const volume = row[6];
-
+      for (const candle of recent) {
         // series.update() throws if fed a time older than its current last
         // bar (e.g. a stale row left over from a reconnect, or any other
         // ordering surprise) - skip rather than risk it.
-        if (lastLiveUnixTime !== null && time < lastLiveUnixTime) continue;
+        if (lastLiveUnixTime !== null && candle.time < lastLiveUnixTime) continue;
 
-        const point = { time: toTimePoint({ time }, range) };
+        const point = { time: toTimePoint(candle, range) };
 
         candleSeries.update({
           ...point,
-          open: +open,
-          high: +high,
-          low: +low,
-          close: +close,
+          open: candle.open,
+          high: candle.high,
+          low: candle.low,
+          close: candle.close,
         });
         volumeSeries.update({
           ...point,
-          value: +volume,
-          color: +close >= +open ? cssVar("--support") : cssVar("--resistance"),
+          value: candle.volume,
+          color: candle.close >= candle.open ? cssVar("--support") : cssVar("--resistance"),
         });
-        lastLiveUnixTime = time;
-        lastClose = +close;
+        lastLiveUnixTime = candle.time;
+        lastClose = candle.close;
       }
 
       if (lastClose !== null) {
@@ -528,9 +539,7 @@
     document.querySelectorAll("#asset-toggle .toggle-btn").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.asset === state.asset);
     });
-    document.querySelectorAll("#range-toggle .toggle-btn").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.range === state.range);
-    });
+    document.getElementById("range-select").value = state.range;
   }
 
   function wireToggles() {
@@ -542,13 +551,11 @@
         loadAndRender().then(pollLiveCandle);
       });
     });
-    document.querySelectorAll("#range-toggle .toggle-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        state.range = btn.dataset.range;
-        setActiveButtons();
-        writeHash();
-        loadAndRender().then(pollLiveCandle);
-      });
+    document.getElementById("range-select").addEventListener("change", (e) => {
+      state.range = e.target.value;
+      setActiveButtons();
+      writeHash();
+      loadAndRender().then(pollLiveCandle);
     });
   }
 
@@ -558,7 +565,7 @@
     try {
       const [levelsData, candles] = await Promise.all([
         fetchJson(levelsUrl(state.asset)),
-        fetchJson(candlesUrl(state.asset, state.range)),
+        fetchKrakenCandles(ASSET_PAIRS[state.asset], RANGE_INTERVALS[state.range]),
       ]);
 
       renderHeader(levelsData);
@@ -569,7 +576,7 @@
       console.error(err);
       const banner = document.getElementById("stale-banner");
       banner.hidden = false;
-      banner.textContent = "Could not load level data. Has the daily workflow run yet?";
+      banner.textContent = "Could not load level or price data — either the daily workflow hasn't run yet, or Kraken's API is unreachable right now.";
     }
   }
 
