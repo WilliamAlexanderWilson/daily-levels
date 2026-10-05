@@ -174,6 +174,66 @@ main {
   50% { opacity: 0.3; }
 }
 
+.nearest-levels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.nearest-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+}
+
+.nearest-card.nearest-resistance {
+  border-left-color: var(--resistance);
+}
+
+.nearest-card.nearest-support {
+  border-left-color: var(--support);
+}
+
+.nearest-card-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.15rem;
+}
+
+.nearest-card-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 0.2rem;
+}
+
+.nearest-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.85rem;
+}
+
+.nearest-card-distance {
+  color: var(--text-muted);
+}
+
+.nearest-card-hold {
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 480px) {
+  .nearest-levels {
+    grid-template-columns: 1fr;
+  }
+}
+
 .chart-container {
   position: relative;
   width: 100%;

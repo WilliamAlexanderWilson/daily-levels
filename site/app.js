@@ -101,6 +101,11 @@
   let currentMarkers = []; // {low, high, mid, color, label, isZone} for repositioning on redraw
   let lastLiveUnixTime = null; // guards against feeding series.update() a time older than its last bar
 
+  // the daily levels + scorecard, kept around so the nearest-level cards
+  // can be recomputed on every live price tick, not just on load/toggle.
+  let activeLevels = [];
+  let activeScorecard = null;
+
   function ensureChart() {
     if (chart) return;
     const container = document.getElementById("chart-container");
@@ -463,6 +468,7 @@
         document.getElementById("price-label").textContent = lastClose.toLocaleString(undefined, {
           maximumFractionDigits: 2,
         });
+        renderNearestLevels(activeLevels, activeScorecard, lastClose);
       }
 
       consecutiveMisses = 0;
@@ -490,6 +496,77 @@
       parts.push(`${s.hold_rate_pct.toFixed(0)}%${flag} (n=${s.resolved})`);
     }
     return parts.length ? parts.join(" / ") : "—";
+  }
+
+  // --- nearest-level cards ---
+
+  function holdRateSummary(level, scorecard) {
+    if (!scorecard) return "No historical data yet";
+    const rates = [];
+    let totalN = 0;
+    let anyLowConfidence = false;
+    for (const kind of level.name.split(" + ")) {
+      const s = scorecard[kind];
+      if (!s || s.hold_rate_pct === null || s.hold_rate_pct === undefined) continue;
+      rates.push(s.hold_rate_pct);
+      totalN += s.resolved;
+      if (s.low_confidence) anyLowConfidence = true;
+    }
+    if (rates.length === 0) return "No historical data yet";
+
+    const min = Math.min(...rates);
+    const max = Math.max(...rates);
+    const rateText = min === max ? `${min.toFixed(0)}%` : `${min.toFixed(0)}–${max.toFixed(0)}%`;
+    const confidenceNote = anyLowConfidence ? ", low confidence" : "";
+    return `Historically held ${rateText} of the time (n=${totalN}${confidenceNote})`;
+  }
+
+  function fillNearestCard(cardId, level, currentPrice, scorecard) {
+    const card = document.getElementById(cardId);
+    if (!level) {
+      card.hidden = true;
+      return;
+    }
+    card.hidden = false;
+
+    const mid = (level.price_low + level.price_high) / 2;
+    const distancePct = ((mid - currentPrice) / currentPrice) * 100;
+    const priceText =
+      level.price_high > level.price_low
+        ? `${level.price_low.toLocaleString(undefined, { maximumFractionDigits: 2 })}–${level.price_high.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+        : level.price_low.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+    card.querySelector(".nearest-card-name").textContent = `${level.name}${level.is_flip ? " 🔒" : ""}`;
+    card.querySelector(".nearest-card-price").textContent = priceText;
+    card.querySelector(".nearest-card-distance").textContent =
+      `${distancePct >= 0 ? "+" : ""}${distancePct.toFixed(2)}%`;
+    card.querySelector(".nearest-card-hold").textContent = holdRateSummary(level, scorecard);
+  }
+
+  function renderNearestLevels(levels, scorecard, currentPrice) {
+    if (!levels || !levels.length || currentPrice === null || currentPrice === undefined) {
+      document.getElementById("nearest-resistance-card").hidden = true;
+      document.getElementById("nearest-support-card").hidden = true;
+      return;
+    }
+
+    // Recomputed off the live price, not the level's own type field - that
+    // field reflects the price at the daily snapshot, which can be stale
+    // by the time the live price has moved past a level.
+    let nearestAbove = null;
+    let nearestBelow = null;
+    for (const level of levels) {
+      const mid = (level.price_low + level.price_high) / 2;
+      if (mid > currentPrice && (nearestAbove === null || mid < (nearestAbove.price_low + nearestAbove.price_high) / 2)) {
+        nearestAbove = level;
+      }
+      if (mid < currentPrice && (nearestBelow === null || mid > (nearestBelow.price_low + nearestBelow.price_high) / 2)) {
+        nearestBelow = level;
+      }
+    }
+
+    fillNearestCard("nearest-resistance-card", nearestAbove, currentPrice, scorecard);
+    fillNearestCard("nearest-support-card", nearestBelow, currentPrice, scorecard);
   }
 
   function diffByKindMap(diff) {
@@ -700,6 +777,10 @@
 
       renderTable(levelsData.levels, levelsData.price, scorecard, levelsData.diff);
       renderScorecardTable(scorecard);
+
+      activeLevels = levelsData.levels;
+      activeScorecard = scorecard;
+      renderNearestLevels(activeLevels, activeScorecard, levelsData.price);
     } catch (err) {
       if (state.asset !== asset || state.range !== range) return;
       console.error(err);
