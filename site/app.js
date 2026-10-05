@@ -492,7 +492,48 @@
     return parts.length ? parts.join(" / ") : "—";
   }
 
-  function renderTable(levels, currentPrice, scorecard) {
+  function diffByKindMap(diff) {
+    const map = {};
+    if (!diff) return map;
+    for (const entry of diff) map[entry.kind] = entry;
+    return map;
+  }
+
+  function diffBadgeHtml(level, diffMap) {
+    let best = null; // priority: a "new" constituent wins over a "moved" one
+    for (const kind of level.name.split(" + ")) {
+      const entry = diffMap[kind];
+      if (!entry) continue;
+      if (entry.status === "new") {
+        best = entry;
+        break;
+      }
+      if (entry.status === "moved" && !best) best = entry;
+    }
+    if (!best) return "";
+    if (best.status === "new") return `<span class="diff-badge diff-new">NEW</span>`;
+    const arrow = best.change_pct >= 0 ? "▲" : "▼";
+    return `<span class="diff-badge diff-moved">${arrow} ${Math.abs(best.change_pct).toFixed(2)}%</span>`;
+  }
+
+  function renderRemovedNote(diff) {
+    const el = document.getElementById("removed-levels-note");
+    const removed = (diff || []).filter((d) => d.status === "removed");
+    if (removed.length === 0) {
+      el.hidden = true;
+      return;
+    }
+    const text = removed
+      .map((d) => `${d.kind} (was ${d.old_price.toLocaleString(undefined, { maximumFractionDigits: 2 })})`)
+      .join(", ");
+    el.textContent = `No longer a level since yesterday: ${text}`;
+    el.hidden = false;
+  }
+
+  function renderTable(levels, currentPrice, scorecard, diff) {
+    const diffMap = diffByKindMap(diff);
+    renderRemovedNote(diff);
+
     const tbody = document.getElementById("levels-table-body");
     tbody.innerHTML = "";
 
@@ -518,7 +559,7 @@
           : level.price_low.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
       tr.innerHTML = `
-        <td>${level.name}${level.is_flip ? " 🔒" : ""}</td>
+        <td>${level.name}${level.is_flip ? " 🔒" : ""} ${diffBadgeHtml(level, diffMap)}</td>
         <td>${priceText}</td>
         <td>${level.distance_pct >= 0 ? "+" : ""}${level.distance_pct.toFixed(2)}%</td>
         <td class="type-cell">${level.is_flip ? "flip" : level.type}</td>
@@ -657,7 +698,7 @@
       }
       if (state.asset !== asset || state.range !== range) return;
 
-      renderTable(levelsData.levels, levelsData.price, scorecard);
+      renderTable(levelsData.levels, levelsData.price, scorecard, levelsData.diff);
       renderScorecardTable(scorecard);
     } catch (err) {
       if (state.asset !== asset || state.range !== range) return;

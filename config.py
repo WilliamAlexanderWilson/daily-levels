@@ -54,3 +54,9 @@ BACKTEST_FORWARD_DAYS = 10      # how many days forward to watch for touch/hold/
 BACKTEST_HOLD_MOVE_PCT = 2.0    # price must move this far from the level to count as "held"
 BACKTEST_BREAK_CLOSE_PCT = 1.0  # a daily close this far beyond the level counts as "broken"
 BACKTEST_MIN_TOUCHES_CONFIDENT = 30  # fewer resolved touches than this is flagged low-confidence
+
+# --- Daily diff ---
+# A level's price is reconstructed as its merged zone's midpoint for
+# diffing purposes (the pre-merge per-kind price isn't retained in
+# output). Changes smaller than this are noise, not a real move.
+DAILY_DIFF_MOVE_THRESHOLD_PCT = 0.1
