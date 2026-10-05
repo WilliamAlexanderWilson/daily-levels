@@ -1,7 +1,7 @@
 {
-  "generated_at_utc": "2026-10-04T23:20:32.793287+00:00",
-  "generated_at_central": "2026-10-04T18:20:32.793287-05:00",
-  "price": 85412.8,
+  "generated_at_utc": "2026-10-05T01:12:45.226285+00:00",
+  "generated_at_central": "2026-10-04T20:12:45.226285-05:00",
+  "price": 86510.4,
   "config": {
     "range_days": 60,
     "volume_bin_pct": 0.0025,
@@ -17,38 +17,29 @@
   },
   "levels": [
     {
-      "name": "Range low",
+      "name": "Range low (60d)",
       "price_low": 62490.0,
       "price_high": 62490.0,
       "type": "support",
-      "distance_pct": -26.837663675702007,
+      "distance_pct": -27.765910225822555,
       "strength": 1,
       "is_flip": false
     },
     {
-      "name": "VAL",
-      "price_low": 74447.792,
-      "price_high": 74447.792,
-      "type": "support",
-      "distance_pct": -12.837663675702004,
-      "strength": 1,
-      "is_flip": false
-    },
-    {
-      "name": "Prior month low",
-      "price_low": 74891.5,
+      "name": "VAL (60d) + Prior month low",
+      "price_low": 74817.732,
       "price_high": 74891.5,
       "type": "support",
-      "distance_pct": -12.318177135042994,
-      "strength": 1,
+      "distance_pct": -13.47327488949304,
+      "strength": 2,
       "is_flip": false
     },
     {
-      "name": "POC",
-      "price_low": 77330.474,
-      "price_high": 77330.474,
+      "name": "POC (60d)",
+      "price_low": 77304.90599999999,
+      "price_high": 77304.90599999999,
       "type": "support",
-      "distance_pct": -9.462663675702004,
+      "distance_pct": -10.640910225822568,
       "strength": 1,
       "is_flip": false
     },
@@ -57,26 +48,17 @@
       "price_low": 79285.81999999999,
       "price_high": 79687.5864,
       "type": "support",
-      "distance_pct": -6.938183504111812,
+      "distance_pct": -8.118904547892514,
       "strength": 1,
       "is_flip": false
     },
     {
-      "name": "Prior week low",
-      "price_low": 80839.5,
-      "price_high": 80839.5,
-      "type": "support",
-      "distance_pct": -5.354349699342491,
-      "strength": 1,
-      "is_flip": false
-    },
-    {
-      "name": "Flip support",
-      "price_low": 82790.9,
+      "name": "Prior week low + Flip support",
+      "price_low": 82566.4,
       "price_high": 82790.9,
       "type": "support",
-      "distance_pct": -3.069680422606458,
-      "strength": 1,
+      "distance_pct": -4.429236253675859,
+      "strength": 2,
       "is_flip": true
     },
     {
@@ -84,25 +66,25 @@
       "price_low": 83564.7,
       "price_high": 83564.7,
       "type": "support",
-      "distance_pct": -2.1637272165296135,
+      "distance_pct": -3.405024135826441,
       "strength": 1,
       "is_flip": false
     },
     {
-      "name": "Current week open + VAH",
-      "price_low": 84444.2,
-      "price_high": 84483.796,
+      "name": "VAH (60d)",
+      "price_low": 84550.152,
+      "price_high": 84550.152,
       "type": "support",
-      "distance_pct": -1.11084287132609,
-      "strength": 2,
+      "distance_pct": -2.2659102258225516,
+      "strength": 1,
       "is_flip": false
     },
     {
-      "name": "Range high + Prior week high + Prior month high",
-      "price_low": 87446.7,
+      "name": "Prior week high + Range high (60d) + Prior month high",
+      "price_low": 87229.0,
       "price_high": 87446.7,
       "type": "resistance",
-      "distance_pct": 2.381259015042235,
+      "distance_pct": 0.9564745972738674,
       "strength": 3,
       "is_flip": false
     },
@@ -111,7 +93,7 @@
       "price_low": 89225.0,
       "price_high": 89225.0,
       "type": "resistance",
-      "distance_pct": 4.463265459041264,
+      "distance_pct": 3.1378886237955275,
       "strength": 1,
       "is_flip": true
     }

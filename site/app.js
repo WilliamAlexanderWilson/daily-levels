@@ -202,7 +202,7 @@
     return candle.time;
   }
 
-  function renderChart(candles, range) {
+  function renderChart(candles, range, levelsWindowDays) {
     ensureChart();
     const candleData = candles.map((c) => ({
       time: toTimePoint(c, range),
@@ -218,7 +218,29 @@
     }));
     candleSeries.setData(candleData);
     volumeSeries.setData(volumeData);
-    chart.timeScale().fitContent();
+
+    if (range === "4h" && levelsWindowDays) {
+      // POC/VAH/VAL/range high-low are computed from the same
+      // levelsWindowDays lookback. Open already framed to that same
+      // window so those lines land on the actual high/low on screen,
+      // instead of fitContent() showing ~120 days (the full fetch) and
+      // making a 60-day-scoped level look like it's ignoring an older,
+      // bigger wick further left.
+      const candlesPerDay = 6; // 24h / 4h
+      const windowBars = levelsWindowDays * candlesPerDay;
+      const marginBars = Math.round(windowBars * 0.08);
+      const from = Math.max(0, candleData.length - windowBars - marginBars);
+      const to = candleData.length + 1;
+      chart.timeScale().setVisibleLogicalRange({ from, to });
+    } else {
+      // Daily view: full fetched history. There's no single lookback
+      // window that cleanly maps to every Daily-relevant stat (golden
+      // pocket uses a longer window than range high/low does), so this
+      // stays a "zoom out for context, labels already say their own
+      // scope" view rather than forcing a crop that still wouldn't
+      // match everything.
+      chart.timeScale().fitContent();
+    }
 
     // a fresh setData() resets what counts as "the last bar" - any
     // in-flight live poll's monotonic guard needs to reset with it.
@@ -448,7 +470,7 @@
       ]);
 
       renderHeader(levelsData);
-      renderChart(candles, state.range);
+      renderChart(candles, state.range, levelsData.config.range_days);
       renderLevels(levelsData.levels);
       renderTable(levelsData.levels, levelsData.price);
     } catch (err) {

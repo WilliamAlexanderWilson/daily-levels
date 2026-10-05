@@ -40,12 +40,19 @@ def build_asset_levels(pair: str) -> dict:
     ref = get_reference_levels(candles_1d)
     flips = find_flip_levels(pivots, candles_1d, current_price)
 
+    # POC/VAH/VAL/range high-low all come from the same RANGE_DAYS lookback
+    # of 4h candles - naming that explicitly keeps the labels honest when
+    # the chart is zoomed out further than that window (e.g. the Daily
+    # view defaults to ~2 years of history; without this a viewer sees an
+    # older, bigger wick elsewhere on screen and reasonably assumes "Range
+    # high" is wrong, when it's just scoped to the last RANGE_DAYS days).
+    window_suffix = f"({config.RANGE_DAYS}d)"
     raw_levels = [
-        RawLevel("POC", vp.poc, vp.poc),
-        RawLevel("VAH", vp.vah, vp.vah),
-        RawLevel("VAL", vp.val, vp.val),
-        RawLevel("Range high", range_high, range_high),
-        RawLevel("Range low", range_low, range_low),
+        RawLevel(f"POC {window_suffix}", vp.poc, vp.poc),
+        RawLevel(f"VAH {window_suffix}", vp.vah, vp.vah),
+        RawLevel(f"VAL {window_suffix}", vp.val, vp.val),
+        RawLevel(f"Range high {window_suffix}", range_high, range_high),
+        RawLevel(f"Range low {window_suffix}", range_low, range_low),
     ]
 
     if golden_pocket is not None:
