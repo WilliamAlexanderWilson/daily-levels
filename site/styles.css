@@ -377,17 +377,22 @@ main {
 /* the liquidation-estimate heatmap - one full-width translucent row per
    bin, sitting BEHIND the candles/grid (the chart's own canvas is
    z-index: 2) so it reads as a real background wash, not a foreground
-   overlay - opacity carries the modeled intensity. The rows themselves
-   are thin (one per narrow price bin) and would look like a stack of
-   crisp gridlines rather than a heatmap; blurring the whole layer
-   blends neighboring bins into the soft, continuous gradient a real
-   heatmap reads as. */
+   overlay - opacity carries the modeled intensity, already smoothed
+   across neighboring bins in JS (renderLiquidationHeatmap /
+   smoothValues) before it ever reaches a style here. A real
+   `filter: blur()` was tried first and made things WORSE: a bin is only
+   ~4px tall surrounded by fully transparent neighbors, and blurring a
+   thin, low-opacity strip spreads its color over a much wider band,
+   diluting the peak opacity at any one row to a sliver of what it
+   started as (confirmed by sampling actual rendered pixel colors - the
+   heatmap contributed no measurable color anywhere). A tiny blur here
+   just softens pixel-grid edges between already-smoothed rows. */
 .liquidation-heatmap-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  filter: blur(10px);
+  filter: blur(1px);
 }
 
 .liquidation-row {

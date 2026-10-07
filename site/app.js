@@ -188,7 +188,15 @@
     chart = LightweightCharts.createChart(container, {
       autoSize: true,
       layout: {
-        background: { type: "solid", color: cssVar("--surface") },
+        // Transparent, not --surface: the library paints this as a
+        // genuinely opaque fill across the whole pane before anything
+        // else, which sits at z-index 2 - any z-index below that (the
+        // liquidation heatmap) was being permanently hidden by this fill
+        // alone, independent of candles or grid being drawn over it.
+        // #chart-container's own CSS background (var(--surface), set in
+        // styles.css) still shows through underneath everything, so the
+        // visual result where nothing else is drawn is unchanged.
+        background: { type: "solid", color: "rgba(0, 0, 0, 0)" },
         textColor: cssVar("--text"),
       },
       grid: {
@@ -460,6 +468,7 @@
 
   const LIQUIDATION_MAX_OPACITY = 0.55;
   const LIQUIDATION_MIN_OPACITY = 0.1; // a real heatmap colors its coldest areas too, not just the hot spots
+  const LIQUIDATION_SMOOTHING_RADIUS = 4; // bins averaged on each side - does the "continuous gradient" work CSS blur was doing badly
 
   // A real background heatmap, not a side gutter - the user pointed at a
   // Coinglass-style screenshot (full-width horizontal bands sitting
@@ -475,6 +484,34 @@
   // are would wreck that system and the table/dropdown. Purely a
   // background visual, same as the always-on current-price line -
   // unaffected by isolate.
+  // Simple box-average smoothing over an array of numbers, by index -
+  // used so neighboring price bins blend into a continuous gradient
+  // instead of relying on CSS `filter: blur()` to do that spatial
+  // averaging. Tried the CSS-blur approach first and it actively made
+  // things worse: a bin is only ~4px tall, mostly surrounded by fully
+  // transparent neighbors, and blurring a thin, already-low-opacity
+  // strip spreads its color over a much wider band - diluting the peak
+  // opacity at any single row to a small fraction of what it started
+  // at (confirmed directly: sampled actual rendered pixel RGB values at
+  // a dozen points across a real screenshot and found the heatmap
+  // contributed no measurable color at any of them). Smoothing the
+  // underlying intensity values first means the opacity you compute is
+  // the opacity that actually reaches the screen.
+  function smoothValues(values, windowRadius) {
+    const n = values.length;
+    const out = new Array(n);
+    for (let i = 0; i < n; i++) {
+      let sum = 0;
+      let count = 0;
+      for (let j = Math.max(0, i - windowRadius); j <= Math.min(n - 1, i + windowRadius); j++) {
+        sum += values[j];
+        count++;
+      }
+      out[i] = sum / count;
+    }
+    return out;
+  }
+
   function renderLiquidationHeatmap(container) {
     if (!liquidationLayerEl) {
       liquidationLayerEl = document.createElement("div");
@@ -487,6 +524,9 @@
 
     const containerHeight = container.clientHeight;
 
+    const smoothedLong = smoothValues(activeLiquidationBins.map((b) => b.long_intensity), LIQUIDATION_SMOOTHING_RADIUS);
+    const smoothedShort = smoothValues(activeLiquidationBins.map((b) => b.short_intensity), LIQUIDATION_SMOOTHING_RADIUS);
+
     // Bin intensities are normalized server-side against the single
     // hottest bin across the WHOLE +/-25% window - correct for comparing
     // bins to each other, but it means whatever's on screen right now can
@@ -496,24 +536,24 @@
     // hotspots at full strength instead of a global ranking that dims
     // everything whenever the single hottest zone isn't in view.
     const visible = [];
-    for (const bin of activeLiquidationBins) {
+    for (let i = 0; i < activeLiquidationBins.length; i++) {
+      const bin = activeLiquidationBins[i];
       const yTop = candleSeries.priceToCoordinate(bin.price_high);
       const yBottom = candleSeries.priceToCoordinate(bin.price_low);
       if (yTop === null || yBottom === null) continue;
       if (yBottom < 0 || yTop > containerHeight) continue;
-      visible.push({ bin, yTop, yBottom });
+      visible.push({ bin, yTop, yBottom, long: smoothedLong[i], short: smoothedShort[i] });
     }
     if (!visible.length) return;
 
-    const visiblePeak =
-      Math.max(...visible.flatMap((v) => [v.bin.long_intensity, v.bin.short_intensity])) || 1;
+    const visiblePeak = Math.max(...visible.flatMap((v) => [v.long, v.short])) || 1;
 
     const axisWidth = candleSeries.priceScale().width();
 
-    for (const { bin, yTop, yBottom } of visible) {
+    for (const { bin, yTop, yBottom, long, short } of visible) {
       const height = Math.max(1, yBottom - yTop);
-      const isLong = bin.long_intensity >= bin.short_intensity;
-      const magnitude = isLong ? bin.long_intensity : bin.short_intensity;
+      const isLong = long >= short;
+      const magnitude = isLong ? long : short;
       if (magnitude <= 0) continue;
 
       const row = document.createElement("div");

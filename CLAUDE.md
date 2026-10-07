@@ -460,6 +460,48 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   not just the hot spots. z-index stays below the chart's own canvas
   (`z-index: 0` vs the canvas's `2`) so candles/grid draw on top, exactly
   like the reference.
+  **This still shipped invisible** - the user checked again and still saw
+  nothing, with a fresh screenshot. Two real, separate bugs were layered
+  on top of each other, found only by sampling actual rendered pixel RGB
+  values (via a canvas `getImageData` on a real screenshot) instead of
+  trusting DOM/computed-style readbacks, which had looked completely
+  correct at every step:
+  1. **`filter: blur()` was actively destroying the signal, not softening
+     it.** A bin is only ~4px tall, mostly flanked by near-transparent
+     neighbors; blurring a thin low-opacity strip spreads its color
+     contribution across a much wider band, diluting the peak opacity at
+     any single row to a sliver of its pre-blur value. Fixed by doing the
+     smoothing in JS instead - `smoothValues()` box-averages the raw
+     `long_intensity`/`short_intensity` arrays across
+     `LIQUIDATION_SMOOTHING_RADIUS` (4) neighboring bins *before* any
+     opacity is computed, so the number that ends up in `style.opacity`
+     is the number that actually reaches the screen. The CSS filter is
+     now `blur(1px)`, just enough to soften pixel-grid edges between
+     already-smoothed rows.
+  2. **The chart's own `layout.background` was a genuinely opaque fill,
+     not merely "whatever candles happen to cover."** lightweight-charts
+     paints this as a solid rect across the entire pane - at `z-index: 2`,
+     unconditionally, before grid or candles - so *anything* below that
+     z-index was permanently hidden, independent of where candles/grid
+     actually drew. `elementFromPoint`/`elementsFromPoint` couldn't catch
+     this either (same reason as before: they skip `pointer-events: none`
+     elements, so the heatmap layer never appeared in that
+     investigation regardless of what was really happening). Fixed by
+     setting `background: { type: "solid", color: "rgba(0, 0, 0, 0)" }`
+     instead of `cssVar("--surface")` - `#chart-container`'s own CSS
+     background (already `var(--surface)`) still fills in everywhere
+     nothing else draws, so this has no visible effect except finally
+     letting the z-index: 0 heatmap layer show through.
+  Confirmed this time by sampling real pixel colors at the exact
+  page-coordinates of the DOM's own highest-opacity row and checking the
+  math: predicted blend at opacity 0.55 against the dark background was
+  ~[45, 118, 81]; the actual sampled pixel was [45, 117, 80]. **The
+  standing lesson from this feature, reinforced twice now: DOM state,
+  computed style, and `elementFromPoint` can all agree the element is
+  correct while the screen genuinely shows nothing - for anything
+  opacity/layering-based, the only real verification is reading back
+  actual pixel colors from an actual screenshot, ideally checked against
+  a hand-computed expected value, not just "a color appears somewhere."**
 
 ---
 
