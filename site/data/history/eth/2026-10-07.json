@@ -1,7 +1,7 @@
 {
-  "generated_at_utc": "2026-10-07T10:38:29.412403+00:00",
-  "generated_at_central": "2026-10-07T05:38:29.412403-05:00",
-  "price": 2615.15,
+  "generated_at_utc": "2026-10-07T14:08:51.749984+00:00",
+  "generated_at_central": "2026-10-07T09:08:51.749984-05:00",
+  "price": 2577.63,
   "config": {
     "range_days": 60,
     "volume_bin_pct": 0.0025,
@@ -13,7 +13,14 @@
       0.65
     ],
     "pivot_lookback_days": 365,
-    "confluence_merge_pct": 0.005
+    "confluence_merge_pct": 0.005,
+    "liquidation_leverage_tiers": [
+      10,
+      25,
+      50,
+      100
+    ],
+    "liquidation_max_distance_pct": 0.25
   },
   "levels": [
     {
@@ -21,7 +28,7 @@
       "price_low": 1852.43,
       "price_high": 1852.43,
       "type": "support",
-      "distance_pct": -29.165439840926904,
+      "distance_pct": -28.13437149629699,
       "strength": 1,
       "is_flip": false
     },
@@ -30,16 +37,16 @@
       "price_low": 2355.48,
       "price_high": 2355.48,
       "type": "support",
-      "distance_pct": -9.929449553562895,
+      "distance_pct": -8.618382002071675,
       "strength": 1,
       "is_flip": false
     },
     {
       "name": "VAL (60d)",
-      "price_low": 2440.83875,
-      "price_high": 2440.83875,
+      "price_low": 2438.840825,
+      "price_high": 2438.840825,
       "type": "support",
-      "distance_pct": -6.665439840926914,
+      "distance_pct": -5.384371496296982,
       "strength": 1,
       "is_flip": false
     },
@@ -48,7 +55,7 @@
       "price_low": 2514.0339999999997,
       "price_high": 2528.44168,
       "type": "support",
-      "distance_pct": -3.5910811999311822,
+      "distance_pct": -2.187752315111181,
       "strength": 1,
       "is_flip": false
     },
@@ -57,7 +64,7 @@
       "price_low": 2565.3,
       "price_high": 2565.3,
       "type": "support",
-      "distance_pct": -1.9062004091543472,
+      "distance_pct": -0.4783463879610312,
       "strength": 1,
       "is_flip": true
     },
@@ -66,7 +73,7 @@
       "price_low": 2621.08,
       "price_high": 2621.08,
       "type": "resistance",
-      "distance_pct": 0.2267556354319957,
+      "distance_pct": 1.6856569794733849,
       "strength": 1,
       "is_flip": true
     },
@@ -75,16 +82,16 @@
       "price_low": 2635.57,
       "price_high": 2635.57,
       "type": "resistance",
-      "distance_pct": 0.7808347513526976,
+      "distance_pct": 2.2478012748144636,
       "strength": 1,
       "is_flip": false
     },
     {
       "name": "Current month open + POC (60d)",
       "price_low": 2684.11,
-      "price_high": 2692.5469375000002,
+      "price_high": 2693.3817875000004,
       "type": "resistance",
-      "distance_pct": 2.798251295336782,
+      "distance_pct": 4.310777487459426,
       "strength": 2,
       "is_flip": false
     },
@@ -93,16 +100,16 @@
       "price_low": 2726.03,
       "price_high": 2726.03,
       "type": "resistance",
-      "distance_pct": 4.2399097566105235,
+      "distance_pct": 5.7572265996283445,
       "strength": 1,
       "is_flip": false
     },
     {
       "name": "Prior week high + VAH (60d)",
       "price_low": 2776.46,
-      "price_high": 2780.80825,
+      "price_high": 2780.3768,
       "type": "resistance",
-      "distance_pct": 6.251424392482265,
+      "distance_pct": 7.789651734345111,
       "strength": 2,
       "is_flip": false
     },
@@ -111,7 +118,7 @@
       "price_low": 2806.69,
       "price_high": 2806.69,
       "type": "resistance",
-      "distance_pct": 7.324245263178018,
+      "distance_pct": 8.8864577150328,
       "strength": 2,
       "is_flip": false
     }
@@ -125,21 +132,845 @@
     "leg_end_price": 2806.69,
     "leg_end_date": "2026-09-21T00:00:00+00:00"
   },
+  "liquidation_estimate": [
+    {
+      "price_low": 1929.7589,
+      "price_high": 1936.2029750000002,
+      "long_intensity": 0.003168774108900212,
+      "short_intensity": 0.0
+    },
+    {
+      "price_low": 1936.2029750000002,
+      "price_high": 1942.64705,
+      "long_intensity": 0.01436171783509542,
+      "short_intensity": 0.10631211556237677
+    },
+    {
+      "price_low": 1942.64705,
+      "price_high": 1949.0911250000001,
+      "long_intensity": 0.019217113343490203,
+      "short_intensity": 0.10782127144423388
+    },
+    {
+      "price_low": 1949.0911250000001,
+      "price_high": 1955.5352,
+      "long_intensity": 0.01436171783509542,
+      "short_intensity": 0.13119744854153031
+    },
+    {
+      "price_low": 1955.5352,
+      "price_high": 1961.9792750000001,
+      "long_intensity": 0.01436171783509542,
+      "short_intensity": 0.1506244517627746
+    },
+    {
+      "price_low": 1961.9792750000001,
+      "price_high": 1968.42335,
+      "long_intensity": 0.01436171783509542,
+      "short_intensity": 0.0920965066596545
+    },
+    {
+      "price_low": 1968.42335,
+      "price_high": 1974.8674250000001,
+      "long_intensity": 0.01436171783509542,
+      "short_intensity": 0.05815898014647063
+    },
+    {
+      "price_low": 1974.8674250000001,
+      "price_high": 1981.3115,
+      "long_intensity": 0.01436171783509542,
+      "short_intensity": 0.043359902979997325
+    },
+    {
+      "price_low": 1981.3115,
+      "price_high": 1987.7555750000001,
+      "long_intensity": 0.024854309669686547,
+      "short_intensity": 0.05267548842242687
+    },
+    {
+      "price_low": 1987.7555750000001,
+      "price_high": 1994.19965,
+      "long_intensity": 0.024854309669686547,
+      "short_intensity": 0.06959983922957498
+    },
+    {
+      "price_low": 1994.19965,
+      "price_high": 2000.6437250000001,
+      "long_intensity": 0.024854309669686547,
+      "short_intensity": 0.06431724768470486
+    },
+    {
+      "price_low": 2000.6437250000001,
+      "price_high": 2007.0878,
+      "long_intensity": 0.0402155908080902,
+      "short_intensity": 0.03141952161218239
+    },
+    {
+      "price_low": 2007.0878,
+      "price_high": 2013.5318750000001,
+      "long_intensity": 0.03306522223955764,
+      "short_intensity": 0.012971503160017057
+    },
+    {
+      "price_low": 2013.5318750000001,
+      "price_high": 2019.97595,
+      "long_intensity": 0.037920617747952426,
+      "short_intensity": 0.009506322326700636
+    },
+    {
+      "price_low": 2019.97595,
+      "price_high": 2026.4200250000001,
+      "long_intensity": 0.04626118686949819,
+      "short_intensity": 0.009506322326700636
+    },
+    {
+      "price_low": 2026.4200250000001,
+      "price_high": 2032.8641,
+      "long_intensity": 0.05199126464968218,
+      "short_intensity": 0.009506322326700636
+    },
+    {
+      "price_low": 2032.8641,
+      "price_high": 2039.3081750000001,
+      "long_intensity": 0.05199126464968218,
+      "short_intensity": 0.009506322326700636
+    },
+    {
+      "price_low": 2039.3081750000001,
+      "price_high": 2045.75225,
+      "long_intensity": 0.048822490540781964,
+      "short_intensity": 0.01468441085333647
+    },
+    {
+      "price_low": 2045.75225,
+      "price_high": 2052.196325,
+      "long_intensity": 0.05635711262050643,
+      "short_intensity": 0.020816383659976068
+    },
+    {
+      "price_low": 2052.196325,
+      "price_high": 2058.6404,
+      "long_intensity": 0.06962093125738812,
+      "short_intensity": 0.0459076801719261
+    },
+    {
+      "price_low": 2058.6404,
+      "price_high": 2065.084475,
+      "long_intensity": 0.07488560772402131,
+      "short_intensity": 0.07080752491423974
+    },
+    {
+      "price_low": 2065.084475,
+      "price_high": 2071.52855,
+      "long_intensity": 0.04546697347930565,
+      "short_intensity": 0.09898230051367062
+    },
+    {
+      "price_low": 2071.52855,
+      "price_high": 2077.972625,
+      "long_intensity": 0.05693566520443047,
+      "short_intensity": 0.07335208148307294
+    },
+    {
+      "price_low": 2077.972625,
+      "price_high": 2084.4167,
+      "long_intensity": 0.05862228660392504,
+      "short_intensity": 0.05786257342205441
+    },
+    {
+      "price_low": 2084.4167,
+      "price_high": 2090.860775,
+      "long_intensity": 0.06347768211231983,
+      "short_intensity": 0.05702126892348867
+    },
+    {
+      "price_low": 2090.860775,
+      "price_high": 2097.30485,
+      "long_intensity": 0.043902552249530026,
+      "short_intensity": 0.01683014005239155
+    },
+    {
+      "price_low": 2097.30485,
+      "price_high": 2103.748925,
+      "long_intensity": 0.043902552249530026,
+      "short_intensity": 0.06633685436591821
+    },
+    {
+      "price_low": 2103.748925,
+      "price_high": 2110.193,
+      "long_intensity": 0.03763771402747582,
+      "short_intensity": 0.09375379700765746
+    },
+    {
+      "price_low": 2110.193,
+      "price_high": 2116.637075,
+      "long_intensity": 0.02818726734237105,
+      "short_intensity": 0.08847120546278732
+    },
+    {
+      "price_low": 2116.637075,
+      "price_high": 2123.08115,
+      "long_intensity": 0.06047946436949261,
+      "short_intensity": 0.06042887489865963
+    },
+    {
+      "price_low": 2123.08115,
+      "price_high": 2129.5252250000003,
+      "long_intensity": 0.05182993093378242,
+      "short_intensity": 0.041980856446494304
+    },
+    {
+      "price_low": 2129.5252250000003,
+      "price_high": 2135.9693,
+      "long_intensity": 0.06238466992667067,
+      "short_intensity": 0.028023083778586762
+    },
+    {
+      "price_low": 2135.9693,
+      "price_high": 2142.413375,
+      "long_intensity": 0.08846761144655281,
+      "short_intensity": 0.01436171783509542
+    },
+    {
+      "price_low": 2142.413375,
+      "price_high": 2148.85745,
+      "long_intensity": 0.1187712276814709,
+      "short_intensity": 0.02970970517808133
+    },
+    {
+      "price_low": 2148.85745,
+      "price_high": 2155.301525,
+      "long_intensity": 0.1385907912560744,
+      "short_intensity": 0.04020229701267246
+    },
+    {
+      "price_low": 2155.301525,
+      "price_high": 2161.7456,
+      "long_intensity": 0.15039280637294725,
+      "short_intensity": 0.02970970517808133
+    },
+    {
+      "price_low": 2161.7456,
+      "price_high": 2168.189675,
+      "long_intensity": 0.17809888331604246,
+      "short_intensity": 0.026540931069181116
+    },
+    {
+      "price_low": 2168.189675,
+      "price_high": 2174.63375,
+      "long_intensity": 0.18891025916968987,
+      "short_intensity": 0.026540931069181116
+    },
+    {
+      "price_low": 2174.63375,
+      "price_high": 2181.0778250000003,
+      "long_intensity": 0.3032707374258023,
+      "short_intensity": 0.026540931069181116
+    },
+    {
+      "price_low": 2181.0778250000003,
+      "price_high": 2187.5219,
+      "long_intensity": 0.17755045384443197,
+      "short_intensity": 0.0313963265775759
+    },
+    {
+      "price_low": 2187.5219,
+      "price_high": 2193.965975,
+      "long_intensity": 0.1997603935765265,
+      "short_intensity": 0.0313963265775759
+    },
+    {
+      "price_low": 2193.965975,
+      "price_high": 2200.41005,
+      "long_intensity": 0.21565820818681877,
+      "short_intensity": 0.020903734742984778
+    },
+    {
+      "price_low": 2200.41005,
+      "price_high": 2206.8541250000003,
+      "long_intensity": 0.23280990155850745,
+      "short_intensity": 0.020903734742984778
+    },
+    {
+      "price_low": 2206.8541250000003,
+      "price_high": 2213.2982,
+      "long_intensity": 0.24838251322471838,
+      "short_intensity": 0.017734960634084564
+    },
+    {
+      "price_low": 2213.2982,
+      "price_high": 2219.742275,
+      "long_intensity": 0.27275293040784304,
+      "short_intensity": 0.017734960634084564
+    },
+    {
+      "price_low": 2219.742275,
+      "price_high": 2226.18635,
+      "long_intensity": 0.2881271904309481,
+      "short_intensity": 0.017734960634084564
+    },
+    {
+      "price_low": 2226.18635,
+      "price_high": 2232.6304250000003,
+      "long_intensity": 0.3075194452093909,
+      "short_intensity": 0.017734960634084564
+    },
+    {
+      "price_low": 2232.6304250000003,
+      "price_high": 2239.0745,
+      "long_intensity": 0.5888170237202417,
+      "short_intensity": 0.014566186525184351
+    },
+    {
+      "price_low": 2239.0745,
+      "price_high": 2245.518575,
+      "long_intensity": 0.33527253552112185,
+      "short_intensity": 0.022987903449089003
+    },
+    {
+      "price_low": 2245.518575,
+      "price_high": 2251.96265,
+      "long_intensity": 0.27393056702110474,
+      "short_intensity": 0.022987903449089003
+    },
+    {
+      "price_low": 2251.96265,
+      "price_high": 2258.4067250000003,
+      "long_intensity": 0.2688945084753518,
+      "short_intensity": 0.025945873203955663
+    },
+    {
+      "price_low": 2258.4067250000003,
+      "price_high": 2264.8508,
+      "long_intensity": 0.27924462660880944,
+      "short_intensity": 0.021090477695560876
+    },
+    {
+      "price_low": 2264.8508,
+      "price_high": 2271.294875,
+      "long_intensity": 0.26764932928068985,
+      "short_intensity": 0.03953938514050586
+    },
+    {
+      "price_low": 2271.294875,
+      "price_high": 2277.73895,
+      "long_intensity": 0.2329121755571094,
+      "short_intensity": 0.055762054755280975
+    },
+    {
+      "price_low": 2277.73895,
+      "price_high": 2284.1830250000003,
+      "long_intensity": 0.2284631485754142,
+      "short_intensity": 0.031583069530152004
+    },
+    {
+      "price_low": 2284.1830250000003,
+      "price_high": 2290.6271,
+      "long_intensity": 0.2118947262010101,
+      "short_intensity": 0.05872002451014764
+    },
+    {
+      "price_low": 2290.6271,
+      "price_high": 2297.071175,
+      "long_intensity": 0.25090887461073275,
+      "short_intensity": 0.0670605936316934
+    },
+    {
+      "price_low": 2297.071175,
+      "price_high": 2303.51525,
+      "long_intensity": 0.18341749422957418,
+      "short_intensity": 0.06983270165701072
+    },
+    {
+      "price_low": 2303.51525,
+      "price_high": 2309.9593250000003,
+      "long_intensity": 0.21600269026812594,
+      "short_intensity": 0.05091839289851496
+    },
+    {
+      "price_low": 2309.9593250000003,
+      "price_high": 2316.4034,
+      "long_intensity": 0.24386746221052769,
+      "short_intensity": 0.0746880971654055
+    },
+    {
+      "price_low": 2316.4034,
+      "price_high": 2322.847475,
+      "long_intensity": 0.2282891835671394,
+      "short_intensity": 0.07173012741053886
+    },
+    {
+      "price_low": 2322.847475,
+      "price_high": 2329.29155,
+      "long_intensity": 0.22522471575578504,
+      "short_intensity": 0.05894256251580994
+    },
+    {
+      "price_low": 2329.29155,
+      "price_high": 2335.7356250000003,
+      "long_intensity": 0.279397149863372,
+      "short_intensity": 0.07041125424093475
+    },
+    {
+      "price_low": 2335.7356250000003,
+      "price_high": 2342.1797,
+      "long_intensity": 0.332279219994391,
+      "short_intensity": 0.07558304925358031
+    },
+    {
+      "price_low": 2342.1797,
+      "price_high": 2348.623775,
+      "long_intensity": 0.3867454017179623,
+      "short_intensity": 0.0813131270337643
+    },
+    {
+      "price_low": 2348.623775,
+      "price_high": 2355.0678500000004,
+      "long_intensity": 0.5059853792889203,
+      "short_intensity": 0.08855467623908521
+    },
+    {
+      "price_low": 2355.0678500000004,
+      "price_high": 2361.5119250000002,
+      "long_intensity": 0.4914755498761178,
+      "short_intensity": 0.08855467623908521
+    },
+    {
+      "price_low": 2361.5119250000002,
+      "price_high": 2367.956,
+      "long_intensity": 0.538149621412432,
+      "short_intensity": 0.08250064237106458
+    },
+    {
+      "price_low": 2367.956,
+      "price_high": 2374.400075,
+      "long_intensity": 0.6706962918057103,
+      "short_intensity": 0.06357011035115148
+    },
+    {
+      "price_low": 2374.400075,
+      "price_high": 2380.84415,
+      "long_intensity": 0.5949431492854236,
+      "short_intensity": 0.0587147148427567
+    },
+    {
+      "price_low": 2380.84415,
+      "price_high": 2387.2882250000002,
+      "long_intensity": 0.6476706177329887,
+      "short_intensity": 0.07914516244793235
+    },
+    {
+      "price_low": 2387.2882250000002,
+      "price_high": 2393.7323,
+      "long_intensity": 0.6587949566587928,
+      "short_intensity": 0.07466626314430409
+    },
+    {
+      "price_low": 2393.7323,
+      "price_high": 2400.176375,
+      "long_intensity": 0.8764713841905423,
+      "short_intensity": 0.09143675104731272
+    },
+    {
+      "price_low": 2400.176375,
+      "price_high": 2406.6204500000003,
+      "long_intensity": 0.7030415717505455,
+      "short_intensity": 0.13619080877712972
+    },
+    {
+      "price_low": 2406.6204500000003,
+      "price_high": 2413.0645250000002,
+      "long_intensity": 1.0,
+      "short_intensity": 0.16850800263865764
+    },
+    {
+      "price_low": 2413.0645250000002,
+      "price_high": 2419.5086,
+      "long_intensity": 0.8228322336473695,
+      "short_intensity": 0.18940221987134107
+    },
+    {
+      "price_low": 2419.5086,
+      "price_high": 2425.952675,
+      "long_intensity": 0.8173669258930817,
+      "short_intensity": 0.21894660738655028
+    },
+    {
+      "price_low": 2425.952675,
+      "price_high": 2432.39675,
+      "long_intensity": 0.7493990632229376,
+      "short_intensity": 0.2421006614140675
+    },
+    {
+      "price_low": 2432.39675,
+      "price_high": 2438.840825,
+      "long_intensity": 0.6926522769503446,
+      "short_intensity": 0.29580312834460987
+    },
+    {
+      "price_low": 2438.840825,
+      "price_high": 2445.2849,
+      "long_intensity": 0.6491645868126336,
+      "short_intensity": 0.2777727135985574
+    },
+    {
+      "price_low": 2445.2849,
+      "price_high": 2451.728975,
+      "long_intensity": 0.6151299674057406,
+      "short_intensity": 0.28127411044883116
+    },
+    {
+      "price_low": 2451.728975,
+      "price_high": 2458.1730500000003,
+      "long_intensity": 0.5836865062066293,
+      "short_intensity": 0.33287078331093445
+    },
+    {
+      "price_low": 2458.1730500000003,
+      "price_high": 2464.617125,
+      "long_intensity": 0.5978925993903829,
+      "short_intensity": 0.3480108563682307
+    },
+    {
+      "price_low": 2464.617125,
+      "price_high": 2471.0612,
+      "long_intensity": 0.6348549709133984,
+      "short_intensity": 0.23444231085478132
+    },
+    {
+      "price_low": 2471.0612,
+      "price_high": 2477.505275,
+      "long_intensity": 0.46617706592316505,
+      "short_intensity": 0.39882589524373496
+    },
+    {
+      "price_low": 2477.505275,
+      "price_high": 2483.94935,
+      "long_intensity": 0.42009665031765575,
+      "short_intensity": 0.4537499958651191
+    },
+    {
+      "price_low": 2483.94935,
+      "price_high": 2490.393425,
+      "long_intensity": 0.3604905829262016,
+      "short_intensity": 0.5080182279350881
+    },
+    {
+      "price_low": 2490.393425,
+      "price_high": 2496.8375,
+      "long_intensity": 0.3121415497768319,
+      "short_intensity": 0.5427517485638125
+    },
+    {
+      "price_low": 2496.8375,
+      "price_high": 2503.281575,
+      "long_intensity": 0.26053680555589714,
+      "short_intensity": 0.5793376148187591
+    },
+    {
+      "price_low": 2503.281575,
+      "price_high": 2509.7256500000003,
+      "long_intensity": 0.2093077909338495,
+      "short_intensity": 0.5946714438004272
+    },
+    {
+      "price_low": 2509.7256500000003,
+      "price_high": 2516.169725,
+      "long_intensity": 0.17549605172354438,
+      "short_intensity": 0.6138269009545634
+    },
+    {
+      "price_low": 2516.169725,
+      "price_high": 2522.6138,
+      "long_intensity": 0.15787587166473102,
+      "short_intensity": 0.5839015045630892
+    },
+    {
+      "price_low": 2522.6138,
+      "price_high": 2529.057875,
+      "long_intensity": 0.16167446422935727,
+      "short_intensity": 0.6060770844154989
+    },
+    {
+      "price_low": 2529.057875,
+      "price_high": 2535.50195,
+      "long_intensity": 0.13971179747823975,
+      "short_intensity": 0.630731743533981
+    },
+    {
+      "price_low": 2535.50195,
+      "price_high": 2541.946025,
+      "long_intensity": 0.15875704498807042,
+      "short_intensity": 0.6648146183900783
+    },
+    {
+      "price_low": 2541.946025,
+      "price_high": 2548.3901,
+      "long_intensity": 0.17377367020198978,
+      "short_intensity": 0.633798605100404
+    },
+    {
+      "price_low": 2548.3901,
+      "price_high": 2554.834175,
+      "long_intensity": 0.2899564486298636,
+      "short_intensity": 0.5808362286403665
+    },
+    {
+      "price_low": 2554.834175,
+      "price_high": 2561.2782500000003,
+      "long_intensity": 0.2634314841043749,
+      "short_intensity": 0.548996208386049
+    },
+    {
+      "price_low": 2561.2782500000003,
+      "price_high": 2567.722325,
+      "long_intensity": 0.3015533108843564,
+      "short_intensity": 0.5006667097530965
+    },
+    {
+      "price_low": 2567.722325,
+      "price_high": 2574.1664,
+      "long_intensity": 0.34382314705682987,
+      "short_intensity": 0.48552192543863393
+    },
+    {
+      "price_low": 2574.1664,
+      "price_high": 2580.6104750000004,
+      "long_intensity": 0.3631019595377849,
+      "short_intensity": 0.41790082980038873
+    },
+    {
+      "price_low": 2580.6104750000004,
+      "price_high": 2587.0545500000003,
+      "long_intensity": 0.40094945244209385,
+      "short_intensity": 0.39920487420461936
+    },
+    {
+      "price_low": 2587.0545500000003,
+      "price_high": 2593.498625,
+      "long_intensity": 0.37610841276695445,
+      "short_intensity": 0.33427157139340113
+    },
+    {
+      "price_low": 2593.498625,
+      "price_high": 2599.9427,
+      "long_intensity": 0.3364241555770212,
+      "short_intensity": 0.11858016249575519
+    },
+    {
+      "price_low": 2599.9427,
+      "price_high": 2606.386775,
+      "long_intensity": 0.2971752856043369,
+      "short_intensity": 0.32888658486874106
+    },
+    {
+      "price_low": 2606.386775,
+      "price_high": 2612.8308500000003,
+      "long_intensity": 0.3178523628050943,
+      "short_intensity": 0.32697676910472306
+    },
+    {
+      "price_low": 2612.8308500000003,
+      "price_high": 2619.274925,
+      "long_intensity": 0.3491865141652961,
+      "short_intensity": 0.341291751601292
+    },
+    {
+      "price_low": 2619.274925,
+      "price_high": 2625.719,
+      "long_intensity": 0.40014946807515966,
+      "short_intensity": 0.3496088608409795
+    },
+    {
+      "price_low": 2625.719,
+      "price_high": 2632.1630750000004,
+      "long_intensity": 0.42924187418830706,
+      "short_intensity": 0.3490314594064297
+    },
+    {
+      "price_low": 2632.1630750000004,
+      "price_high": 2638.6071500000003,
+      "long_intensity": 0.43702429575773355,
+      "short_intensity": 0.3309576463651548
+    },
+    {
+      "price_low": 2638.6071500000003,
+      "price_high": 2645.051225,
+      "long_intensity": 0.4827454386968943,
+      "short_intensity": 0.3105372950758485
+    },
+    {
+      "price_low": 2645.051225,
+      "price_high": 2651.4953,
+      "long_intensity": 0.4708560240005042,
+      "short_intensity": 0.3000370600122106
+    },
+    {
+      "price_low": 2651.4953,
+      "price_high": 2657.939375,
+      "long_intensity": 0.48234856610518934,
+      "short_intensity": 0.28422452579797886
+    },
+    {
+      "price_low": 2657.939375,
+      "price_high": 2664.3834500000003,
+      "long_intensity": 0.4323673045647431,
+      "short_intensity": 0.16286956088923474
+    },
+    {
+      "price_low": 2664.3834500000003,
+      "price_high": 2670.827525,
+      "long_intensity": 0.4352111160280472,
+      "short_intensity": 0.3150093513083942
+    },
+    {
+      "price_low": 2670.827525,
+      "price_high": 2677.2716,
+      "long_intensity": 0.3488114044332762,
+      "short_intensity": 0.33809181202910876
+    },
+    {
+      "price_low": 2677.2716,
+      "price_high": 2683.7156750000004,
+      "long_intensity": 0.2917973490460765,
+      "short_intensity": 0.3609059016222994
+    },
+    {
+      "price_low": 2683.7156750000004,
+      "price_high": 2690.1597500000003,
+      "long_intensity": 0.3287655524035651,
+      "short_intensity": 0.40469454669873123
+    },
+    {
+      "price_low": 2690.1597500000003,
+      "price_high": 2696.603825,
+      "long_intensity": 0.20948382696249493,
+      "short_intensity": 0.46116412471092744
+    },
+    {
+      "price_low": 2696.603825,
+      "price_high": 2703.0479,
+      "long_intensity": 0.17679533348042456,
+      "short_intensity": 0.5211490481966439
+    },
+    {
+      "price_low": 2703.0479,
+      "price_high": 2709.491975,
+      "long_intensity": 0.17079221889296134,
+      "short_intensity": 0.5846445503113603
+    },
+    {
+      "price_low": 2709.491975,
+      "price_high": 2715.9360500000003,
+      "long_intensity": 0.14142926494176103,
+      "short_intensity": 0.6392768992523961
+    },
+    {
+      "price_low": 2715.9360500000003,
+      "price_high": 2722.380125,
+      "long_intensity": 0.11924361569196525,
+      "short_intensity": 0.7188728904068915
+    },
+    {
+      "price_low": 2722.380125,
+      "price_high": 2728.8242,
+      "long_intensity": 0.08121834801369163,
+      "short_intensity": 0.7075600764442943
+    },
+    {
+      "price_low": 2728.8242,
+      "price_high": 2735.2682750000004,
+      "long_intensity": 0.06808251411474919,
+      "short_intensity": 0.48699512688575525
+    },
+    {
+      "price_low": 2735.2682750000004,
+      "price_high": 2741.7123500000002,
+      "long_intensity": 0.07304072182046156,
+      "short_intensity": 0.7179456843210846
+    },
+    {
+      "price_low": 2741.7123500000002,
+      "price_high": 2748.156425,
+      "long_intensity": 0.05469010080690549,
+      "short_intensity": 0.7207539030723021
+    },
+    {
+      "price_low": 2748.156425,
+      "price_high": 2754.6005,
+      "long_intensity": 0.04774186023531751,
+      "short_intensity": 0.6513318081519104
+    },
+    {
+      "price_low": 2754.6005,
+      "price_high": 2761.044575,
+      "long_intensity": 0.01590780112417392,
+      "short_intensity": 0.5851615116295511
+    },
+    {
+      "price_low": 2761.044575,
+      "price_high": 2767.4886500000002,
+      "long_intensity": 0.011295749393094063,
+      "short_intensity": 0.43575785050952887
+    },
+    {
+      "price_low": 2767.4886500000002,
+      "price_high": 2773.932725,
+      "long_intensity": 0.009568799736851265,
+      "short_intensity": 0.5072658145273966
+    },
+    {
+      "price_low": 2773.932725,
+      "price_high": 2780.3768,
+      "long_intensity": 0.009568799736851265,
+      "short_intensity": 0.471777490950611
+    },
+    {
+      "price_low": 2780.3768,
+      "price_high": 2786.8208750000003,
+      "long_intensity": 0.009568799736851265,
+      "short_intensity": 0.4589648272410265
+    },
+    {
+      "price_low": 2786.8208750000003,
+      "price_high": 2793.26495,
+      "long_intensity": 0.0,
+      "short_intensity": 0.4648134989971645
+    },
+    {
+      "price_low": 2793.26495,
+      "price_high": 2799.709025,
+      "long_intensity": 0.0,
+      "short_intensity": 0.3403958119236587
+    },
+    {
+      "price_low": 2799.709025,
+      "price_high": 2806.1531,
+      "long_intensity": 0.0,
+      "short_intensity": 0.38167719088542024
+    },
+    {
+      "price_low": 2806.1531,
+      "price_high": 2812.597175,
+      "long_intensity": 0.0,
+      "short_intensity": 0.33546436215262504
+    }
+  ],
   "futures_context": {
     "symbol": "PF_ETHUSD",
-    "mark_price": 2576.70498832595,
-    "open_interest": 29633.526,
-    "volume_24h": 60137.784,
-    "funding_rate_hourly_pct": -0.0006787991666667,
-    "funding_rate_prediction_hourly_pct": -0.0013327941666667
+    "mark_price": 2567.8725228877,
+    "open_interest": 29987.54,
+    "volume_24h": 69397.247,
+    "funding_rate_hourly_pct": 0.0004933708333333001,
+    "funding_rate_prediction_hourly_pct": 0.002535125
   },
   "diff": [
     {
       "kind": "Current month open",
       "status": "unchanged",
       "old_price": 2688.027975,
-      "new_price": 2688.32846875,
-      "change_pct": 0.011178966617711146
+      "new_price": 2688.7458937500005,
+      "change_pct": 0.026708008870351713
     },
     {
       "kind": "Current week open",
@@ -173,8 +1004,8 @@
       "kind": "POC (60d)",
       "status": "unchanged",
       "old_price": 2688.027975,
-      "new_price": 2688.32846875,
-      "change_pct": 0.011178966617711146
+      "new_price": 2688.7458937500005,
+      "change_pct": 0.026708008870351713
     },
     {
       "kind": "Prior month high",
@@ -194,8 +1025,8 @@
       "kind": "Prior week high",
       "status": "unchanged",
       "old_price": 2776.34735,
-      "new_price": 2778.634125,
-      "change_pct": 0.08236631486330535
+      "new_price": 2778.4184,
+      "change_pct": 0.07459621361858824
     },
     {
       "kind": "Prior week low",
@@ -222,15 +1053,15 @@
       "kind": "VAH (60d)",
       "status": "unchanged",
       "old_price": 2776.34735,
-      "new_price": 2778.634125,
-      "change_pct": 0.08236631486330535
+      "new_price": 2778.4184,
+      "change_pct": 0.07459621361858824
     },
     {
       "kind": "VAL (60d)",
       "status": "unchanged",
       "old_price": 2439.0797000000002,
-      "new_price": 2440.83875,
-      "change_pct": 0.07211941454802238
+      "new_price": 2438.840825,
+      "change_pct": -0.009793652909333272
     }
   ]
 }

@@ -114,7 +114,18 @@
       <span class="legend-item"><i class="swatch flip"></i>Flip (must hold)</span>
       <span class="legend-item"><i class="swatch current"></i>Current price</span>
       <span class="legend-item"><i class="swatch liquidity"></i>Order book wall</span>
+      <span class="legend-item"><i class="swatch support"></i>Est. long liquidations</span>
+      <span class="legend-item"><i class="swatch resistance"></i>Est. short liquidations</span>
     </div>
+    <p class="liquidation-note">
+      The green/red strip next to the price axis is a <strong>model, not
+      real position data</strong> — no exchange publishes actual entry
+      prices or leverage. It projects the real traded volume at each price
+      (the same data the volume profile uses) through a few standard perp
+      leverage tiers (10x/25x/50x/100x), split evenly long/short since
+      there's no signal to weight either way. Read it as "where crowded
+      leverage plausibly sits," not a fact.
+    </p>
 
     <section class="levels-table-section">
       <h2>My trades</h2>

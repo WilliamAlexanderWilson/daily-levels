@@ -189,6 +189,39 @@ the real ~0.0008%). And Kraken Futures pays funding **hourly**, not every
 8 hours like most exchanges — the site labels it "/hr" explicitly so it
 isn't misread against an 8h mental model.
 
+## Liquidation estimate (the green/red heat strip)
+
+**This is a model, not real position data** — no exchange, Kraken
+included, publishes actual entry prices or leverage, so nothing can show
+*verified* liquidation levels. What's shown instead: the real volume
+profile (actual traded volume at each price over the lookback window —
+the same data POC/VAH/VAL are built from) projected through a handful of
+standard perp leverage tiers (10x/25x/50x/100x):
+
+```
+long liquidation price  = entry * (1 - 1/leverage)   # below entry
+short liquidation price = entry * (1 + 1/leverage)   # above entry
+```
+
+Each volume bin's volume is split evenly across every leverage tier and
+evenly between long and short, because there's no real signal to weight
+either split any other way — Kraken's open-interest number is a single
+aggregate, it doesn't say how it splits by side or leverage. An even
+split is the most honest default available, not a claim that longs and
+shorts were actually equal there.
+
+The result (`src/levels/liquidation_estimate.py`, baked into
+`{asset}_levels.json` as `liquidation_estimate`) is a **relative**
+density, not an absolute size — a bin twice as "hot" as another means
+twice as much real volume projects a liquidation there, not "twice as
+many dollars" or "this will definitely happen." Rendered as two thin
+columns docked against the price axis (green = estimated long
+liquidations, red = estimated short), capped to within 25% of the
+current price so it doesn't extrapolate off into irrelevant territory.
+Treat it the way you'd treat any third-party liquidation heatmap: a
+plausible read on where crowded leverage might sit, built transparently
+from real data plus one stated, simple assumption — not a fact.
+
 ## Trade journal
 
 Mark a trade by clicking "+ Mark trade" above the chart, then clicking

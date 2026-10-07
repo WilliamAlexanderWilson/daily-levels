@@ -171,6 +171,8 @@
   let activeLevels = [];
   let activeScorecard = null;
   let activeProximity = null;
+  let activeLiquidationBins = []; // {price_low, price_high, long_intensity, short_intensity} - a model, not real position data, see renderLiquidationHeatmap()
+  const liquidationEls = []; // kept separate from overlayEls - purely visual, never clickable/decluttered/part of currentMarkers
   let tradeMarkersPlugin = null;
   let activeCandles = []; // current timeframe's loaded candles, so trade markers can be bounds-checked
   let markingMode = false;
@@ -455,6 +457,58 @@
     return yLow >= 0 && yHigh <= containerHeight;
   }
 
+  const LIQUIDATION_BAR_WIDTH_PX = 10;
+  const LIQUIDATION_MAX_OPACITY = 0.85;
+
+  // Two thin heat-strip columns docked against the price axis (short/red
+  // against the axis itself, long/green just inboard of it) - deliberately
+  // NOT part of currentMarkers: there can be 100+ bins, and treating them
+  // as clickable/decluttered "levels" the way real levels are would wreck
+  // that system and the table/dropdown. Purely a background visual, same
+  // as the always-on current-price line - unaffected by isolate.
+  function renderLiquidationHeatmap(container) {
+    for (const el of liquidationEls) el.remove();
+    liquidationEls.length = 0;
+    if (!activeLiquidationBins.length) return;
+
+    const axisWidth = candleSeries.priceScale().width();
+    const shortRight = axisWidth;
+    const longRight = axisWidth + LIQUIDATION_BAR_WIDTH_PX;
+
+    for (const bin of activeLiquidationBins) {
+      const yTop = candleSeries.priceToCoordinate(bin.price_high);
+      const yBottom = candleSeries.priceToCoordinate(bin.price_low);
+      if (yTop === null || yBottom === null) continue;
+      const height = Math.max(1, yBottom - yTop);
+
+      if (bin.short_intensity > 0) {
+        const bar = document.createElement("div");
+        bar.className = "liquidation-bar short";
+        bar.style.top = `${yTop}px`;
+        bar.style.height = `${height}px`;
+        bar.style.right = `${shortRight}px`;
+        bar.style.width = `${LIQUIDATION_BAR_WIDTH_PX}px`;
+        bar.style.opacity = bin.short_intensity * LIQUIDATION_MAX_OPACITY;
+        bar.title = `Est. short liquidations near ${formatPriceRange(bin.price_low, bin.price_high)} (modeled, not real position data)`;
+        container.appendChild(bar);
+        liquidationEls.push(bar);
+      }
+
+      if (bin.long_intensity > 0) {
+        const bar = document.createElement("div");
+        bar.className = "liquidation-bar long";
+        bar.style.top = `${yTop}px`;
+        bar.style.height = `${height}px`;
+        bar.style.right = `${longRight}px`;
+        bar.style.width = `${LIQUIDATION_BAR_WIDTH_PX}px`;
+        bar.style.opacity = bin.long_intensity * LIQUIDATION_MAX_OPACITY;
+        bar.title = `Est. long liquidations near ${formatPriceRange(bin.price_low, bin.price_high)} (modeled, not real position data)`;
+        container.appendChild(bar);
+        liquidationEls.push(bar);
+      }
+    }
+  }
+
   function renderOverlays() {
     const container = document.getElementById("chart-container");
     for (const el of overlayEls) el.remove();
@@ -463,6 +517,7 @@
     if (!candleSeries) return;
     lastOverlayPriceRange = candleSeries.priceScale().getVisibleRange();
     applyLineIsolation();
+    renderLiquidationHeatmap(container);
 
     // zone shading draws at its exact price - only the text tags get
     // decluttered below.
@@ -1629,6 +1684,11 @@
 
       renderHeader(levelsData);
       renderFuturesContext(levelsData.futures_context);
+      // set before renderChart(): its zoom call can trigger the time-axis
+      // subscription straight into renderOverlays() (which draws the
+      // heatmap), and that would otherwise run once against the previous
+      // asset's bins before renderLevels() below gets a chance to update it.
+      activeLiquidationBins = levelsData.liquidation_estimate || [];
       renderChart(candles, range, levelsData.config.range_days);
       renderLevels(levelsData.levels);
 

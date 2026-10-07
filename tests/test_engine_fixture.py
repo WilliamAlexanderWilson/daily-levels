@@ -56,5 +56,14 @@ def test_engine_runs_end_to_end_on_real_fixture(patched_fetch):
     assert "generated_at_utc" in result
     assert "generated_at_central" in result
 
+    assert "liquidation_estimate" in result
+    assert len(result["liquidation_estimate"]) > 0
+    for b in result["liquidation_estimate"]:
+        assert b["price_low"] < b["price_high"]
+        assert 0.0 <= b["long_intensity"] <= 1.0
+        assert 0.0 <= b["short_intensity"] <= 1.0
+        assert b["long_intensity"] > 0 or b["short_intensity"] > 0
+    assert result["config"]["liquidation_leverage_tiers"] == [10, 25, 50, 100]
+
     assert len(output["candles_4h"]) == len(candles_4h)
     assert len(output["candles_1d"]) == len(candles_1d)

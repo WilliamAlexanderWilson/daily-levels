@@ -183,6 +183,12 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   at all** (checked the raw response headers directly) - not fetchable
   live from the browser, so it's a separate feature (below), fetched
   server-side once a day instead of polled live.
+  **Follow-up**: the user came back and explicitly asked for the modeled
+  heatmap anyway, understanding and accepting that it's a guess - see
+  "Liquidation estimate" below for what got built once that was clear.
+  The distinction that mattered wasn't "decline forever," it was "don't
+  present a guess as verified fact without saying so" - once the user
+  wanted the guess, clearly labeled, that's a legitimate ask.
 - **Futures context** (`src/context/futures.py`) — open interest + perp
   funding rate, fetched server-side in the daily job (the CORS gap above)
   and baked into `{asset}_levels.json` as `futures_context`, read directly
@@ -363,6 +369,44 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
     not-yet-final pixel misses. Not a real bug (a human watches the
     chart settle before clicking), but worth remembering before
     trusting a fast re-click in an automated test against this chart.
+- **Liquidation estimate** (`src/levels/liquidation_estimate.py`) — see
+  the README section of the same name for the full methodology and the
+  honesty framing; this is the implementation note. Reuses the volume
+  profile's own `bin_edges`/`bin_volumes` (already computed from real
+  trade data for POC/VAH/VAL, no extra fetch) and projects each bin
+  through `LIQUIDATION_LEVERAGE_TIERS` (`config.py`: `[10, 25, 50, 100]`)
+  into long/short liquidation prices, re-bucketed onto the same bin grid,
+  normalized 0-1 by the single hottest bin across both sides, capped to
+  `LIQUIDATION_MAX_DISTANCE_PCT` (0.25) from current price. Output is
+  `liquidation_estimate` in `{asset}_levels.json` - a flat list of
+  `{price_low, price_high, long_intensity, short_intensity}`, computed
+  once a day alongside everything else (no live recompute needed, same
+  as POC/VAH/VAL).
+  Rendered in `site/app.js` as two thin heat-strip columns
+  (`renderLiquidationHeatmap`, called from inside `renderOverlays()` so
+  it inherits the same staleness-fix machinery everything else there
+  already has) docked against the price axis via
+  `candleSeries.priceScale().width()` - deliberately **not** part of
+  `currentMarkers`: there are 100+ bins, and treating them as
+  clickable/decluttered "levels" the way real levels are would wreck
+  that system and flood the table/dropdown. Purely a background visual,
+  unaffected by isolate, same as the always-on current-price line.
+  **A real debugging detour worth remembering**: the bars appeared
+  completely invisible in every manual verification screenshot at
+  first, even forced to `opacity:1` with a magenta background. Spent
+  real effort chasing this as a z-index/paint-order bug (the chart's own
+  canvas sits at `z-index: 2`) before finding the actual cause via a
+  synchronous `getBoundingClientRect()` readback: the test viewport
+  (1000px tall) was shorter than the chart container's page position
+  (it starts ~455px down the page and is 720px tall, so its bottom
+  edge sits past 1000px), and every verification screenshot happened to
+  sample a bin that landed below the fold - never actually rendered content
+  to begin with, nothing to do with the heatmap code. Fixed by testing
+  with a taller viewport (1400px). The same class of bug bit chart-click
+  testing earlier (see the isolate-on-click entry above) - **when a
+  Playwright check against this page returns something false/invisible/
+  absent, verify the element's actual page-absolute position against the
+  viewport height before assuming the application code is wrong.**
 
 ---
 

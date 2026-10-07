@@ -9,6 +9,7 @@ from src.fetch import fetch_candles
 from src.levels.confluence import RawLevel, merge_confluence
 from src.levels.flip_level import find_flip_levels
 from src.levels.golden_pocket import find_golden_pocket
+from src.levels.liquidation_estimate import estimate_liquidation_bins
 from src.levels.pivots import find_pivots
 from src.levels.reference_levels import get_reference_levels
 from src.levels.volume_profile import build_volume_profile
@@ -32,6 +33,11 @@ def build_asset_levels(pair: str) -> dict:
     vp = build_volume_profile(vp_candles, current_price)
     range_high = float(vp_candles["high"].max())
     range_low = float(vp_candles["low"].min())
+
+    # Reuses vp's own real volume-at-price bins - no extra fetch. See
+    # src/levels/liquidation_estimate.py for exactly what this is (a
+    # model, not verified position data) and why.
+    liquidation_bins = estimate_liquidation_bins(vp, current_price)
 
     pivot_candles = _lookback(candles_1d, config.PIVOT_LOOKBACK_DAYS)
     pivots = find_pivots(pivot_candles)
@@ -111,6 +117,16 @@ def build_asset_levels(pair: str) -> dict:
             "leg_end_date": golden_pocket.leg_end.date.isoformat(),
         }
 
+    liquidation_bins_out = [
+        {
+            "price_low": b.price_low,
+            "price_high": b.price_high,
+            "long_intensity": b.long_intensity,
+            "short_intensity": b.short_intensity,
+        }
+        for b in liquidation_bins
+    ]
+
     result = {
         "generated_at_utc": now_utc.isoformat(),
         "generated_at_central": now_central.isoformat(),
@@ -124,9 +140,12 @@ def build_asset_levels(pair: str) -> dict:
             "golden_pocket_range": [config.GOLDEN_POCKET_LOW, config.GOLDEN_POCKET_HIGH],
             "pivot_lookback_days": config.PIVOT_LOOKBACK_DAYS,
             "confluence_merge_pct": config.CONFLUENCE_MERGE_PCT,
+            "liquidation_leverage_tiers": config.LIQUIDATION_LEVERAGE_TIERS,
+            "liquidation_max_distance_pct": config.LIQUIDATION_MAX_DISTANCE_PCT,
         },
         "levels": levels_out,
         "golden_pocket_leg": golden_pocket_out,
+        "liquidation_estimate": liquidation_bins_out,
     }
 
     return {"result": result, "candles_4h": candles_4h, "candles_1d": candles_1d}

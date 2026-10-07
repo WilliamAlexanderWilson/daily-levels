@@ -39,6 +39,19 @@ PIVOT_LOOKBACK_DAYS = 365   # how far back into daily candles to search for pivo
 # --- Confluence ---
 CONFLUENCE_MERGE_PCT = 0.005  # merge levels within 0.5% of each other into one zone
 
+# --- Liquidation estimate ---
+# This is a MODEL, not verified position data - no exchange publishes real
+# entry prices or leverage, on Kraken or anywhere else (see
+# src/levels/liquidation_estimate.py for the full assumptions). Built from
+# the real volume profile (actual traded volume at each price, same data
+# POC/VAH/VAL already use) projected forward through a few standard perp
+# leverage tiers. Every bin's volume is split evenly across these tiers AND
+# evenly between long/short, because there is no real signal to weight
+# either assumption differently - splitting evenly is the most honest
+# default, not a claim that it's accurate.
+LIQUIDATION_LEVERAGE_TIERS = [10, 25, 50, 100]
+LIQUIDATION_MAX_DISTANCE_PCT = 0.25  # don't project further than this from current price
+
 # --- Output ---
 DATA_DIR = "site/data"
 HISTORY_DIR = "site/data/history"
