@@ -157,7 +157,13 @@
   const activePriceLines = [];
   const orderBookPriceLines = []; // separate from activePriceLines - these redraw every poll tick, not just on load/toggle
   const overlayEls = [];
-  let currentMarkers = []; // {low, high, mid, color, label, isZone} for repositioning on redraw
+  let currentMarkers = []; // {key, low, high, mid, color, label, isZone} for repositioning on redraw
+  // native IPriceLine objects, keyed by the same marker key, so "isolate"
+  // can toggle lineVisible/axisLabelVisible per line instead of per marker
+  // array - kept separate (levels refresh once per data load, walls every
+  // poll tick) so refreshing one never has to touch the other's entries.
+  let levelLinesByKey = new Map();
+  let wallLinesByKey = new Map();
   let lastLiveUnixTime = null; // guards against feeding series.update() a time older than its last bar
 
   // the daily levels + scorecard, kept around so the nearest-level cards
@@ -242,6 +248,21 @@
       candleSeries.removePriceLine(line);
     }
     activePriceLines.length = 0;
+    levelLinesByKey.clear();
+  }
+
+  // "Isolate": when a marker is snapped, every OTHER native price line
+  // (the ones lightweight-charts draws itself - our overlay divs are
+  // handled separately, by just not building them in renderOverlays())
+  // hides too, so the chart shows only the one line being focused on.
+  // Clicking again (snappedMarkerKey back to null) restores every line.
+  function applyLineIsolation() {
+    for (const map of [levelLinesByKey, wallLinesByKey]) {
+      for (const [key, lines] of map) {
+        const visible = !snappedMarkerKey || key === snappedMarkerKey;
+        for (const line of lines) line.applyOptions({ lineVisible: visible, axisLabelVisible: visible });
+      }
+    }
   }
 
   function clearOverlays() {
@@ -277,6 +298,7 @@
       const style = styleForLevel(level);
       const isZone = level.price_high > level.price_low;
       const label = `${level.name} (${level.strength}) — ${formatPriceRange(level.price_low, level.price_high)}`;
+      const key = levelKey(level);
 
       // No inline title on the price line itself - that label renders
       // wherever the line is, which is usually right where the latest
@@ -303,6 +325,7 @@
           title: "",
         });
         activePriceLines.push(top, bottom);
+        levelLinesByKey.set(key, [top, bottom]);
       } else {
         const line = candleSeries.createPriceLine({
           price: level.price_low,
@@ -313,10 +336,11 @@
           title: "",
         });
         activePriceLines.push(line);
+        levelLinesByKey.set(key, [line]);
       }
 
       currentMarkers.push({
-        key: levelKey(level),
+        key,
         low: level.price_low,
         high: level.price_high,
         mid: (level.price_low + level.price_high) / 2,
@@ -410,11 +434,13 @@
 
     if (!candleSeries) return;
     lastOverlayPriceRange = candleSeries.priceScale().getVisibleRange();
+    applyLineIsolation();
 
     // zone shading draws at its exact price - only the text tags get
     // decluttered below.
     for (const marker of currentMarkers) {
       if (!marker.isZone) continue;
+      if (snappedMarkerKey && marker.key !== snappedMarkerKey) continue; // isolated: only the selected marker's own zone shows
       const yTop = candleSeries.priceToCoordinate(marker.high);
       const yBottom = candleSeries.priceToCoordinate(marker.low);
       if (yTop === null || yBottom === null) continue;
@@ -432,8 +458,12 @@
     // Several levels often cluster within a few % of each other, which
     // can be a tiny sliver of pixels once zoomed out (e.g. the Daily view
     // spanning a 2-year price range) - without this pass their text tags
-    // would stack directly on top of each other.
+    // would stack directly on top of each other. Filtering to just the
+    // isolated marker here (rather than after) means decluttering has
+    // nothing left to do - it'll just place the one remaining tag at its
+    // own true position.
     const rawPositions = currentMarkers
+      .filter((marker) => !snappedMarkerKey || marker.key === snappedMarkerKey)
       .map((marker) => ({ marker, y: candleSeries.priceToCoordinate(marker.mid) }))
       .filter((p) => p.y !== null);
     const containerHeight = container.clientHeight;
@@ -477,12 +507,13 @@
       container.appendChild(tick);
       overlayEls.push(tick);
 
+      const isSelected = marker.key === snappedMarkerKey;
       const tag = document.createElement("div");
-      tag.className = `level-label${marker.key === snappedMarkerKey ? " level-label-selected" : ""}`;
+      tag.className = `level-label${isSelected ? " level-label-selected" : ""}`;
       tag.style.top = `${y}px`;
       tag.style.background = marker.color;
       tag.textContent = offScreen ? `${offScreen === "above" ? "↑" : "↓"} ${marker.label}` : marker.label;
-      const clickHint = "click to snap the chart here";
+      const clickHint = isSelected ? "click again to show everything" : "click to isolate this line";
       tag.title = offScreen
         ? `${marker.label} — off-screen, zoom/pan ${offScreen} to see its line (${clickHint})`
         : `${marker.label} (${clickHint})`;
@@ -490,8 +521,10 @@
       // proximity band - carries a `key` (set where it's pushed into
       // currentMarkers) and a real {low, high}, so the same toggle used by
       // the table and dropdown works here directly: click the tag itself,
-      // snap to it; click again, un-snap. Works on any timeframe, since
-      // this only ever touches the price axis, never the time axis.
+      // it snaps the chart to it AND hides every other line/label (see
+      // applyLineIsolation() and the isolation filters above); click
+      // again, everything comes back. Works on any timeframe, since this
+      // only ever touches the price axis, never the time axis.
       tag.addEventListener("click", () => toggleMarkerSnap(marker.key, marker.low, marker.high));
       container.appendChild(tag);
       overlayEls.push(tag);
@@ -836,10 +869,12 @@
   function renderOrderBookWalls(walls) {
     for (const line of orderBookPriceLines) candleSeries.removePriceLine(line);
     orderBookPriceLines.length = 0;
+    wallLinesByKey.clear();
     currentMarkers = currentMarkers.filter((m) => !m.isOrderBookWall);
 
     if (walls) {
       for (const wall of [...walls.bids, ...walls.asks]) {
+        const wallKey = `wall|${wall.side}|${wall.price}`;
         const line = candleSeries.createPriceLine({
           price: wall.price,
           color: cssVar("--liquidity"),
@@ -849,9 +884,10 @@
           title: "",
         });
         orderBookPriceLines.push(line);
+        wallLinesByKey.set(wallKey, [line]);
 
         currentMarkers.push({
-          key: `wall|${wall.side}|${wall.price}`,
+          key: wallKey,
           low: wall.price,
           high: wall.price,
           mid: wall.price,
@@ -1327,7 +1363,7 @@
       const tr = document.createElement("tr");
       const key = levelKey(level);
       tr.className = `type-${level.type}${level.is_flip ? " is-flip" : ""} level-row-clickable${key === snappedMarkerKey ? " level-row-selected" : ""}`;
-      tr.title = "Click to snap the chart to this level";
+      tr.title = "Click to isolate this level on the chart (click again to show everything)";
       tr.dataset.levelKey = key;
 
       const priceText =

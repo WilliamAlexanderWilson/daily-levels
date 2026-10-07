@@ -298,6 +298,28 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   and a different rare configuration could still trip something similar).
   Not chased further since it's pre-existing and separate from what was
   being built. Worth a closer look if it starts showing up more.
+- **Isolate-on-click**, in response to a screenshot of a sharp-drop view
+  where order book walls had stacked up only a few dollars apart - the
+  user asked to be able to click a line and have it isolated (everything
+  else hidden) with its info shown, click again to bring everything back.
+  Built on the same `snappedMarkerKey` state the snap/zoom already uses,
+  so it's automatic from the table, the dropdown, or a direct chart-label
+  click - no separate toggle needed. Two things had to hide, tracked
+  differently: our own overlay DOM (labels, leaders, zone bands) just
+  isn't built for non-selected markers in `renderOverlays()` (filtered
+  before decluttering even runs); the *native* price lines the library
+  draws itself needed `levelLinesByKey`/`wallLinesByKey` (IPriceLine
+  objects keyed by the same marker key) and a new `applyLineIsolation()`
+  that toggles `lineVisible`/`axisLabelVisible` per line, called at the
+  top of every `renderOverlays()` so it's always in sync. The always-on
+  live-price line (not a "level", just market context) deliberately isn't
+  part of either map, so it stays visible even while isolated.
+  Also audited that screenshot directly for a separate bug rather than
+  assuming the clutter was the only thing wrong: reproduced the same
+  label density (zoomed to roughly the same visible price band) and ran
+  the existing overlap/order-violation checks against it - zero overlaps,
+  zero order violations. The density itself was real, live order-book
+  data, not a rendering bug - isolate is the actual fix for it.
 
 ---
 

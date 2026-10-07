@@ -222,9 +222,12 @@ to touch.
 
 **Every colored tag on the chart itself is also clickable** — not just
 table rows and the dropdown. Click an order book wall or a round-number
-proximity band directly and the chart snaps to it the same way, on
-whichever timeframe you're on. Click it again to go back to the default
-view.
+proximity band directly and the chart snaps to it, on whichever timeframe
+you're on. When a lot of lines are bunched together (a sharp move tends
+to stack order book walls right on top of each other), clicking one also
+**isolates** it — every other line and label hides so you can see exactly
+which one you picked and what it is. Click it again (from the chart, the
+table, or the dropdown — all three stay in sync) to bring everything back.
 
 **Proximity curve** (`src/backtest/round_proximity.py`,
 `{asset}_round_proximity.json`): re-runs the round-number touch/hold/break
