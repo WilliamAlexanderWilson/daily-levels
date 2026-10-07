@@ -229,6 +229,15 @@
     return { color: cssVar("--resistance"), lineStyle: LightweightCharts.LineStyle.Dashed, lineWidth: 2 };
   }
 
+  // Every label embeds its own price, not just the compact axis tag -
+  // at high density a label can get pushed well away from its true line
+  // (see the bounds-clamping note in declutter() below), so the price
+  // needs to be readable from the tag's own text, not just its position.
+  function formatPriceRange(low, high) {
+    const fmt = (v) => v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    return high > low ? `${fmt(low)}–${fmt(high)}` : fmt(low);
+  }
+
   function renderLevels(levels) {
     clearPriceLines();
     clearOverlays();
@@ -236,7 +245,7 @@
     for (const level of levels) {
       const style = styleForLevel(level);
       const isZone = level.price_high > level.price_low;
-      const label = `${level.name} (${level.strength})`;
+      const label = `${level.name} (${level.strength}) — ${formatPriceRange(level.price_low, level.price_high)}`;
 
       // No inline title on the price line itself - that label renders
       // wherever the line is, which is usually right where the latest
@@ -297,7 +306,7 @@
   // cluster near the top - it can push a label tens of pixels from its
   // actual line, past other, unrelated lines. Centering keeps each
   // cluster's drift local to where it actually is.
-  function declutter(items, minGap) {
+  function declutter(items, minGap, bounds) {
     const sorted = [...items].sort((a, b) => a.y - b.y);
     const clusters = [];
     for (const item of sorted) {
@@ -325,6 +334,31 @@
       const minY = placed[i - 1].y + minGap;
       if (placed[i].y < minY) placed[i].y = minY;
     }
+
+    // At high density (order book walls + round-number bands + regular
+    // levels can all cluster within a fraction of a percent of price) the
+    // cascade above can push labels well outside the visible chart -
+    // observed pushing a label to y=-248px and another to y=3846px in a
+    // ~900px container, i.e. completely invisible. An off-screen label is
+    // strictly worse than a slightly-tight one, so compress spacing (down
+    // to a floor, never fully collapsed) and clamp the whole stack to stay
+    // inside the container rather than letting it overflow.
+    if (bounds && placed.length > 0) {
+      const available = bounds.max - bounds.min;
+      const span = placed[placed.length - 1].y - placed[0].y;
+      if (span > available && placed.length > 1) {
+        const tightGap = Math.max(available / (placed.length - 1), minGap * 0.4);
+        const start = placed[0].y;
+        placed.forEach((p, i) => {
+          p.y = start + i * tightGap;
+        });
+      }
+      const overflowBottom = placed[placed.length - 1].y - bounds.max;
+      if (overflowBottom > 0) placed.forEach((p) => (p.y -= overflowBottom));
+      const overflowTop = bounds.min - placed[0].y;
+      if (overflowTop > 0) placed.forEach((p) => (p.y += overflowTop));
+    }
+
     return placed;
   }
 
@@ -360,7 +394,8 @@
     const rawPositions = currentMarkers
       .map((marker) => ({ marker, y: candleSeries.priceToCoordinate(marker.mid) }))
       .filter((p) => p.y !== null);
-    const placements = declutter(rawPositions, LABEL_MIN_GAP_PX);
+    const containerHeight = container.clientHeight;
+    const placements = declutter(rawPositions, LABEL_MIN_GAP_PX, { min: 4, max: containerHeight - 4 });
 
     for (const { marker, y, trueY } of placements) {
       // dense clusters (common on a short/mobile chart) can still need to
@@ -726,7 +761,7 @@
           high: wall.price,
           mid: wall.price,
           color: cssVar("--liquidity"),
-          label: `${wall.side === "bid" ? "Bid" : "Ask"} wall: ${wall.volume.toFixed(2)} ${state.asset.toUpperCase()}`,
+          label: `${wall.side === "bid" ? "Bid" : "Ask"} wall: ${wall.volume.toFixed(2)} ${state.asset.toUpperCase()} @ ${formatPriceRange(wall.price, wall.price)}`,
           isZone: false,
           isOrderBookWall: true,
         });
