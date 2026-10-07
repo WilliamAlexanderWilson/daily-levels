@@ -201,6 +201,22 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   actually needed fixing when the data went stale.
 - Left-anchored level labels with a cluster-and-center decluttering
   algorithm (see gotchas below) instead of inline price-line titles.
+- **Snap-to-level** — clicking any row in the Level table zooms the chart's
+  price axis to frame that level tightly; clicking the same row again (or
+  another row) restores the default view. `levelKey`/`snapToLevel`/
+  `clearPriceSnapState`/`resetPriceSnap` in `site/app.js`. The "restore"
+  side had a real bug worth remembering: `priceScale().setAutoScale(true)`
+  only changes behavior going forward, it does **not** retroactively
+  recompute an already-manually-set visible range, so un-snapping looked
+  stuck until the price range was explicitly recomputed. The fix needed a
+  second, non-obvious finding: `getVisibleRange()`/`setVisibleRange()` deal
+  in bare data values only — the chart's configured `scaleMargins` (used to
+  leave room for the volume series under the candles) pad the rendering,
+  but are never reflected in the from/to numbers. Confirmed directly:
+  autoscale's own `getVisibleRange()` matched the visible candles' raw
+  high/low exactly, zero padding. An earlier attempt that added a flat
+  margin before calling `setVisibleRange` was solving a problem that didn't
+  exist and produced a visibly wrong (too-wide) restore.
 
 ---
 

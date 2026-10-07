@@ -6,6 +6,11 @@
   const KRAKEN_OHLC_URL = "https://api.kraken.com/0/public/OHLC";
   const KRAKEN_DEPTH_URL = "https://api.kraken.com/0/public/Depth";
   const ASSET_PAIRS = { btc: "BTC/USD", eth: "ETH/USD" };
+  // the candle price scale reserves extra room at the bottom for the volume
+  // series beneath it, so "fit these candles" must reproduce this same
+  // asymmetric split - a flat symmetric margin visibly doesn't match what
+  // autoscale actually renders.
+  const CANDLE_SCALE_MARGINS = { top: 0.08, bottom: 0.3 };
   const RANGE_INTERVALS = { "1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240, "1d": 1440 };
 
   const state = {
@@ -164,6 +169,8 @@
   let activeCandles = []; // current timeframe's loaded candles, so trade markers can be bounds-checked
   let markingMode = false;
   let pendingTrade = null; // {time, price} captured from a chart click, awaiting form submission
+  let snappedLevelKey = null; // which table row's level the price scale is currently locked to, if any
+  let activeLevelsWindowDays = null; // RANGE_DAYS from the levels JSON, for the 4H default-zoom calc
 
   function ensureChart() {
     if (chart) return;
@@ -189,7 +196,7 @@
       wickUpColor: cssVar("--support"),
       wickDownColor: cssVar("--resistance"),
       priceScaleId: "right",
-      scaleMargins: { top: 0.08, bottom: 0.3 },
+      scaleMargins: CANDLE_SCALE_MARGINS,
       // a persistent "where is price right now" line, always visible -
       // its own color + dotted style keeps it visually distinct from the
       // solid support / dashed resistance / large-dashed flip lines.
@@ -448,8 +455,34 @@
     return candle.time;
   }
 
+  // POC/VAH/VAL/range high-low are computed from the same levelsWindowDays
+  // lookback - on 4H, open already framed to that same window so those
+  // lines land on the actual high/low on screen, instead of fitContent()
+  // showing ~120 days (the full fetch) and making a 60-day-scoped level
+  // look like it's ignoring an older, bigger wick further left. Daily
+  // view: full fetched history - there's no single lookback window that
+  // cleanly maps to every Daily-relevant stat (golden pocket uses a
+  // longer window than range high/low does), so that stays "zoom out for
+  // context, labels already say their own scope" rather than forcing a
+  // crop that still wouldn't match everything. Shared by renderChart and
+  // resetPriceSnap (clicking a level row to snap away from this default,
+  // then clicking it again to come back).
+  function applyDefaultZoom(candleCount, range, levelsWindowDays) {
+    if (range === "4h" && levelsWindowDays) {
+      const candlesPerDay = 6; // 24h / 4h
+      const windowBars = levelsWindowDays * candlesPerDay;
+      const marginBars = Math.round(windowBars * 0.08);
+      const from = Math.max(0, candleCount - windowBars - marginBars);
+      const to = candleCount + 1;
+      chart.timeScale().setVisibleLogicalRange({ from, to });
+    } else {
+      chart.timeScale().fitContent();
+    }
+  }
+
   function renderChart(candles, range, levelsWindowDays) {
     ensureChart();
+    clearPriceSnapState(); // a fresh timeframe/asset load starts back at normal autoscale
     const candleData = candles.map((c) => ({
       time: toTimePoint(c, range),
       open: c.open,
@@ -465,28 +498,8 @@
     candleSeries.setData(candleData);
     volumeSeries.setData(volumeData);
 
-    if (range === "4h" && levelsWindowDays) {
-      // POC/VAH/VAL/range high-low are computed from the same
-      // levelsWindowDays lookback. Open already framed to that same
-      // window so those lines land on the actual high/low on screen,
-      // instead of fitContent() showing ~120 days (the full fetch) and
-      // making a 60-day-scoped level look like it's ignoring an older,
-      // bigger wick further left.
-      const candlesPerDay = 6; // 24h / 4h
-      const windowBars = levelsWindowDays * candlesPerDay;
-      const marginBars = Math.round(windowBars * 0.08);
-      const from = Math.max(0, candleData.length - windowBars - marginBars);
-      const to = candleData.length + 1;
-      chart.timeScale().setVisibleLogicalRange({ from, to });
-    } else {
-      // Daily view: full fetched history. There's no single lookback
-      // window that cleanly maps to every Daily-relevant stat (golden
-      // pocket uses a longer window than range high/low does), so this
-      // stays a "zoom out for context, labels already say their own
-      // scope" view rather than forcing a crop that still wouldn't
-      // match everything.
-      chart.timeScale().fitContent();
-    }
+    activeLevelsWindowDays = levelsWindowDays;
+    applyDefaultZoom(candleData.length, range, levelsWindowDays);
 
     // Seed the guard to the last rendered candle's true time rather than
     // nulling it out - nulling disabled the guard entirely for the very
@@ -1030,6 +1043,68 @@
     el.hidden = false;
   }
 
+  // --- click a level row, snap the chart's price axis to show it ---
+  //
+  // Levels can sit far outside whatever price range the candles happen to
+  // autoscale to right now (e.g. "Range low" from 60 days ago while
+  // price has since run up) - the line is still drawn, but you'd have to
+  // manually scroll/zoom the price axis to ever see it. This makes every
+  // row in the level table a one-click way to bring its line into view.
+
+  function levelKey(level) {
+    return `${level.name}|${level.price_low}|${level.price_high}`;
+  }
+
+  function snapToLevel(level) {
+    if (!candleSeries) return;
+    const mid = (level.price_low + level.price_high) / 2;
+    const margin = Math.max(level.price_high - level.price_low, mid * 0.03);
+    const priceScale = candleSeries.priceScale();
+    priceScale.setAutoScale(false);
+    priceScale.setVisibleRange({ from: level.price_low - margin, to: level.price_high + margin });
+  }
+
+  function clearPriceSnapState() {
+    snappedLevelKey = null;
+    if (candleSeries) candleSeries.priceScale().setAutoScale(true);
+  }
+
+  // The user-facing "un-snap". setAutoScale(true) alone only changes
+  // behavior going forward - it does NOT retroactively recompute the
+  // range that's already visible (verified directly: the chart stayed
+  // zoomed into the clicked level after toggling off, until some other
+  // action happened to nudge it). So: restore the known default TIME
+  // window first, so "un-snap" always lands back on the same framing
+  // regardless of whether the user panned around while a level was
+  // snapped, then measure that window's candles and set the price range
+  // to fit them directly. Future manual pans/zooms still autoscale
+  // normally from here.
+  function resetPriceSnap() {
+    clearPriceSnapState();
+    if (!activeCandles.length || !candleSeries) return;
+
+    applyDefaultZoom(activeCandles.length, state.range, activeLevelsWindowDays);
+
+    let candlesInView = activeCandles;
+    const visibleRange = chart.timeScale().getVisibleLogicalRange();
+    if (visibleRange) {
+      const startIdx = Math.max(0, Math.floor(visibleRange.from));
+      const endIdx = Math.min(activeCandles.length - 1, Math.ceil(visibleRange.to));
+      if (endIdx >= startIdx) candlesInView = activeCandles.slice(startIdx, endIdx + 1);
+    }
+    if (!candlesInView.length) candlesInView = activeCandles;
+
+    const high = Math.max(...candlesInView.map((c) => c.high));
+    const low = Math.min(...candlesInView.map((c) => c.low));
+    // getVisibleRange()/setVisibleRange() deal in bare data values - the
+    // configured scaleMargins only pad the rendering, they're never baked
+    // into the from/to numbers - so the exact high/low IS what autoscale
+    // itself would have landed on (confirmed directly: an autoscaled
+    // getVisibleRange() matched a view's raw candle high/low exactly, with
+    // zero padding, on the actual chart).
+    candleSeries.priceScale().setVisibleRange({ from: low, to: high });
+  }
+
   function renderTable(levels, currentPrice, scorecard, diff) {
     const diffMap = diffByKindMap(diff);
     renderRemovedNote(diff);
@@ -1051,7 +1126,9 @@
       }
 
       const tr = document.createElement("tr");
-      tr.className = `type-${level.type}${level.is_flip ? " is-flip" : ""}`;
+      const key = levelKey(level);
+      tr.className = `type-${level.type}${level.is_flip ? " is-flip" : ""} level-row-clickable${key === snappedLevelKey ? " level-row-selected" : ""}`;
+      tr.title = "Click to snap the chart to this level";
 
       const priceText =
         level.price_high > level.price_low
@@ -1066,6 +1143,16 @@
         <td>${level.strength}</td>
         <td class="hold-rate-cell">${holdRateCellText(level, scorecard)}</td>
       `;
+      tr.addEventListener("click", () => {
+        if (snappedLevelKey === key) {
+          resetPriceSnap();
+        } else {
+          snappedLevelKey = key;
+          snapToLevel(level);
+        }
+        tbody.querySelectorAll("tr").forEach((row) => row.classList.remove("level-row-selected"));
+        if (snappedLevelKey === key) tr.classList.add("level-row-selected");
+      });
       tbody.appendChild(tr);
     }
 

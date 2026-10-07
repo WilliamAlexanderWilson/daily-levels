@@ -559,6 +559,19 @@ tr.current-price-row td {
   color: var(--accent);
 }
 
+tr.level-row-clickable {
+  cursor: pointer;
+}
+
+tr.level-row-clickable:hover td {
+  background: var(--row-current);
+}
+
+tr.level-row-selected td {
+  background: var(--row-current);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
 .hold-rate-cell {
   color: var(--text-muted);
   font-size: 0.8rem;

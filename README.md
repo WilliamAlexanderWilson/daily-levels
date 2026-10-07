@@ -124,6 +124,9 @@ These are two independent systems that happen to share one page:
   it isn't fetchable from the browser at all; it would need to go through
   the daily Python engine instead, same as everything else that isn't
   live.)
+- **Click any row in the Level table to snap the chart to it** — zooms the
+  price axis to frame that level tightly. Click the same row again (or
+  select a different one) to go back to the default view.
 
 ## The hold-rate scorecard
 
