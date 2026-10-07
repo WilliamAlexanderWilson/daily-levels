@@ -502,6 +502,16 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   opacity/layering-based, the only real verification is reading back
   actual pixel colors from an actual screenshot, ideally checked against
   a hand-computed expected value, not just "a color appears somewhere."**
+- **Dimmed and given contrast once it was actually visible.** With the
+  two bugs above fixed, the next real problem was the opposite one: the
+  whole range read as uniformly, loudly saturated - "blinding," and
+  nothing stood out as more or less important. `LIQUIDATION_MAX_OPACITY`
+  0.55 -> 0.32, `LIQUIDATION_MIN_OPACITY` 0.1 -> 0.035, and a new
+  `LIQUIDATION_CONTRAST_EXPONENT` (2.2): `relative` is raised to this
+  power before scaling into the opacity range, so a bin at 50% of the
+  visible peak renders far dimmer than linear would (0.5^2.2 ≈ 0.22 of
+  the way to max, not 50%) - true hotspots stand out against a quiet
+  background instead of the whole view looking equally hot.
 
 ---
 

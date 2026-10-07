@@ -466,8 +466,9 @@
     return yLow >= 0 && yHigh <= containerHeight;
   }
 
-  const LIQUIDATION_MAX_OPACITY = 0.55;
-  const LIQUIDATION_MIN_OPACITY = 0.1; // a real heatmap colors its coldest areas too, not just the hot spots
+  const LIQUIDATION_MAX_OPACITY = 0.32; // dialed down from 0.55 - at full saturation every row looked equally "hot", not a heatmap
+  const LIQUIDATION_MIN_OPACITY = 0.035; // a real heatmap colors its coldest areas too, not just the hot spots - but faintly
+  const LIQUIDATION_CONTRAST_EXPONENT = 2.2; // relative^this before scaling - pushes mid/low intensity down further so true hotspots stand out instead of the whole range looking uniformly loud
   const LIQUIDATION_SMOOTHING_RADIUS = 4; // bins averaged on each side - does the "continuous gradient" work CSS blur was doing badly
 
   // A real background heatmap, not a side gutter - the user pointed at a
@@ -562,7 +563,8 @@
       row.style.height = `${height}px`;
       row.style.right = `${axisWidth}px`;
       const relative = Math.min(1, magnitude / visiblePeak);
-      row.style.opacity = LIQUIDATION_MIN_OPACITY + relative * (LIQUIDATION_MAX_OPACITY - LIQUIDATION_MIN_OPACITY);
+      const shaped = Math.pow(relative, LIQUIDATION_CONTRAST_EXPONENT);
+      row.style.opacity = LIQUIDATION_MIN_OPACITY + shaped * (LIQUIDATION_MAX_OPACITY - LIQUIDATION_MIN_OPACITY);
       row.title = `Est. ${isLong ? "long" : "short"} liquidations near ${formatPriceRange(bin.price_low, bin.price_high)} (modeled, not real position data)`;
       liquidationLayerEl.appendChild(row);
       liquidationEls.push(row);
