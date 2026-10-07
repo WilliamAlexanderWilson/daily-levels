@@ -8,6 +8,7 @@
   --support: #1f9d55;
   --resistance: #d1453b;
   --flip: #b8860b;
+  --round: #8a5cf6;
   --stale: #d1453b;
   --row-current: #eef2ff;
 }
@@ -23,6 +24,7 @@
     --support: #3fc278;
     --resistance: #f06a60;
     --flip: #e0b84a;
+    --round: #a988fb;
     --stale: #f06a60;
     --row-current: #1c2340;
   }
@@ -203,7 +205,7 @@ main {
 
 .nearest-levels {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
 }
@@ -222,6 +224,10 @@ main {
 
 .nearest-card.nearest-support {
   border-left-color: var(--support);
+}
+
+.nearest-card.nearest-round {
+  border-left-color: var(--round);
 }
 
 .nearest-card-label {

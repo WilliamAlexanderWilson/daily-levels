@@ -543,10 +543,29 @@
     card.querySelector(".nearest-card-hold").textContent = holdRateSummary(level, scorecard);
   }
 
+  // Round numbers are arithmetic, not data-derived - computed from the
+  // live price directly rather than coming from the daily levels JSON.
+  // Mirrors src/levels/round_numbers.py; keep both in sync if this
+  // formula changes.
+  function roundNumberStep(price) {
+    const digits = Math.floor(Math.log10(price)) + 1;
+    return Math.pow(10, digits - 2);
+  }
+
+  function nearestRoundNumbers(price) {
+    const step = roundNumberStep(price);
+    let below = Math.floor(price / step) * step;
+    let above = Math.ceil(price / step) * step;
+    if (below === price) below -= step;
+    if (above === price) above += step;
+    return { below, above };
+  }
+
   function renderNearestLevels(levels, scorecard, currentPrice) {
     if (!levels || !levels.length || currentPrice === null || currentPrice === undefined) {
       document.getElementById("nearest-resistance-card").hidden = true;
       document.getElementById("nearest-support-card").hidden = true;
+      document.getElementById("nearest-round-card").hidden = true;
       return;
     }
 
@@ -567,6 +586,15 @@
 
     fillNearestCard("nearest-resistance-card", nearestAbove, currentPrice, scorecard);
     fillNearestCard("nearest-support-card", nearestBelow, currentPrice, scorecard);
+
+    const { below: roundBelow, above: roundAbove } = nearestRoundNumbers(currentPrice);
+    const nearestRoundPrice = currentPrice - roundBelow <= roundAbove - currentPrice ? roundBelow : roundAbove;
+    fillNearestCard(
+      "nearest-round-card",
+      { name: "Round number", price_low: nearestRoundPrice, price_high: nearestRoundPrice, is_flip: false },
+      currentPrice,
+      scorecard
+    );
   }
 
   function diffByKindMap(diff) {

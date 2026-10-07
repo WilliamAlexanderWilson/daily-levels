@@ -17,6 +17,7 @@ from src.levels.flip_level import find_flip_levels
 from src.levels.golden_pocket import find_golden_pocket
 from src.levels.pivots import find_pivots
 from src.levels.reference_levels import get_reference_levels
+from src.levels.round_numbers import nearest_round_numbers, round_number_step
 from src.levels.volume_profile import build_volume_profile
 
 
@@ -78,6 +79,16 @@ def build_levels_for_day(candles_1d: pd.DataFrame) -> list[dict]:
     if flips["flip_resistance"] is not None:
         price = flips["flip_resistance"].price
         raw_levels.append(RawLevel("Flip resistance", price, price))
+
+    # Round numbers are arithmetic, not data-derived, so they don't need
+    # their own "(60d)"-style window label - but they get tested through
+    # the exact same touch/hold/break machinery as everything else.
+    # Tested as a tolerance zone, not an exact point - "got close and
+    # reacted" is the real question, not "printed to the penny."
+    round_below, round_above = nearest_round_numbers(current_price)
+    tolerance = round_number_step(current_price) * config.ROUND_NUMBER_TOLERANCE_FRACTION
+    raw_levels.append(RawLevel("Round number", round_below - tolerance, round_below + tolerance))
+    raw_levels.append(RawLevel("Round number", round_above - tolerance, round_above + tolerance))
 
     merged = merge_confluence(raw_levels, current_price)
     merged.sort(key=lambda lvl: lvl.midpoint)

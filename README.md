@@ -139,6 +139,22 @@ low-confidence.
 This is historical frequency, not a prediction — the site says so right
 next to the table.
 
+**Round numbers** ("Round number" in the scorecard) are included as a
+level type too — psychological whole-number levels ($85,000 for BTC,
+$2,700 for ETH), scaled to price magnitude (`src/levels/round_numbers.py`:
+step = `10**(digits-2)`, so $1,000 steps for a five-figure BTC price,
+$100 for four-figure ETH). Unlike every other level, these are purely
+arithmetic, not derived from trade data, so they're **not** part of the
+once-a-day snapshot — the live site recomputes the nearest one
+continuously from the live price (reimplemented in `site/app.js`; keep
+both in sync if the formula changes), while the backtest tests them the
+same way as everything else: not "did price print the exact dollar
+amount," but "did it come within `ROUND_NUMBER_TOLERANCE_FRACTION` of a
+step (a quarter-step — $250 for BTC) and then hold or break." Tested
+across every round number the price actually traded near over the full
+replay — dozens of distinct values per asset, not just whatever's current
+today.
+
 ## Config (`config.py`)
 
 Every tunable number lives in `config.py`, each with a comment explaining
@@ -159,6 +175,7 @@ it. The ones worth knowing about up front:
 | `BACKTEST_FORWARD_DAYS` | How many days forward the scorecard watches for a touch to resolve as hold/break. |
 | `BACKTEST_HOLD_MOVE_PCT` / `BACKTEST_BREAK_CLOSE_PCT` | The hold vs. break thresholds, as % away from / beyond the level. |
 | `BACKTEST_MIN_TOUCHES_CONFIDENT` | Resolved touches below this get flagged low-confidence. |
+| `ROUND_NUMBER_TOLERANCE_FRACTION` | How close (as a fraction of the round-number step) counts as "touched" for backtest purposes. |
 
 ## Data source: Kraken
 
@@ -193,7 +210,9 @@ src/
     golden_pocket.py         # 0.618-0.65 retracement of the most recent qualifying leg
     reference_levels.py      # prior week/month high-low, current week/month open
     flip_level.py             # old resistance/support flipped the other way
+    round_numbers.py           # psychological whole-number levels, scaled to price magnitude
     confluence.py             # merges nearby levels, tags type/distance/strength
+    daily_diff.py               # new/moved/unchanged/removed vs. the prior snapshot
     engine.py                  # orchestrates all of the above per asset (live, 4h+daily)
   backtest/
     engine.py                 # daily-candle-only approximation of the level engine, for replay depth

@@ -134,8 +134,23 @@ GitHub Action, Pages deployment.
 Also built, beyond the original Phase 1/2 spec, in response to live usage:
 - **Live chart**, independent of the daily snapshot — 1m/5m/15m/30m/1h/4h/Daily
   timeframes, all polling Kraken directly every 15s, with retry+backoff.
-- **Nearest-level cards** — nearest resistance/support to the live price,
-  with their aggregated historical hold rate, right next to the price.
+- **Nearest-level cards** — nearest resistance/support/round-number to the
+  live price, each with its aggregated historical hold rate, right next
+  to the price. This came from the user repeatedly asking for an entry
+  signal (see Product philosophy above) — the honest answer each time
+  was "here are the real odds," not a signal.
+- **Round numbers** (`src/levels/round_numbers.py`) — psychological
+  whole-number levels, scaled to price magnitude, tested through the
+  backtest same as everything else. Proven, not assumed: BTC round
+  numbers held 46.3% (n=626, tested across 90 distinct values from $58k
+  to $120k), ETH held 56.5% (n=579, 28 distinct values) - both with real
+  sample size, using a tolerance-zone touch definition (within a
+  quarter-step, not an exact print) after the user clarified that's what
+  "getting close to a whole number" actually means in practice.
+- A refresh button next to the levels timestamp — re-fetches without a
+  full reload. Explicitly does NOT trigger new computation (the site is
+  static, no server) - see the daily-run gating gotcha below for what
+  actually needed fixing when the data went stale.
 - Left-anchored level labels with a cluster-and-center decluttering
   algorithm (see gotchas below) instead of inline price-line titles.
 
@@ -195,6 +210,22 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   this project should ever cost money. No server, no database, no paid
   API. If something looks like it's consuming a budget, something is
   configured wrong, it's not expected behavior.
+- **GitHub's scheduled-workflow cron fired 6-9 hours late on consecutive
+  days** — confirmed in the logs, not a one-off (a firing scheduled for
+  10:00/11:00 UTC actually executed at 17:00 UTC). `src/run.py` used to
+  gate on "is it exactly the 5am Central hour right now," which meant a
+  late firing checked the clock, saw it wasn't 5am, and skipped - forever,
+  every day, since no firing ever happened to land in that one exact hour.
+  The site sat silently stale for ~32 hours before the staleness banner
+  got noticed. Fixed by gating on "has this asset already produced
+  today's data" instead (`_already_ran_today` in `src/run.py`) - whichever
+  firing lands first each day does the real work, regardless of hour, and
+  it's self-healing if a whole day's firings get skipped. Also widened the
+  cron schedule from 2 firings/day to 8 (every 3 hours) as a margin
+  against the jitter, since extra firings are now free no-ops. If daily
+  data goes stale again, check `gh run list --workflow=update-levels.yml`
+  for *when* runs actually fired before assuming the workflow logic broke
+  - it's happened at least once already.
 
 ---
 

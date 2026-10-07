@@ -57,6 +57,13 @@ BACKTEST_HOLD_MOVE_PCT = 2.0    # price must move this far from the level to cou
 BACKTEST_BREAK_CLOSE_PCT = 1.0  # a daily close this far beyond the level counts as "broken"
 BACKTEST_MIN_TOUCHES_CONFIDENT = 30  # fewer resolved touches than this is flagged low-confidence
 
+# Round numbers are tested as a zone, not an exact point: "did price come
+# within a quarter-step of the round number" (e.g. for BTC's $1,000 step,
+# within $250), not "did it trade at the exact dollar." A trader watching
+# $85,000 cares whether price got close and reacted, not whether it
+# printed 85000.00 to the penny.
+ROUND_NUMBER_TOLERANCE_FRACTION = 0.25
+
 # --- Daily diff ---
 # A level's price is reconstructed as its merged zone's midpoint for
 # diffing purposes (the pre-merge per-kind price isn't retained in
