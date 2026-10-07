@@ -335,8 +335,17 @@
     }
 
     // clustering can still leave two adjacent clusters' centered spans
-    // touching - one more forward pass guarantees no residual overlap.
-    placed.sort((a, b) => a.y - b.y);
+    // touching or, for a large enough cluster, actually overlapping a
+    // neighbor's position entirely - one more forward pass guarantees no
+    // residual overlap. Critically, this must walk in TRUE price order
+    // (trueY), not the just-centered y: a big cluster's centering math
+    // can push its first item's y before a neighboring cluster's y (a
+    // real, confirmed bug - verified a 12-item cluster centering could
+    // place a lower-priced level 10px above a higher-priced one that sat
+    // alone in its own cluster). Sorting by the already-corrupted y would
+    // lock that inversion in; this pass can only fix spacing, not order,
+    // so the order it walks in has to already be correct.
+    placed.sort((a, b) => a.trueY - b.trueY);
     for (let i = 1; i < placed.length; i++) {
       const minY = placed[i - 1].y + minGap;
       if (placed[i].y < minY) placed[i].y = minY;
