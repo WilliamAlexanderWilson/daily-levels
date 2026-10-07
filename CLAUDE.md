@@ -376,7 +376,8 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   trade data for POC/VAH/VAL, no extra fetch) and projects each bin
   through `LIQUIDATION_LEVERAGE_TIERS` (`config.py`: `[10, 25, 50, 100]`)
   into long/short liquidation prices, re-bucketed onto the same bin grid,
-  normalized 0-1 by the single hottest bin across both sides, capped to
+  normalized 0-1 server-side by the single hottest bin across both
+  sides, capped to
   `LIQUIDATION_MAX_DISTANCE_PCT` (0.25) from current price. Output is
   `liquidation_estimate` in `{asset}_levels.json` - a flat list of
   `{price_low, price_high, long_intensity, short_intensity}`, computed
@@ -407,6 +408,38 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   Playwright check against this page returns something false/invisible/
   absent, verify the element's actual page-absolute position against the
   viewport height before assuming the application code is wrong.**
+
+  **That viewport finding was real but incomplete** - shipped it, then
+  the user looked at the live site and still couldn't see it, with a
+  screenshot to prove it. The viewport bug was one genuine problem;
+  there was a second, separate one still live: intensity normalized
+  against the single hottest bin across the *entire* +/-25% window means
+  whatever's visible in a typical near-price view can be almost
+  invisible whenever the all-time hottest zone happens to be scrolled
+  off elsewhere (confirmed directly: the hottest bins that day sat
+  ~10% below current price, so the view the user actually had open -
+  close to current price - was showing bins at 10-20% of max opacity).
+  Two more things were needed, found by directly reading back computed
+  opacity + a pixel-level screenshot crop rather than assuming the first
+  fix was sufficient: (1) `document.elementFromPoint` had also wrongly
+  suggested a z-index/paint-order problem (bumped `.liquidation-bar` to
+  `z-index: 3` just in case) - this turned out to be a red herring,
+  because `elementFromPoint`/`elementsFromPoint` skip anything with
+  `pointer-events: none` entirely, which every one of these bars has by
+  design; they were never actually hidden by the canvas, hit-testing
+  just can't see them. (2) The actual fix: `renderLiquidationHeatmap`
+  now also rescales opacity against the max intensity among only the
+  *currently visible* bins, not the server's global-window normalization
+  - so the chart always shows its own on-screen hotspots at full visual
+  strength. Also widened the bars (10px -> 16px) and raised the opacity
+  ceiling (0.85 -> 0.9) for better baseline legibility. Confirmed
+  visually this time with a direct pixel-crop screenshot showing a real
+  green/red gradient, not just a DOM query returning non-null. **Lesson
+  for next time: "the element exists in the DOM with a sane computed
+  style" is not the same claim as "a human looking at this page would
+  actually see it" - confirm the second one with an actual rendered
+  screenshot, not a style readback, especially for anything opacity- or
+  intensity-based.**
 
 ---
 

@@ -457,8 +457,8 @@
     return yLow >= 0 && yHigh <= containerHeight;
   }
 
-  const LIQUIDATION_BAR_WIDTH_PX = 10;
-  const LIQUIDATION_MAX_OPACITY = 0.85;
+  const LIQUIDATION_BAR_WIDTH_PX = 16;
+  const LIQUIDATION_MAX_OPACITY = 0.9;
 
   // Two thin heat-strip columns docked against the price axis (short/red
   // against the axis itself, long/green just inboard of it) - deliberately
@@ -469,16 +469,36 @@
   function renderLiquidationHeatmap(container) {
     for (const el of liquidationEls) el.remove();
     liquidationEls.length = 0;
-    if (!activeLiquidationBins.length) return;
+    if (!activeLiquidationBins.length || !candleSeries) return;
+
+    const containerHeight = container.clientHeight;
+
+    // Bin intensities are normalized server-side against the single
+    // hottest bin across the WHOLE +/-25% window - correct for comparing
+    // bins to each other, but it means whatever's on screen right now can
+    // look almost invisible if the all-time hottest spot happens to be
+    // scrolled off elsewhere. Rescale again here against just what's
+    // actually visible, so the chart always shows its own relative
+    // hotspots at full strength instead of a global ranking that dims
+    // everything whenever the single hottest zone isn't in view.
+    const visible = [];
+    for (const bin of activeLiquidationBins) {
+      const yTop = candleSeries.priceToCoordinate(bin.price_high);
+      const yBottom = candleSeries.priceToCoordinate(bin.price_low);
+      if (yTop === null || yBottom === null) continue;
+      if (yBottom < 0 || yTop > containerHeight) continue;
+      visible.push({ bin, yTop, yBottom });
+    }
+    if (!visible.length) return;
+
+    const visiblePeak =
+      Math.max(...visible.flatMap((v) => [v.bin.long_intensity, v.bin.short_intensity])) || 1;
 
     const axisWidth = candleSeries.priceScale().width();
     const shortRight = axisWidth;
     const longRight = axisWidth + LIQUIDATION_BAR_WIDTH_PX;
 
-    for (const bin of activeLiquidationBins) {
-      const yTop = candleSeries.priceToCoordinate(bin.price_high);
-      const yBottom = candleSeries.priceToCoordinate(bin.price_low);
-      if (yTop === null || yBottom === null) continue;
+    for (const { bin, yTop, yBottom } of visible) {
       const height = Math.max(1, yBottom - yTop);
 
       if (bin.short_intensity > 0) {
@@ -488,7 +508,7 @@
         bar.style.height = `${height}px`;
         bar.style.right = `${shortRight}px`;
         bar.style.width = `${LIQUIDATION_BAR_WIDTH_PX}px`;
-        bar.style.opacity = bin.short_intensity * LIQUIDATION_MAX_OPACITY;
+        bar.style.opacity = Math.min(1, bin.short_intensity / visiblePeak) * LIQUIDATION_MAX_OPACITY;
         bar.title = `Est. short liquidations near ${formatPriceRange(bin.price_low, bin.price_high)} (modeled, not real position data)`;
         container.appendChild(bar);
         liquidationEls.push(bar);
@@ -501,7 +521,7 @@
         bar.style.height = `${height}px`;
         bar.style.right = `${longRight}px`;
         bar.style.width = `${LIQUIDATION_BAR_WIDTH_PX}px`;
-        bar.style.opacity = bin.long_intensity * LIQUIDATION_MAX_OPACITY;
+        bar.style.opacity = Math.min(1, bin.long_intensity / visiblePeak) * LIQUIDATION_MAX_OPACITY;
         bar.title = `Est. long liquidations near ${formatPriceRange(bin.price_low, bin.price_high)} (modeled, not real position data)`;
         container.appendChild(bar);
         liquidationEls.push(bar);
