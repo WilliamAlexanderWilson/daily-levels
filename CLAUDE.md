@@ -217,6 +217,28 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   high/low exactly, zero padding. An earlier attempt that added a flat
   margin before calling `setVisibleRange` was solving a problem that didn't
   exist and produced a visibly wrong (too-wide) restore.
+- **Manual trade price entry** — the trade journal originally only accepted
+  a price by clicking the chart; added a plain number input next to
+  "+ Mark trade" (`trade-manual-price`/`trade-manual-btn`, Enter key also
+  works) for typing the exact fill price instead. A typed entry has no
+  associated chart bar, so it's stamped with the current time rather than
+  a candle time — same canonical-unix-timestamp storage as a clicked trade.
+- **Level-jump dropdown with a live progress percentage** — a `<select>`
+  (`level-jump-select`) listing every row from the Level table, sorted by
+  distance from the live price (closest first), that snaps the chart to
+  whichever one is picked - kept in sync both ways with the table via one
+  shared `toggleLevelSnap`/`syncLevelSelectionUi` path, so clicking a table
+  row updates the dropdown and vice versa. Each option also shows a live
+  percentage: 0% means price is sitting at the nearest level on the
+  *opposite* side (the one it would cross back through first), 100% means
+  price has arrived at this one. Explicitly anchored on the two real
+  levels price is actually between (`findNearestAboveBelow`, shared with
+  the nearest-level cards), not an arbitrary cutoff — generalizes the
+  round-number proximity curve's "closer = higher percentage" idea to
+  every level type. Returns `null` (no percentage shown) rather than
+  inventing a reference point when price is beyond every known level in
+  that direction (e.g. below the 60-day range low) and no opposite-side
+  anchor exists.
 
 ---
 

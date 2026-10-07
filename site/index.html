@@ -74,9 +74,21 @@
       </div>
     </div>
 
+    <div class="level-jump">
+      <label for="level-jump-select">Jump to level</label>
+      <select id="level-jump-select">
+        <option value="">Default view</option>
+      </select>
+    </div>
+
     <div class="trade-controls">
       <button type="button" id="mark-trade-btn" class="mark-trade-btn">+ Mark trade</button>
       <span id="mark-trade-hint" class="mark-trade-hint" hidden>Click the chart where you got in…</span>
+      <span class="trade-manual-entry">
+        <span class="trade-manual-or">or type a price</span>
+        <input type="number" id="trade-manual-price" class="trade-manual-price" placeholder="e.g. 84500" step="any" inputmode="decimal" />
+        <button type="button" id="trade-manual-btn" class="trade-manual-btn">Use price</button>
+      </span>
     </div>
 
     <div id="chart-container" class="chart-container"></div>

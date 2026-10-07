@@ -204,6 +204,22 @@ timeframe happened to use at click time, so it renders correctly on any
 timeframe later, as long as that timeframe's currently-loaded candles
 actually cover it.
 
+You can also just **type the price** instead of clicking the chart — a
+number field sits right next to "+ Mark trade" for exact fills.
+
+## Jump to a level
+
+The "Jump to level" dropdown above the chart lists every level from the
+Level table, closest to the live price first, and snaps the chart to
+whichever one you pick — same as clicking its row in the table below
+(they stay in sync with each other either way). Each entry also shows a
+live percentage: 0% means price is sitting at the nearest level on the
+*other* side, 100% means price has arrived at this one — so as price
+moves toward a level, its number climbs. It's anchored on the two real
+levels price is actually between, not an arbitrary cutoff, so a level
+further away naturally shows a lower percentage than one price is about
+to touch.
+
 **Proximity curve** (`src/backtest/round_proximity.py`,
 `{asset}_round_proximity.json`): re-runs the round-number touch/hold/break
 classification at 6 tolerance widths instead of 1 (100%/50%/25%/10%/5%/2%

@@ -122,6 +122,31 @@ main {
   cursor: pointer;
 }
 
+.level-jump {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.level-jump label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.level-jump select {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 .meta-row {
   display: flex;
   justify-content: space-between;
@@ -333,8 +358,42 @@ main {
 .trade-controls {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.6rem;
   margin-bottom: 0.5rem;
+}
+
+.trade-manual-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.trade-manual-or {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.trade-manual-price {
+  width: 8rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.trade-manual-btn {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .mark-trade-btn {

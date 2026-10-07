@@ -589,6 +589,7 @@
         });
         renderNearestLevels(activeLevels, activeScorecard, lastClose);
         renderRoundProximityBands(lastClose, activeProximity);
+        renderLevelJumpSelect(activeLevels, lastClose);
       }
 
       consecutiveMisses = 0;
@@ -691,6 +692,30 @@
     return { below, above };
   }
 
+  function levelMid(level) {
+    return (level.price_low + level.price_high) / 2;
+  }
+
+  // Recomputed off the live price, not the level's own type field - that
+  // field reflects the price at the daily snapshot, which can be stale by
+  // the time the live price has moved past a level. Shared by the nearest-
+  // level cards and the level-jump dropdown's progress percentage, so both
+  // always agree on which levels currently bracket price.
+  function findNearestAboveBelow(levels, currentPrice) {
+    let nearestAbove = null;
+    let nearestBelow = null;
+    for (const level of levels) {
+      const mid = levelMid(level);
+      if (mid > currentPrice && (nearestAbove === null || mid < levelMid(nearestAbove))) {
+        nearestAbove = level;
+      }
+      if (mid < currentPrice && (nearestBelow === null || mid > levelMid(nearestBelow))) {
+        nearestBelow = level;
+      }
+    }
+    return { nearestAbove, nearestBelow };
+  }
+
   function renderNearestLevels(levels, scorecard, currentPrice) {
     if (!levels || !levels.length || currentPrice === null || currentPrice === undefined) {
       document.getElementById("nearest-resistance-card").hidden = true;
@@ -699,20 +724,7 @@
       return;
     }
 
-    // Recomputed off the live price, not the level's own type field - that
-    // field reflects the price at the daily snapshot, which can be stale
-    // by the time the live price has moved past a level.
-    let nearestAbove = null;
-    let nearestBelow = null;
-    for (const level of levels) {
-      const mid = (level.price_low + level.price_high) / 2;
-      if (mid > currentPrice && (nearestAbove === null || mid < (nearestAbove.price_low + nearestAbove.price_high) / 2)) {
-        nearestAbove = level;
-      }
-      if (mid < currentPrice && (nearestBelow === null || mid > (nearestBelow.price_low + nearestBelow.price_high) / 2)) {
-        nearestBelow = level;
-      }
-    }
+    const { nearestAbove, nearestBelow } = findNearestAboveBelow(levels, currentPrice);
 
     fillNearestCard("nearest-resistance-card", nearestAbove, currentPrice, scorecard);
     fillNearestCard("nearest-support-card", nearestBelow, currentPrice, scorecard);
@@ -962,6 +974,19 @@
     }
   }
 
+  function useManualTradePrice() {
+    const input = document.getElementById("trade-manual-price");
+    const price = parseFloat(input.value);
+    if (!Number.isFinite(price) || price <= 0) return;
+
+    setMarkingMode(false);
+    // typed entries aren't tied to a chart bar - stamp them "now" so they
+    // sort and plot (once a candle at this time exists) like any other trade.
+    pendingTrade = { time: Math.floor(Date.now() / 1000), price };
+    input.value = "";
+    openTradeForm();
+  }
+
   function wireTradeForm() {
     document.getElementById("mark-trade-btn").addEventListener("click", () => {
       if (markingMode) {
@@ -970,6 +995,11 @@
         closeTradeForm();
         setMarkingMode(true);
       }
+    });
+
+    document.getElementById("trade-manual-btn").addEventListener("click", useManualTradePrice);
+    document.getElementById("trade-manual-price").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") useManualTradePrice();
     });
 
     document.querySelectorAll(".trade-dir-btn").forEach((btn) => {
@@ -1105,6 +1135,105 @@
     candleSeries.priceScale().setVisibleRange({ from: low, to: high });
   }
 
+  // Toggling a level's snap state from either the table or the dropdown
+  // needs to leave both in sync, so this is the one place that actually
+  // changes `snappedLevelKey` - everything else (row clicks, dropdown
+  // change) just calls this.
+  function toggleLevelSnap(level) {
+    const key = levelKey(level);
+    if (snappedLevelKey === key) {
+      resetPriceSnap();
+    } else {
+      snappedLevelKey = key;
+      snapToLevel(level);
+    }
+    syncLevelSelectionUi();
+  }
+
+  function syncLevelSelectionUi() {
+    document.querySelectorAll("#levels-table-body tr").forEach((row) => {
+      row.classList.toggle("level-row-selected", row.dataset.levelKey === snappedLevelKey);
+    });
+    const select = document.getElementById("level-jump-select");
+    if (select) select.value = snappedLevelKey || "";
+  }
+
+  // "Progress across the gap to it" - 0% means price is sitting at the
+  // nearest level on the OPPOSITE side (the one it would have to cross
+  // back through first), 100% means price has arrived at this level.
+  // Generalizes the round-number proximity curve's "closer = higher
+  // percentage" idea to every level, anchored on the two real levels
+  // price is currently between rather than an arbitrary cutoff. No
+  // opposite-side anchor exists when price is beyond every known level in
+  // that direction (e.g. below the 60-day range low) - returns null there
+  // rather than inventing a reference point.
+  function levelProgressPct(level, currentPrice, nearestAbove, nearestBelow) {
+    const mid = levelMid(level);
+    if (currentPrice >= level.price_low && currentPrice <= level.price_high) return 100;
+
+    if (mid > currentPrice) {
+      if (!nearestBelow) return null;
+      const anchor = levelMid(nearestBelow);
+      return clamp(((currentPrice - anchor) / (mid - anchor)) * 100, 0, 100);
+    }
+    if (!nearestAbove) return null;
+    const anchor = levelMid(nearestAbove);
+    return clamp(((anchor - currentPrice) / (anchor - mid)) * 100, 0, 100);
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function renderLevelJumpSelect(levels, currentPrice) {
+    const select = document.getElementById("level-jump-select");
+    if (!select) return;
+    if (!levels || !levels.length || currentPrice === null || currentPrice === undefined) {
+      select.innerHTML = `<option value="">Default view</option>`;
+      select.disabled = true;
+      return;
+    }
+    select.disabled = false;
+
+    const { nearestAbove, nearestBelow } = findNearestAboveBelow(levels, currentPrice);
+    const sorted = [...levels].sort(
+      (a, b) => Math.abs(levelMid(a) - currentPrice) - Math.abs(levelMid(b) - currentPrice)
+    );
+
+    const options = [`<option value="">Default view</option>`];
+    for (const level of sorted) {
+      const key = levelKey(level);
+      const priceText = level.price_high > level.price_low
+        ? formatPriceRange(level.price_low, level.price_high)
+        : level.price_low.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      const distancePct = ((levelMid(level) - currentPrice) / currentPrice) * 100;
+      const pct = levelProgressPct(level, currentPrice, nearestAbove, nearestBelow);
+      const pctText = pct === null ? "" : `, ${pct.toFixed(0)}% there`;
+      const label = `${level.name} — ${priceText} (${distancePct >= 0 ? "+" : ""}${distancePct.toFixed(2)}%${pctText})`;
+      options.push(`<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`);
+    }
+    select.innerHTML = options.join("");
+    select.value = snappedLevelKey || "";
+  }
+
+  function wireLevelJumpSelect() {
+    const select = document.getElementById("level-jump-select");
+    if (!select) return;
+    select.addEventListener("change", () => {
+      const key = select.value;
+      if (!key) {
+        resetPriceSnap();
+        syncLevelSelectionUi();
+        return;
+      }
+      const level = activeLevels.find((l) => levelKey(l) === key);
+      if (!level) return;
+      snappedLevelKey = key;
+      snapToLevel(level);
+      syncLevelSelectionUi();
+    });
+  }
+
   function renderTable(levels, currentPrice, scorecard, diff) {
     const diffMap = diffByKindMap(diff);
     renderRemovedNote(diff);
@@ -1129,6 +1258,7 @@
       const key = levelKey(level);
       tr.className = `type-${level.type}${level.is_flip ? " is-flip" : ""} level-row-clickable${key === snappedLevelKey ? " level-row-selected" : ""}`;
       tr.title = "Click to snap the chart to this level";
+      tr.dataset.levelKey = key;
 
       const priceText =
         level.price_high > level.price_low
@@ -1143,16 +1273,7 @@
         <td>${level.strength}</td>
         <td class="hold-rate-cell">${holdRateCellText(level, scorecard)}</td>
       `;
-      tr.addEventListener("click", () => {
-        if (snappedLevelKey === key) {
-          resetPriceSnap();
-        } else {
-          snappedLevelKey = key;
-          snapToLevel(level);
-        }
-        tbody.querySelectorAll("tr").forEach((row) => row.classList.remove("level-row-selected"));
-        if (snappedLevelKey === key) tr.classList.add("level-row-selected");
-      });
+      tr.addEventListener("click", () => toggleLevelSnap(level));
       tbody.appendChild(tr);
     }
 
@@ -1365,6 +1486,7 @@
       activeProximity = proximity;
       renderNearestLevels(activeLevels, activeScorecard, levelsData.price);
       renderRoundProximityBands(levelsData.price, activeProximity);
+      renderLevelJumpSelect(activeLevels, levelsData.price);
     } catch (err) {
       if (state.asset !== asset || state.range !== range) return;
       console.error(err);
@@ -1378,5 +1500,6 @@
   setActiveButtons();
   wireToggles();
   wireTradeForm();
+  wireLevelJumpSelect();
   loadAndRender().then(startLivePolling);
 })();
