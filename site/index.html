@@ -72,7 +72,28 @@
       </div>
     </div>
 
+    <div class="trade-controls">
+      <button type="button" id="mark-trade-btn" class="mark-trade-btn">+ Mark trade</button>
+      <span id="mark-trade-hint" class="mark-trade-hint" hidden>Click the chart where you got in…</span>
+    </div>
+
     <div id="chart-container" class="chart-container"></div>
+
+    <div id="trade-form" class="trade-form" hidden>
+      <div class="trade-form-row">
+        <span id="trade-form-price"></span>
+        <div class="trade-form-direction">
+          <button type="button" class="trade-dir-btn trade-dir-long" data-direction="long">Long</button>
+          <button type="button" class="trade-dir-btn trade-dir-short" data-direction="short">Short</button>
+        </div>
+      </div>
+      <textarea id="trade-form-description" class="trade-form-description" placeholder="Why'd you take this trade? (optional)" rows="2"></textarea>
+      <div class="trade-form-actions">
+        <button type="button" id="trade-form-cancel" class="trade-form-cancel">Cancel</button>
+        <button type="button" id="trade-form-save" class="trade-form-save" disabled>Save trade</button>
+      </div>
+    </div>
+
     <div id="chart-legend" class="chart-legend">
       <span class="legend-item"><i class="swatch support"></i>Support</span>
       <span class="legend-item"><i class="swatch resistance"></i>Resistance</span>
@@ -80,6 +101,29 @@
       <span class="legend-item"><i class="swatch current"></i>Current price</span>
       <span class="legend-item"><i class="swatch liquidity"></i>Order book wall</span>
     </div>
+
+    <section class="levels-table-section">
+      <h2>My trades</h2>
+      <p class="scorecard-note">
+        Saved in this browser only (no server, no account) — click
+        "+ Mark trade" above, then click the chart where you got in.
+        Won't follow you to a different browser or device.
+      </p>
+      <div class="table-wrapper">
+        <table id="trades-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Direction</th>
+              <th>Price</th>
+              <th>Note</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="trades-table-body"></tbody>
+        </table>
+      </div>
+    </section>
 
     <section class="levels-table-section">
       <h2>Level table</h2>

@@ -314,6 +314,143 @@ main {
   z-index: 2;
 }
 
+.trade-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.mark-trade-btn {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.mark-trade-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.mark-trade-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.trade-form {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.trade-form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.trade-form-direction {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.trade-dir-btn {
+  background: var(--bg);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.trade-dir-btn.trade-dir-long.active {
+  background: var(--support);
+  border-color: var(--support);
+  color: #fff;
+}
+
+.trade-dir-btn.trade-dir-short.active {
+  background: var(--resistance);
+  border-color: var(--resistance);
+  color: #fff;
+}
+
+.trade-form-description {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.trade-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.trade-form-cancel,
+.trade-form-save {
+  border-radius: 6px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.trade-form-save {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.trade-form-save:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.trade-delete-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.trade-delete-btn:hover {
+  color: var(--resistance);
+  border-color: var(--resistance);
+}
+
+.trade-note-cell {
+  max-width: 320px;
+  white-space: normal;
+}
+
 .chart-legend {
   display: flex;
   justify-content: center;

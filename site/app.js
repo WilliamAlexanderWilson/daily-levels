@@ -160,6 +160,10 @@
   let activeLevels = [];
   let activeScorecard = null;
   let activeProximity = null;
+  let tradeMarkersPlugin = null;
+  let activeCandles = []; // current timeframe's loaded candles, so trade markers can be bounds-checked
+  let markingMode = false;
+  let pendingTrade = null; // {time, price} captured from a chart click, awaiting form submission
 
   function ensureChart() {
     if (chart) return;
@@ -201,6 +205,9 @@
       priceScaleId: "",
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+
+    tradeMarkersPlugin = LightweightCharts.createSeriesMarkers(candleSeries, []);
+    chart.subscribeClick(handleChartClick);
 
     chart.timeScale().subscribeVisibleLogicalRangeChange(renderOverlays);
     window.addEventListener("resize", renderOverlays);
@@ -771,6 +778,211 @@
     renderOverlays();
   }
 
+  // --- trade journal ---
+  //
+  // Saved to this browser's localStorage only - no server, no account,
+  // consistent with everything else in this project (the user explicitly
+  // chose this over a synced backend). Won't follow you to a different
+  // browser or device, and clearing site data wipes it. Trades are keyed
+  // by a canonical unix timestamp, not whatever display format the active
+  // timeframe happened to use at click time, so a trade marked on the
+  // Daily view still renders correctly if you later look at it on 1h.
+
+  function tradesStorageKey(asset) {
+    return `daily-levels-trades-${asset}`;
+  }
+
+  function loadTrades(asset) {
+    try {
+      const raw = localStorage.getItem(tradesStorageKey(asset));
+      return raw ? JSON.parse(raw) : [];
+    } catch (err) {
+      console.error("could not read saved trades", err);
+      return [];
+    }
+  }
+
+  function saveTrades(asset, trades) {
+    try {
+      localStorage.setItem(tradesStorageKey(asset), JSON.stringify(trades));
+    } catch (err) {
+      console.error("could not save trade", err);
+      alert("Couldn't save that trade - your browser's local storage may be full or blocked (private browsing can do this).");
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // The inverse of toTimePoint(): a chart click's `time` comes back as a
+  // raw unix number for intraday ranges, or a date string / {year,month,day}
+  // business-day object for the Daily range - normalize whichever shape
+  // shows up into one canonical unix-seconds integer for storage.
+  function resolveClickTimeToUnix(time, range) {
+    if (range !== "1d") {
+      return typeof time === "number" ? time : null;
+    }
+    if (typeof time === "string") {
+      return Math.floor(new Date(`${time}T00:00:00Z`).getTime() / 1000);
+    }
+    if (time && typeof time === "object" && "year" in time) {
+      return Math.floor(Date.UTC(time.year, time.month - 1, time.day) / 1000);
+    }
+    return null;
+  }
+
+  function setMarkingMode(on) {
+    markingMode = on;
+    const btn = document.getElementById("mark-trade-btn");
+    const hint = document.getElementById("mark-trade-hint");
+    btn.classList.toggle("active", on);
+    btn.textContent = on ? "Cancel marking" : "+ Mark trade";
+    hint.hidden = !on;
+  }
+
+  function openTradeForm() {
+    if (!pendingTrade) return;
+    const saveBtn = document.getElementById("trade-form-save");
+    document.getElementById("trade-form-price").textContent = `Entry: ${formatPriceRange(pendingTrade.price, pendingTrade.price)}`;
+    document.getElementById("trade-form-description").value = "";
+    document.querySelectorAll(".trade-dir-btn").forEach((b) => b.classList.remove("active"));
+    saveBtn.disabled = true;
+    saveBtn.dataset.direction = "";
+    document.getElementById("trade-form").hidden = false;
+  }
+
+  function closeTradeForm() {
+    document.getElementById("trade-form").hidden = true;
+    pendingTrade = null;
+  }
+
+  function handleChartClick(param) {
+    if (!markingMode) return;
+    if (!param.point || param.time === undefined) return;
+
+    const price = candleSeries.coordinateToPrice(param.point.y);
+    const unixTime = resolveClickTimeToUnix(param.time, state.range);
+    if (price === null || unixTime === null) return;
+
+    pendingTrade = { time: unixTime, price };
+    setMarkingMode(false);
+    openTradeForm();
+  }
+
+  function renderTradeMarkers(asset, range, candles) {
+    if (!tradeMarkersPlugin) return;
+    const trades = loadTrades(asset);
+    if (!trades.length || !candles.length) {
+      tradeMarkersPlugin.setMarkers([]);
+      return;
+    }
+
+    // a trade marked on a wide-history timeframe won't necessarily fall
+    // within a narrower timeframe's currently-loaded candles (e.g. a
+    // trade from 3 days ago isn't in the 1m view's ~12h window) - skip
+    // rather than hand the library a time it has no bar for.
+    const minTime = candles[0].time;
+    const maxTime = candles[candles.length - 1].time;
+
+    const markers = trades
+      .filter((t) => t.time >= minTime && t.time <= maxTime)
+      .map((t) => ({
+        time: toTimePoint({ time: t.time }, range),
+        position: t.direction === "long" ? "belowBar" : "aboveBar",
+        color: t.direction === "long" ? cssVar("--support") : cssVar("--resistance"),
+        shape: t.direction === "long" ? "arrowUp" : "arrowDown",
+        text: t.direction === "long" ? "Long" : "Short",
+      }))
+      .sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0));
+
+    tradeMarkersPlugin.setMarkers(markers);
+  }
+
+  function deleteTrade(asset, id) {
+    saveTrades(asset, loadTrades(asset).filter((t) => t.id !== id));
+    renderTradeMarkers(state.asset, state.range, activeCandles);
+    renderTradesTable(asset);
+  }
+
+  function renderTradesTable(asset) {
+    const tbody = document.getElementById("trades-table-body");
+    tbody.innerHTML = "";
+
+    const trades = [...loadTrades(asset)].sort((a, b) => b.time - a.time);
+    if (!trades.length) {
+      tbody.innerHTML = `<tr><td colspan="5">No trades marked yet for ${asset.toUpperCase()}.</td></tr>`;
+      return;
+    }
+
+    for (const trade of trades) {
+      const tr = document.createElement("tr");
+      const dateText = new Date(trade.time * 1000).toLocaleString(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+      const directionColor = trade.direction === "long" ? "var(--support)" : "var(--resistance)";
+      tr.innerHTML = `
+        <td>${dateText}</td>
+        <td class="type-cell" style="color: ${directionColor}">${trade.direction}</td>
+        <td>${formatPriceRange(trade.price, trade.price)}</td>
+        <td class="trade-note-cell">${trade.description ? escapeHtml(trade.description) : "—"}</td>
+        <td></td>
+      `;
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "trade-delete-btn";
+      deleteBtn.textContent = "Delete";
+      deleteBtn.addEventListener("click", () => deleteTrade(asset, trade.id));
+      tr.lastElementChild.appendChild(deleteBtn);
+      tbody.appendChild(tr);
+    }
+  }
+
+  function wireTradeForm() {
+    document.getElementById("mark-trade-btn").addEventListener("click", () => {
+      if (markingMode) {
+        setMarkingMode(false);
+      } else {
+        closeTradeForm();
+        setMarkingMode(true);
+      }
+    });
+
+    document.querySelectorAll(".trade-dir-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".trade-dir-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const saveBtn = document.getElementById("trade-form-save");
+        saveBtn.dataset.direction = btn.dataset.direction;
+        saveBtn.disabled = false;
+      });
+    });
+
+    document.getElementById("trade-form-cancel").addEventListener("click", closeTradeForm);
+
+    document.getElementById("trade-form-save").addEventListener("click", (e) => {
+      const direction = e.currentTarget.dataset.direction;
+      if (!pendingTrade || !direction) return;
+
+      const trades = loadTrades(state.asset);
+      trades.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        time: pendingTrade.time,
+        price: pendingTrade.price,
+        direction,
+        description: document.getElementById("trade-form-description").value.trim(),
+        createdAt: new Date().toISOString(),
+      });
+      saveTrades(state.asset, trades);
+
+      closeTradeForm();
+      renderTradeMarkers(state.asset, state.range, activeCandles);
+      renderTradesTable(state.asset);
+    });
+  }
+
   function diffByKindMap(diff) {
     const map = {};
     if (!diff) return map;
@@ -935,6 +1147,11 @@
         state.asset = btn.dataset.asset;
         setActiveButtons();
         writeHash();
+        // a pending trade's price/time belong to whatever asset was
+        // active when the chart was clicked - switching assets mid-entry
+        // would otherwise save it against the wrong one.
+        setMarkingMode(false);
+        closeTradeForm();
         loadAndRender().then(pollLiveCandle);
       });
     });
@@ -942,6 +1159,8 @@
       state.range = e.target.value;
       setActiveButtons();
       writeHash();
+      setMarkingMode(false);
+      closeTradeForm();
       loadAndRender().then(pollLiveCandle);
     });
 
@@ -983,6 +1202,10 @@
       renderChart(candles, range, levelsData.config.range_days);
       renderLevels(levelsData.levels);
 
+      activeCandles = candles;
+      renderTradeMarkers(asset, range, candles);
+      renderTradesTable(asset);
+
       // The scorecard and proximity curve are nice-to-haves, not core - if
       // either is missing (first rollout before a backtest has run, or a
       // fetch hiccup) the levels table and chart should still render
@@ -1021,5 +1244,6 @@
   readHash();
   setActiveButtons();
   wireToggles();
+  wireTradeForm();
   loadAndRender().then(startLivePolling);
 })();
