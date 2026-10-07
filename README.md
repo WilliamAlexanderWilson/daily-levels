@@ -112,6 +112,18 @@ These are two independent systems that happen to share one page:
   the volume-profile levels are computed from (read from the levels JSON's
   own `config` block, not duplicated as a constant), so those lines land
   on the actual high/low on screen. The other timeframes use `fitContent()`.
+- **Order book liquidity walls** are also live-only: `fetchOrderBookWalls`
+  polls Kraken's public spot order book (`/0/public/Depth`) on the same
+  15s cadence, and shows the top 3 bid/ask price levels per side that are
+  at least 2x the book's median resting size — real orders sitting on the
+  book right now, not a modeled estimate. (A true liquidation heatmap
+  would need every trader's entry price and leverage across every
+  exchange, which no exchange publishes — that's what tools like
+  Coinglass are actually estimating, not displaying as fact. Kraken
+  Futures' open-interest/funding endpoint has no CORS header at all, so
+  it isn't fetchable from the browser at all; it would need to go through
+  the daily Python engine instead, same as everything else that isn't
+  live.)
 
 ## The hold-rate scorecard
 

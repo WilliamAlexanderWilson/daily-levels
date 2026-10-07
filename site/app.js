@@ -4,6 +4,7 @@
   const STALE_HOURS = 26;
   const LIVE_POLL_MS = 15000;
   const KRAKEN_OHLC_URL = "https://api.kraken.com/0/public/OHLC";
+  const KRAKEN_DEPTH_URL = "https://api.kraken.com/0/public/Depth";
   const ASSET_PAIRS = { btc: "BTC/USD", eth: "ETH/USD" };
   const RANGE_INTERVALS = { "1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240, "1d": 1440 };
 
@@ -95,12 +96,61 @@
     throw lastErr;
   }
 
+  // Real resting orders on Kraken's spot order book right now - the
+  // literal answer to "where is liquidity sitting," not a modeled
+  // estimate. (A true liquidation heatmap - where leveraged positions
+  // would get force-closed - needs every trader's entry price and
+  // leverage across every exchange; no exchange publishes that, and the
+  // tools that show one are displaying a model's guess, not verified
+  // data. This is the real thing instead: actual bids and asks.)
+  const ORDER_BOOK_WALL_COUNT = 3; // top N per side shown
+  const ORDER_BOOK_WALL_MIN_SIZE_MULTIPLE = 2; // must be at least this many times the book's median size
+
+  async function fetchOrderBookWalls(pair, retries = 3) {
+    let lastErr;
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const url = `${KRAKEN_DEPTH_URL}?pair=${encodeURIComponent(pair)}&count=100`;
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`Kraken Depth fetch failed: ${res.status}`);
+        const payload = await res.json();
+        if (payload.error && payload.error.length) throw new Error(`Kraken error: ${payload.error.join(", ")}`);
+        const book = payload.result && payload.result[pair];
+        if (!book) throw new Error("Kraken response missing expected pair data");
+
+        const parse = (rows) => rows.map(([price, volume]) => ({ price: +price, volume: +volume }));
+        const bids = parse(book.bids);
+        const asks = parse(book.asks);
+
+        const median = (rows) => {
+          const sorted = [...rows].map((r) => r.volume).sort((a, b) => a - b);
+          return sorted[Math.floor(sorted.length / 2)];
+        };
+        const significantWalls = (rows, side) => {
+          const threshold = median(rows) * ORDER_BOOK_WALL_MIN_SIZE_MULTIPLE;
+          return [...rows]
+            .filter((r) => r.volume >= threshold)
+            .sort((a, b) => b.volume - a.volume)
+            .slice(0, ORDER_BOOK_WALL_COUNT)
+            .map((r) => ({ ...r, side }));
+        };
+
+        return { bids: significantWalls(bids, "bid"), asks: significantWalls(asks, "ask") };
+      } catch (err) {
+        lastErr = err;
+        if (attempt < retries - 1) await sleep(600 * (attempt + 1));
+      }
+    }
+    throw lastErr;
+  }
+
   // --- chart ---
 
   let chart = null;
   let candleSeries = null;
   let volumeSeries = null;
   const activePriceLines = [];
+  const orderBookPriceLines = []; // separate from activePriceLines - these redraw every poll tick, not just on load/toggle
   const overlayEls = [];
   let currentMarkers = []; // {low, high, mid, color, label, isZone} for repositioning on redraw
   let lastLiveUnixTime = null; // guards against feeding series.update() a time older than its last bar
@@ -483,6 +533,16 @@
       console.error("live poll failed", err);
       noteLiveMiss();
     }
+
+    // Best-effort, separate from the candle update above - a failed order
+    // book fetch shouldn't mark the whole live poll as missed, it just
+    // means the liquidity walls don't refresh this tick.
+    try {
+      const walls = await fetchOrderBookWalls(pair);
+      if (state.asset === asset && state.range === range) renderOrderBookWalls(walls);
+    } catch (err) {
+      console.error("order book fetch failed", err);
+    }
   }
 
   function startLivePolling() {
@@ -637,6 +697,38 @@
           isZone: true,
           isRoundProximity: true,
           opacity,
+        });
+      }
+    }
+
+    renderOverlays();
+  }
+
+  function renderOrderBookWalls(walls) {
+    for (const line of orderBookPriceLines) candleSeries.removePriceLine(line);
+    orderBookPriceLines.length = 0;
+    currentMarkers = currentMarkers.filter((m) => !m.isOrderBookWall);
+
+    if (walls) {
+      for (const wall of [...walls.bids, ...walls.asks]) {
+        const line = candleSeries.createPriceLine({
+          price: wall.price,
+          color: cssVar("--liquidity"),
+          lineWidth: 1,
+          lineStyle: LightweightCharts.LineStyle.SparseDotted,
+          axisLabelVisible: true,
+          title: "",
+        });
+        orderBookPriceLines.push(line);
+
+        currentMarkers.push({
+          low: wall.price,
+          high: wall.price,
+          mid: wall.price,
+          color: cssVar("--liquidity"),
+          label: `${wall.side === "bid" ? "Bid" : "Ask"} wall: ${wall.volume.toFixed(2)} ${state.asset.toUpperCase()}`,
+          isZone: false,
+          isOrderBookWall: true,
         });
       }
     }

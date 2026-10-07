@@ -9,6 +9,7 @@
   --resistance: #d1453b;
   --flip: #b8860b;
   --round: #8a5cf6;
+  --liquidity: #0f9ba8;
   --stale: #d1453b;
   --row-current: #eef2ff;
 }
@@ -25,6 +26,7 @@
     --resistance: #f06a60;
     --flip: #e0b84a;
     --round: #a988fb;
+    --liquidity: #3dd9e8;
     --stale: #f06a60;
     --row-current: #1c2340;
   }
@@ -354,6 +356,12 @@ main {
 .swatch.current {
   border-top-color: var(--accent);
   border-top-style: dotted;
+}
+
+.swatch.liquidity {
+  border-top-color: var(--liquidity);
+  border-top-style: dotted;
+  border-top-width: 1px;
 }
 
 .levels-table-section h2,

@@ -159,6 +159,24 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   nested bands around the current nearest round number (not all 6 tiers -
   picked loose/mid/tight to stay readable), reusing the existing
   zone-overlay system via a new `opacity` field per marker.
+- **Order book liquidity walls** — the user asked for "where all the
+  liquidity is sitting" / a liquidation heatmap. Researched this
+  directly rather than guessing: a true liquidation heatmap needs every
+  trader's entry price and leverage across every exchange, which no
+  exchange publishes - the tools that show one (Coinglass, Hyblock) are
+  displaying a model's estimate, not verified data. Declined to fake
+  that. Built the real thing instead: Kraken's public spot order book
+  (`/0/public/Depth`, CORS-friendly, confirmed live) shows actual resting
+  bids/asks right now. `fetchOrderBookWalls` in `site/app.js` takes the
+  top 3 per side that are at least 2x the book's median size, polled on
+  the same 15s cadence as the live candle, rendered as thin teal lines
+  with size labels. Note: Kraken Futures' open-interest/funding endpoint
+  (`futures.kraken.com/derivatives/api/v3/tickers`) has **no CORS header
+  at all** (checked the raw response headers directly) - that data isn't
+  fetchable live from the browser. If it gets added, it has to go through
+  the daily Python engine (server-side fetch, no CORS issue there) and
+  get baked into the once-a-day snapshot, not the live poll. Not built
+  yet.
 - A refresh button next to the levels timestamp — re-fetches without a
   full reload. Explicitly does NOT trigger new computation (the site is
   static, no server) - see the daily-run gating gotcha below for what
