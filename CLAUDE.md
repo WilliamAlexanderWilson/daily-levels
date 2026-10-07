@@ -147,6 +147,18 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   sample size, using a tolerance-zone touch definition (within a
   quarter-step, not an exact print) after the user clarified that's what
   "getting close to a whole number" actually means in practice.
+- **Round-number proximity curve** (`src/backtest/round_proximity.py`) -
+  the user asked to "find a pattern" in how the odds shift as price gets
+  closer to a round number, not just one aggregate hold rate. Real,
+  substantial, monotonic finding: hold rate drops the closer price
+  actually gets (BTC 55%→42%, ETH 69%→40%, from a full step away down to
+  2%, 600+ resolved touches at every tier for both assets). Read: a loose
+  approach often reverses before fully arriving; once price actually
+  commits and reaches the number closely, continuation becomes more
+  likely than a bounce right at the number. Shown on the live chart as 3
+  nested bands around the current nearest round number (not all 6 tiers -
+  picked loose/mid/tight to stay readable), reusing the existing
+  zone-overlay system via a new `opacity` field per marker.
 - A refresh button next to the levels timestamp — re-fetches without a
   full reload. Explicitly does NOT trigger new computation (the site is
   static, no server) - see the daily-run gating gotcha below for what

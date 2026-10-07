@@ -50,6 +50,10 @@
     return `data/${asset}_scorecard.json`;
   }
 
+  function proximityUrl(asset) {
+    return `data/${asset}_round_proximity.json`;
+  }
+
   // The chart (candles) is always fetched live, straight from Kraken -
   // only the levels come from the once-a-day static snapshot. Shared by
   // the initial render and the live poll below.
@@ -105,6 +109,7 @@
   // can be recomputed on every live price tick, not just on load/toggle.
   let activeLevels = [];
   let activeScorecard = null;
+  let activeProximity = null;
 
   function ensureChart() {
     if (chart) return;
@@ -293,7 +298,7 @@
       band.style.top = `${yTop}px`;
       band.style.height = `${Math.max(1, yBottom - yTop)}px`;
       band.style.background = marker.color;
-      band.style.opacity = "0.12";
+      band.style.opacity = marker.opacity !== undefined ? marker.opacity : "0.12";
       container.appendChild(band);
       overlayEls.push(band);
     }
@@ -469,6 +474,7 @@
           maximumFractionDigits: 2,
         });
         renderNearestLevels(activeLevels, activeScorecard, lastClose);
+        renderRoundProximityBands(lastClose, activeProximity);
       }
 
       consecutiveMisses = 0;
@@ -595,6 +601,47 @@
       currentPrice,
       scorecard
     );
+  }
+
+  // Backtest found that the hold rate isn't flat with distance - it drops
+  // substantially the closer price actually gets to the round number (BTC
+  // 55% -> 42% from a full step away down to 2%; ETH 69% -> 40%). Shown as
+  // nested bands around the live nearest round number so that slope is
+  // visible directly on the chart, not just as a table. Picked 3 of the 6
+  // backtested tiers (loose/mid/tight) to keep it readable - all 6 would
+  // just be 6 near-identical-looking rings.
+  const ROUND_PROXIMITY_DISPLAY_TIERS = [
+    { fraction: 0.5, opacity: 0.07 },
+    { fraction: 0.1, opacity: 0.16 },
+    { fraction: 0.02, opacity: 0.3 },
+  ];
+
+  function renderRoundProximityBands(currentPrice, proximityCurve) {
+    currentMarkers = currentMarkers.filter((m) => !m.isRoundProximity);
+
+    if (currentPrice !== null && currentPrice !== undefined && proximityCurve) {
+      const step = roundNumberStep(currentPrice);
+      const { below, above } = nearestRoundNumbers(currentPrice);
+      const nearestRoundPrice = currentPrice - below <= above - currentPrice ? below : above;
+
+      for (const { fraction, opacity } of ROUND_PROXIMITY_DISPLAY_TIERS) {
+        const tier = proximityCurve.find((t) => t.tolerance_fraction === fraction);
+        if (!tier || tier.hold_rate_pct === null) continue;
+        const tolerance = step * fraction;
+        currentMarkers.push({
+          low: nearestRoundPrice - tolerance,
+          high: nearestRoundPrice + tolerance,
+          mid: nearestRoundPrice,
+          color: cssVar("--round"),
+          label: `Within ${Math.round(fraction * 100)}% of $${nearestRoundPrice.toLocaleString()} — ${tier.hold_rate_pct.toFixed(0)}% held (n=${tier.resolved})`,
+          isZone: true,
+          isRoundProximity: true,
+          opacity,
+        });
+      }
+    }
+
+    renderOverlays();
   }
 
   function diffByKindMap(diff) {
@@ -809,14 +856,21 @@
       renderChart(candles, range, levelsData.config.range_days);
       renderLevels(levelsData.levels);
 
-      // The scorecard is a nice-to-have, not core - if it's missing (first
-      // rollout before a backtest has run, or a fetch hiccup) the levels
-      // table and chart should still render fine, just without hold rates.
+      // The scorecard and proximity curve are nice-to-haves, not core - if
+      // either is missing (first rollout before a backtest has run, or a
+      // fetch hiccup) the levels table and chart should still render
+      // fine, just without hold rates / proximity bands.
       let scorecard = null;
       try {
         scorecard = await fetchJson(scorecardUrl(asset));
       } catch (err) {
         console.error("scorecard unavailable", err);
+      }
+      let proximity = null;
+      try {
+        proximity = await fetchJson(proximityUrl(asset));
+      } catch (err) {
+        console.error("round-number proximity curve unavailable", err);
       }
       if (state.asset !== asset || state.range !== range) return;
 
@@ -825,7 +879,9 @@
 
       activeLevels = levelsData.levels;
       activeScorecard = scorecard;
+      activeProximity = proximity;
       renderNearestLevels(activeLevels, activeScorecard, levelsData.price);
+      renderRoundProximityBands(levelsData.price, activeProximity);
     } catch (err) {
       if (state.asset !== asset || state.range !== range) return;
       console.error(err);

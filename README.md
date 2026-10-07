@@ -155,6 +155,18 @@ across every round number the price actually traded near over the full
 replay — dozens of distinct values per asset, not just whatever's current
 today.
 
+**Proximity curve** (`src/backtest/round_proximity.py`,
+`{asset}_round_proximity.json`): re-runs the round-number touch/hold/break
+classification at 6 tolerance widths instead of 1 (100%/50%/25%/10%/5%/2%
+of a step), to test whether the odds actually change depending on how
+close price gets before reacting, rather than assuming one number covers
+it. They do, substantially — hold rate drops the closer price gets to the
+exact number (BTC: 55%→42% from a full step away down to 2%; ETH:
+69%→40%), for both assets, with 600+ resolved touches even at the
+tightest tier. The site shows this as 3 of the 6 tiers rendered as nested
+bands around the live nearest round number, each labeled with its own
+hold rate.
+
 ## Config (`config.py`)
 
 Every tunable number lives in `config.py`, each with a comment explaining
