@@ -365,8 +365,13 @@ main {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  pointer-events: none;
+  cursor: pointer;
   z-index: 2;
+}
+
+.level-label-selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .trade-controls {

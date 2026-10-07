@@ -169,7 +169,7 @@
   let activeCandles = []; // current timeframe's loaded candles, so trade markers can be bounds-checked
   let markingMode = false;
   let pendingTrade = null; // {time, price} captured from a chart click, awaiting form submission
-  let snappedLevelKey = null; // which table row's level the price scale is currently locked to, if any
+  let snappedMarkerKey = null; // key of whichever marker (table row, dropdown pick, or on-chart label) the price scale is currently locked to, if any
   let activeLevelsWindowDays = null; // RANGE_DAYS from the levels JSON, for the 4H default-zoom calc
   let lastOverlayPriceRange = null; // {from, to} as of the last renderOverlays() call, for the price-scale poll below
 
@@ -316,6 +316,7 @@
       }
 
       currentMarkers.push({
+        key: levelKey(level),
         low: level.price_low,
         high: level.price_high,
         mid: (level.price_low + level.price_high) / 2,
@@ -477,13 +478,21 @@
       overlayEls.push(tick);
 
       const tag = document.createElement("div");
-      tag.className = "level-label";
+      tag.className = `level-label${marker.key === snappedMarkerKey ? " level-label-selected" : ""}`;
       tag.style.top = `${y}px`;
       tag.style.background = marker.color;
       tag.textContent = offScreen ? `${offScreen === "above" ? "↑" : "↓"} ${marker.label}` : marker.label;
+      const clickHint = "click to snap the chart here";
       tag.title = offScreen
-        ? `${marker.label} — off-screen, zoom/pan ${offScreen} to see its line`
-        : marker.label;
+        ? `${marker.label} — off-screen, zoom/pan ${offScreen} to see its line (${clickHint})`
+        : `${marker.label} (${clickHint})`;
+      // Every marker - a formal level, an order book wall, a round-number
+      // proximity band - carries a `key` (set where it's pushed into
+      // currentMarkers) and a real {low, high}, so the same toggle used by
+      // the table and dropdown works here directly: click the tag itself,
+      // snap to it; click again, un-snap. Works on any timeframe, since
+      // this only ever touches the price axis, never the time axis.
+      tag.addEventListener("click", () => toggleMarkerSnap(marker.key, marker.low, marker.high));
       container.appendChild(tag);
       overlayEls.push(tag);
     }
@@ -808,6 +817,7 @@
         if (!tier || tier.hold_rate_pct === null) continue;
         const tolerance = step * fraction;
         currentMarkers.push({
+          key: `proximity|${fraction}|${nearestRoundPrice}`,
           low: nearestRoundPrice - tolerance,
           high: nearestRoundPrice + tolerance,
           mid: nearestRoundPrice,
@@ -841,6 +851,7 @@
         orderBookPriceLines.push(line);
 
         currentMarkers.push({
+          key: `wall|${wall.side}|${wall.price}`,
           low: wall.price,
           high: wall.price,
           mid: wall.price,
@@ -1128,13 +1139,18 @@
     return `${level.name}|${level.price_low}|${level.price_high}`;
   }
 
-  function snapToLevel(level) {
+  // Generic "frame this price band" - used for a formal level (from the
+  // table or dropdown) and for any other chart marker (an order book
+  // wall, a round-number proximity band) alike, since all of them boil
+  // down to the same {low, high} pair once you're past where the number
+  // came from.
+  function snapToRange(low, high) {
     if (!candleSeries) return;
-    const mid = (level.price_low + level.price_high) / 2;
-    const margin = Math.max(level.price_high - level.price_low, mid * 0.03);
+    const mid = (low + high) / 2;
+    const margin = Math.max(high - low, mid * 0.03);
     const priceScale = candleSeries.priceScale();
     priceScale.setAutoScale(false);
-    priceScale.setVisibleRange({ from: level.price_low - margin, to: level.price_high + margin });
+    priceScale.setVisibleRange({ from: low - margin, to: high + margin });
     // every other label's position was computed against the price scale
     // from before this jump - the time-axis subscription that normally
     // keeps them current doesn't fire for a price-only change (the
@@ -1144,7 +1160,7 @@
   }
 
   function clearPriceSnapState() {
-    snappedLevelKey = null;
+    snappedMarkerKey = null;
     if (candleSeries) candleSeries.priceScale().setAutoScale(true);
   }
 
@@ -1182,30 +1198,34 @@
     // getVisibleRange() matched a view's raw candle high/low exactly, with
     // zero padding, on the actual chart).
     candleSeries.priceScale().setVisibleRange({ from: low, to: high });
-    renderOverlays(); // same staleness reason as the one in snapToLevel()
+    renderOverlays(); // same staleness reason as the one in snapToRange()
   }
 
-  // Toggling a level's snap state from either the table or the dropdown
-  // needs to leave both in sync, so this is the one place that actually
-  // changes `snappedLevelKey` - everything else (row clicks, dropdown
-  // change) just calls this.
-  function toggleLevelSnap(level) {
-    const key = levelKey(level);
-    if (snappedLevelKey === key) {
+  // Toggling a marker's snap state from the table, the dropdown, or
+  // directly clicking its tag on the chart needs to leave all three in
+  // sync, so this is the one place that actually changes
+  // `snappedMarkerKey` - everything else just calls this with whatever
+  // {key, low, high} it has on hand.
+  function toggleMarkerSnap(key, low, high) {
+    if (snappedMarkerKey === key) {
       resetPriceSnap();
     } else {
-      snappedLevelKey = key;
-      snapToLevel(level);
+      snappedMarkerKey = key;
+      snapToRange(low, high);
     }
     syncLevelSelectionUi();
   }
 
+  function toggleLevelSnap(level) {
+    toggleMarkerSnap(levelKey(level), level.price_low, level.price_high);
+  }
+
   function syncLevelSelectionUi() {
     document.querySelectorAll("#levels-table-body tr").forEach((row) => {
-      row.classList.toggle("level-row-selected", row.dataset.levelKey === snappedLevelKey);
+      row.classList.toggle("level-row-selected", row.dataset.levelKey === snappedMarkerKey);
     });
     const select = document.getElementById("level-jump-select");
-    if (select) select.value = snappedLevelKey || "";
+    if (select) select.value = snappedMarkerKey || "";
   }
 
   // "Progress across the gap to it" - 0% means price is sitting at the
@@ -1263,7 +1283,7 @@
       options.push(`<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`);
     }
     select.innerHTML = options.join("");
-    select.value = snappedLevelKey || "";
+    select.value = snappedMarkerKey || "";
   }
 
   function wireLevelJumpSelect() {
@@ -1278,8 +1298,8 @@
       }
       const level = activeLevels.find((l) => levelKey(l) === key);
       if (!level) return;
-      snappedLevelKey = key;
-      snapToLevel(level);
+      snappedMarkerKey = key;
+      snapToRange(level.price_low, level.price_high);
       syncLevelSelectionUi();
     });
   }
@@ -1306,7 +1326,7 @@
 
       const tr = document.createElement("tr");
       const key = levelKey(level);
-      tr.className = `type-${level.type}${level.is_flip ? " is-flip" : ""} level-row-clickable${key === snappedLevelKey ? " level-row-selected" : ""}`;
+      tr.className = `type-${level.type}${level.is_flip ? " is-flip" : ""} level-row-clickable${key === snappedMarkerKey ? " level-row-selected" : ""}`;
       tr.title = "Click to snap the chart to this level";
       tr.dataset.levelKey = key;
 

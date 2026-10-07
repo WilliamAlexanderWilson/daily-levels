@@ -220,6 +220,12 @@ levels price is actually between, not an arbitrary cutoff, so a level
 further away naturally shows a lower percentage than one price is about
 to touch.
 
+**Every colored tag on the chart itself is also clickable** — not just
+table rows and the dropdown. Click an order book wall or a round-number
+proximity band directly and the chart snaps to it the same way, on
+whichever timeframe you're on. Click it again to go back to the default
+view.
+
 **Proximity curve** (`src/backtest/round_proximity.py`,
 `{asset}_round_proximity.json`): re-runs the round-number touch/hold/break
 classification at 6 tolerance widths instead of 1 (100%/50%/25%/10%/5%/2%

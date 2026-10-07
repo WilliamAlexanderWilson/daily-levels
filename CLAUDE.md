@@ -263,6 +263,41 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   range now gets a `↑`/`↓` prefix on its label and its leader's
   target clamped to the nearest edge, rather than drawing a connector
   toward a line that was never going to be on screen.
+- **Every on-chart label is now clickable, not just table rows.** The
+  user asked for the labels themselves ("these buttons") - including
+  order book walls and round-number proximity bands, not just formal
+  levels - to snap the chart on click, on any timeframe. Generalized the
+  snap machinery: `snapToLevel(level)` became `snapToRange(low, high)`,
+  `toggleLevelSnap(level)` is now a thin wrapper over
+  `toggleMarkerSnap(key, low, high)`, and `snappedLevelKey` is
+  `snappedMarkerKey` everywhere. Every marker pushed into `currentMarkers`
+  (formal levels, order book walls, proximity bands) now carries a `key` -
+  `levelKey(level)` for levels, `` `wall|${side}|${price}` `` for walls,
+  `` `proximity|${fraction}|${nearestRoundPrice}` `` for bands - so the
+  exact same toggle used by the table and dropdown works from a direct
+  click on the tag. Required removing `.level-label`'s `pointer-events:
+  none` (it was fully inert before); verified directly with a real
+  `page.mouse` pan gesture dragged across label territory that this
+  didn't break chart panning/zooming. Walls and bands aren't in the table
+  or dropdown (by design, see the dropdown-scope decision above), so
+  clicking one just doesn't match any table row or dropdown option -
+  confirmed that degrades cleanly rather than erroring.
+  **Known flake, not caused by this change**: an automated label-order
+  check (`verify_order2.js`-style, sorts all labels by pixel position and
+  asserts price order matches) intermittently shows one violation -
+  reproduced maybe 1 in 10-15 runs, always during a pan while live order
+  book data was mid-update, never on a clean page load. Ruled out the
+  obvious suspect directly: a real `page.mouse` drag across now-clickable
+  labels still pans correctly (logical range moves exactly as expected).
+  12+ dedicated repro attempts couldn't pin down the exact marker
+  configuration that triggers it. Best guess: a rare residual edge case
+  in `declutter()`'s cluster-centering (the one confirmed inversion bug
+  in this function was already found and fixed earlier - see above - but
+  live order-book prices constantly reshuffle which markers cluster
+  together, so the input space to this function is effectively unbounded
+  and a different rare configuration could still trip something similar).
+  Not chased further since it's pre-existing and separate from what was
+  being built. Worth a closer look if it starts showing up more.
 
 ---
 
