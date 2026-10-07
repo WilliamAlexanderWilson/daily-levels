@@ -2,11 +2,22 @@ name: Update levels
 
 on:
   schedule:
-    # Cron is UTC. 5 AM America/Chicago is UTC-5 (CDT) or UTC-6 (CST), so
-    # fire at both 10:00 and 11:00 UTC; src/run.py exits early unless it's
-    # actually the 5 AM hour in Chicago, so only one of these does anything.
+    # GitHub's scheduled-workflow cron is best-effort and has been observed
+    # firing 6-9 hours late for this repo - not a one-off, happened on
+    # consecutive days. src/run.py no longer gates on "is it exactly 5am
+    # Central right now" (a late firing would just see the wrong hour and
+    # skip forever); it gates on "has this asset already produced today's
+    # data," so extra firings here are harmless no-ops, not wasted work.
+    # Every 3 hours maximizes the chance at least one firing lands early
+    # enough each day, even with GitHub's jitter.
     - cron: "0 10 * * *"
-    - cron: "0 11 * * *"
+    - cron: "0 13 * * *"
+    - cron: "0 16 * * *"
+    - cron: "0 19 * * *"
+    - cron: "0 22 * * *"
+    - cron: "0 1 * * *"
+    - cron: "0 4 * * *"
+    - cron: "0 7 * * *"
   workflow_dispatch: {}
 
 permissions:

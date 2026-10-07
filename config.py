@@ -19,7 +19,9 @@ FETCH_BACKOFF_SECONDS = 2  # doubles each retry: 2s, 4s, 8s
 
 # --- Schedule ---
 LOCAL_TIMEZONE = "America/Chicago"
-RUN_HOUR_LOCAL = 5  # 5 AM local triggers the real run; other cron firings exit early
+RUN_HOUR_LOCAL = 5  # target hour for the daily run - informational only, src/run.py
+                    # gates on "already ran today," not this hour (GitHub's cron can
+                    # fire hours late; see the docstring in src/run.py)
 STALE_AFTER_HOURS = 26  # site shows a warning if data is older than this
 
 # --- Volume profile ---
