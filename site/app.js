@@ -192,6 +192,14 @@
         vertLines: { color: cssVar("--border") },
         horzLines: { color: cssVar("--border") },
       },
+      // The library's default horizontal crosshair line (gray, large-
+      // dashed, with its own price tag) sits wherever the mouse last was
+      // and looks close enough to our own colored level tags to pass for
+      // one - a real source of "what is this line?" confusion, confirmed
+      // by reproducing it directly. It adds no information our own
+      // current-price line doesn't already give, so it's off; the
+      // vertical (time) crosshair line stays, it's unambiguous.
+      crosshair: { horzLine: { visible: false, labelVisible: false } },
       timeScale: { timeVisible: true, borderColor: cssVar("--border") },
       rightPriceScale: { borderColor: cssVar("--border") },
     });
@@ -222,6 +230,14 @@
 
     tradeMarkersPlugin = LightweightCharts.createSeriesMarkers(candleSeries, []);
     chart.subscribeClick(handleChartClick);
+    // hover feedback for "click the line itself" - the cursor becomes a
+    // pointer only when it's actually close enough to a drawn line to do
+    // something, so you can tell before you click rather than guessing.
+    chart.subscribeCrosshairMove((param) => {
+      if (markingMode) return; // marking-mode already has its own cursor/hint via mark-trade-hint
+      const near = param.point ? findMarkerNearPoint(param.point.y) : null;
+      container.style.cursor = near ? "pointer" : "default";
+    });
 
     chart.timeScale().subscribeVisibleLogicalRangeChange(renderOverlays);
     window.addEventListener("resize", renderOverlays);
@@ -354,6 +370,7 @@
   }
 
   const LABEL_MIN_GAP_PX = 20; // tags closer than this get pushed apart
+  const LINE_CLICK_TOLERANCE_PX = 5; // how close a click has to land to a line to count as clicking it
 
   // Resolves overlaps by clustering nearby labels and centering each
   // cluster on its own natural (average) position, rather than cascading
@@ -427,6 +444,17 @@
     return placed;
   }
 
+  // Checked against the marker's actual [low, high] range, not just its
+  // midpoint - a marker whose line is only partly in view (a wide zone
+  // whose center has scrolled off) still counts as visible, since there's
+  // still a real line on screen to point a tag at.
+  function markerIsVisible(marker, containerHeight) {
+    const yHigh = candleSeries.priceToCoordinate(marker.high);
+    const yLow = candleSeries.priceToCoordinate(marker.low);
+    if (yHigh === null || yLow === null) return false;
+    return yLow >= 0 && yHigh <= containerHeight;
+  }
+
   function renderOverlays() {
     const container = document.getElementById("chart-container");
     for (const el of overlayEls) el.remove();
@@ -455,6 +483,8 @@
       overlayEls.push(band);
     }
 
+    const containerHeight = container.clientHeight;
+
     // Several levels often cluster within a few % of each other, which
     // can be a tiny sliver of pixels once zoomed out (e.g. the Daily view
     // spanning a 2-year price range) - without this pass their text tags
@@ -462,27 +492,29 @@
     // isolated marker here (rather than after) means decluttering has
     // nothing left to do - it'll just place the one remaining tag at its
     // own true position.
+    //
+    // Also filters out anything whose line isn't actually on screen right
+    // now (checked against its real [low, high], not just its midpoint,
+    // so a wide zone that only partly pokes into view still counts) - a
+    // tag with no visible line to point at was confusable with a real
+    // one, which is exactly what was reported. No arrow/off-screen
+    // placeholder to replace it: if you can't see the line, you don't see
+    // its tag either, full stop.
     const rawPositions = currentMarkers
       .filter((marker) => !snappedMarkerKey || marker.key === snappedMarkerKey)
+      .filter((marker) => markerIsVisible(marker, containerHeight))
       .map((marker) => ({ marker, y: candleSeries.priceToCoordinate(marker.mid) }))
       .filter((p) => p.y !== null);
-    const containerHeight = container.clientHeight;
     const placements = declutter(rawPositions, LABEL_MIN_GAP_PX, { min: 4, max: containerHeight - 4 });
 
     for (const { marker, y, trueY } of placements) {
-      // trueY is unclamped - priceToCoordinate happily returns a y far
-      // outside [0, containerHeight] for a level whose real price is
-      // beyond whatever's currently zoomed into view (e.g. a flip level
-      // from a wider lookback than the visible candles span, or just the
-      // user having zoomed into a narrow band). The old leader connected
-      // the label straight to that raw value, which on a short chart
-      // meant a vertical bar running off into empty space toward a line
-      // that was never going to be on screen - exactly the "doesn't
-      // connect to anything" look. Clamp the connector's target to the
-      // visible area and say so on the label instead of pretending there's
-      // a nearby line to point at.
+      // the bounding-box filter above guarantees marker.low/high intersect
+      // the visible area, but trueY (the MIDPOINT's coordinate) can still
+      // fall outside it for a wide zone whose center is off-screen while
+      // an edge pokes into view - clamp just for where the tick/leader
+      // point, same reasoning as before, minus the arrow (nothing fully
+      // off-screen reaches this loop any more).
       const clampedTrueY = Math.max(0, Math.min(containerHeight, trueY));
-      const offScreen = trueY < 0 ? "above" : trueY > containerHeight ? "below" : null;
 
       // dense clusters (common on a short/mobile chart) can still need to
       // push a label a visible distance from its real line - the leader
@@ -512,11 +544,9 @@
       tag.className = `level-label${isSelected ? " level-label-selected" : ""}`;
       tag.style.top = `${y}px`;
       tag.style.background = marker.color;
-      tag.textContent = offScreen ? `${offScreen === "above" ? "↑" : "↓"} ${marker.label}` : marker.label;
+      tag.textContent = marker.label;
       const clickHint = isSelected ? "click again to show everything" : "click to isolate this line";
-      tag.title = offScreen
-        ? `${marker.label} — off-screen, zoom/pan ${offScreen} to see its line (${clickHint})`
-        : `${marker.label} (${clickHint})`;
+      tag.title = `${marker.label} (${clickHint})`;
       // Every marker - a formal level, an order book wall, a round-number
       // proximity band - carries a `key` (set where it's pushed into
       // currentMarkers) and a real {low, high}, so the same toggle used by
@@ -524,7 +554,9 @@
       // it snaps the chart to it AND hides every other line/label (see
       // applyLineIsolation() and the isolation filters above); click
       // again, everything comes back. Works on any timeframe, since this
-      // only ever touches the price axis, never the time axis.
+      // only ever touches the price axis, never the time axis. Clicking
+      // the actual line on the chart (not just its tag) does the exact
+      // same thing - see handleChartClick().
       tag.addEventListener("click", () => toggleMarkerSnap(marker.key, marker.low, marker.high));
       container.appendChild(tag);
       overlayEls.push(tag);
@@ -983,17 +1015,55 @@
     pendingTrade = null;
   }
 
+  // Finds whichever currently-drawn line a click/hover at this y landed
+  // close enough to, in price terms (so the hit area stays the same
+  // number of pixels regardless of zoom level, rather than a fixed price
+  // window that's huge when zoomed out and tiny when zoomed in). A zone
+  // marker (low !== high) counts as a hit anywhere inside its range, not
+  // just right on one boundary line - distance is 0 there, same as
+  // clicking exactly on a single-price marker's own line.
+  function findMarkerNearPoint(y) {
+    if (!candleSeries) return null;
+    const priceAtY = candleSeries.coordinateToPrice(y);
+    const priceAtTolerance = candleSeries.coordinateToPrice(y + LINE_CLICK_TOLERANCE_PX);
+    if (priceAtY === null || priceAtTolerance === null) return null;
+    const priceTolerance = Math.abs(priceAtTolerance - priceAtY);
+
+    let best = null;
+    let bestDist = Infinity;
+    for (const marker of currentMarkers) {
+      // isolated: every other line is actually hidden (applyLineIsolation),
+      // so only the one still drawn can be "clicked" at all.
+      if (snappedMarkerKey && marker.key !== snappedMarkerKey) continue;
+      const dist = priceAtY < marker.low ? marker.low - priceAtY : priceAtY > marker.high ? priceAtY - marker.high : 0;
+      if (dist <= priceTolerance && dist < bestDist) {
+        best = marker;
+        bestDist = dist;
+      }
+    }
+    return best;
+  }
+
   function handleChartClick(param) {
-    if (!markingMode) return;
-    if (!param.point || param.time === undefined) return;
+    if (markingMode) {
+      if (!param.point || param.time === undefined) return;
+      const price = candleSeries.coordinateToPrice(param.point.y);
+      const unixTime = resolveClickTimeToUnix(param.time, state.range);
+      if (price === null || unixTime === null) return;
 
-    const price = candleSeries.coordinateToPrice(param.point.y);
-    const unixTime = resolveClickTimeToUnix(param.time, state.range);
-    if (price === null || unixTime === null) return;
+      pendingTrade = { time: unixTime, price };
+      setMarkingMode(false);
+      openTradeForm();
+      return;
+    }
 
-    pendingTrade = { time: unixTime, price };
-    setMarkingMode(false);
-    openTradeForm();
+    // Not marking a trade: clicking anywhere on an actual drawn line -
+    // not just its tag, which decluttering can push well away from the
+    // line itself - isolates it. Same toggle the table, dropdown, and
+    // tag clicks already use, so it stays in sync with all three.
+    if (!param.point) return;
+    const marker = findMarkerNearPoint(param.point.y);
+    if (marker) toggleMarkerSnap(marker.key, marker.low, marker.high);
   }
 
   function renderTradeMarkers(asset, range, candles) {

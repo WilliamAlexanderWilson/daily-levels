@@ -320,6 +320,49 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   the existing overlap/order-violation checks against it - zero overlaps,
   zero order violations. The density itself was real, live order-book
   data, not a rendering bug - isolate is the actual fix for it.
+- **Three follow-ups from a later screenshot** ("ARE THESE ------ lines
+  representing something?" / "I have no idea what this line is"):
+  - **The mystery dashed line was the chart library's own default
+    crosshair** - confirmed directly by reproducing it (move the mouse,
+    screenshot, compare pixel-for-pixel against the user's screenshot):
+    lightweight-charts' default horizontal crosshair is gray,
+    `LargeDashed`, with its own price tag, sitting wherever the mouse
+    last was - close enough to our colored level tags to genuinely pass
+    for one, and it carries no information our own current-price line
+    doesn't already give. Turned off via `crosshair: { horzLine: {
+    visible: false, labelVisible: false } }` in the chart options; the
+    vertical (time) crosshair line stays, since it's unambiguous.
+  - **Tags for off-screen levels are gone, not arrowed.** The earlier
+    `↑`/`↓` off-screen-arrow system (see above) was itself a source of
+    "what is this" confusion once isolate existed - the user explicitly
+    asked to only see a tag when its line is actually on screen.
+    `markerIsVisible()` checks a marker's real `[low, high]` against the
+    container bounds (not just its midpoint, so a wide zone that's only
+    partly scrolled into view still counts) and filters it out of
+    `renderOverlays()` entirely otherwise - no placeholder, no arrow.
+  - **Every line is now clickable along its whole length, not just its
+    tag.** Decluttering routinely pushes a tag's label well away from its
+    real line, so the old "click the tag" model left the line itself
+    inert. `findMarkerNearPoint(y)` (used by both `handleChartClick` and
+    a new `subscribeCrosshairMove` hover handler for cursor feedback)
+    converts a small pixel tolerance to a price tolerance at the current
+    zoom level - not a fixed price window, which would be huge zoomed out
+    and useless zoomed in - and finds whichever marker's line is closest,
+    treating a zone marker as a hit anywhere inside `[low, high]`, not
+    just its two boundary lines. Isolation-aware: once a marker is
+    isolated, every other line is actually hidden, so `findMarkerNearPoint`
+    also skips them - nothing to click if there's nothing drawn.
+    `handleChartClick` now branches on `markingMode` first so marking a
+    trade still takes priority over isolating a line - confirmed directly
+    with a test that clicks on top of a level while marking mode is
+    active and checks the trade form opens, not an isolate.
+    One real test-only gotcha hit while verifying the toggle-off path:
+    `snapToRange`'s `setVisibleRange` transition isn't instant -
+    `priceToCoordinate` read immediately after it can reflect a
+    transitional, not-yet-settled position. Clicking at that
+    not-yet-final pixel misses. Not a real bug (a human watches the
+    chart settle before clicking), but worth remembering before
+    trusting a fast re-click in an automated test against this chart.
 
 ---
 

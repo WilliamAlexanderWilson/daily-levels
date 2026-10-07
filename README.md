@@ -229,6 +229,14 @@ to stack order book walls right on top of each other), clicking one also
 which one you picked and what it is. Click it again (from the chart, the
 table, or the dropdown — all three stay in sync) to bring everything back.
 
+**You can click the line itself, not just its tag** — decluttering can
+push a tag's label well away from its actual line when things are
+crowded, so clicking anywhere along the real line (the cursor turns into
+a pointer when you're close enough) isolates it exactly the same way.
+A tag also only ever shows when its line is actually somewhere on screen
+— nothing is pinned to the edge with an arrow pointing off into the
+distance.
+
 **Proximity curve** (`src/backtest/round_proximity.py`,
 `{asset}_round_proximity.json`): re-runs the round-number touch/hold/break
 classification at 6 tolerance widths instead of 1 (100%/50%/25%/10%/5%/2%
