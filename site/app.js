@@ -171,6 +171,7 @@
   let pendingTrade = null; // {time, price} captured from a chart click, awaiting form submission
   let snappedLevelKey = null; // which table row's level the price scale is currently locked to, if any
   let activeLevelsWindowDays = null; // RANGE_DAYS from the levels JSON, for the 4H default-zoom calc
+  let lastOverlayPriceRange = null; // {from, to} as of the last renderOverlays() call, for the price-scale poll below
 
   function ensureChart() {
     if (chart) return;
@@ -218,6 +219,22 @@
 
     chart.timeScale().subscribeVisibleLogicalRangeChange(renderOverlays);
     window.addEventListener("resize", renderOverlays);
+
+    // The library has no price-scale equivalent of
+    // subscribeVisibleLogicalRangeChange, so a manual drag or scroll-zoom
+    // on the right price axis (enabled by default) changes the price
+    // scale with no event to hook - every label would otherwise go stale,
+    // pointing at wherever its line used to be rather than where it is
+    // now. Poll for drift instead: cheap when nothing changed (two number
+    // reads), only rebuilds the DOM when the range actually moved.
+    setInterval(() => {
+      if (!candleSeries || !lastOverlayPriceRange) return;
+      const range = candleSeries.priceScale().getVisibleRange();
+      if (!range) return;
+      if (range.from !== lastOverlayPriceRange.from || range.to !== lastOverlayPriceRange.to) {
+        renderOverlays();
+      }
+    }, 200);
   }
 
   function clearPriceLines() {
@@ -391,6 +408,7 @@
     overlayEls.length = 0;
 
     if (!candleSeries) return;
+    lastOverlayPriceRange = candleSeries.priceScale().getVisibleRange();
 
     // zone shading draws at its exact price - only the text tags get
     // decluttered below.
@@ -421,26 +439,51 @@
     const placements = declutter(rawPositions, LABEL_MIN_GAP_PX, { min: 4, max: containerHeight - 4 });
 
     for (const { marker, y, trueY } of placements) {
+      // trueY is unclamped - priceToCoordinate happily returns a y far
+      // outside [0, containerHeight] for a level whose real price is
+      // beyond whatever's currently zoomed into view (e.g. a flip level
+      // from a wider lookback than the visible candles span, or just the
+      // user having zoomed into a narrow band). The old leader connected
+      // the label straight to that raw value, which on a short chart
+      // meant a vertical bar running off into empty space toward a line
+      // that was never going to be on screen - exactly the "doesn't
+      // connect to anything" look. Clamp the connector's target to the
+      // visible area and say so on the label instead of pretending there's
+      // a nearby line to point at.
+      const clampedTrueY = Math.max(0, Math.min(containerHeight, trueY));
+      const offScreen = trueY < 0 ? "above" : trueY > containerHeight ? "below" : null;
+
       // dense clusters (common on a short/mobile chart) can still need to
-      // push a label a visible distance from its real line - a leader
+      // push a label a visible distance from its real line - the leader
       // connects the two so it's never ambiguous which line a tag belongs
-      // to, even when displaced.
-      if (Math.abs(y - trueY) > 1) {
+      // to, even when displaced. A horizontal tick right at the real
+      // height does the actual pointing; the vertical bar just closes the
+      // gap between that tick and wherever decluttering moved the label.
+      if (Math.abs(y - clampedTrueY) > 1) {
         const leader = document.createElement("div");
         leader.className = "level-label-leader";
-        leader.style.top = `${Math.min(y, trueY)}px`;
-        leader.style.height = `${Math.abs(y - trueY)}px`;
+        leader.style.top = `${Math.min(y, clampedTrueY)}px`;
+        leader.style.height = `${Math.abs(y - clampedTrueY)}px`;
         leader.style.background = marker.color;
         container.appendChild(leader);
         overlayEls.push(leader);
       }
 
+      const tick = document.createElement("div");
+      tick.className = "level-label-leader-tick";
+      tick.style.top = `${clampedTrueY}px`;
+      tick.style.background = marker.color;
+      container.appendChild(tick);
+      overlayEls.push(tick);
+
       const tag = document.createElement("div");
       tag.className = "level-label";
       tag.style.top = `${y}px`;
       tag.style.background = marker.color;
-      tag.textContent = marker.label;
-      tag.title = marker.label;
+      tag.textContent = offScreen ? `${offScreen === "above" ? "↑" : "↓"} ${marker.label}` : marker.label;
+      tag.title = offScreen
+        ? `${marker.label} — off-screen, zoom/pan ${offScreen} to see its line`
+        : marker.label;
       container.appendChild(tag);
       overlayEls.push(tag);
     }
@@ -1092,6 +1135,12 @@
     const priceScale = candleSeries.priceScale();
     priceScale.setAutoScale(false);
     priceScale.setVisibleRange({ from: level.price_low - margin, to: level.price_high + margin });
+    // every other label's position was computed against the price scale
+    // from before this jump - the time-axis subscription that normally
+    // keeps them current doesn't fire for a price-only change (the
+    // library has no equivalent event for the price scale), so without
+    // this they'd sit wherever they were before, pointing at nothing.
+    renderOverlays();
   }
 
   function clearPriceSnapState() {
@@ -1133,6 +1182,7 @@
     // getVisibleRange() matched a view's raw candle high/low exactly, with
     // zero padding, on the actual chart).
     candleSeries.priceScale().setVisibleRange({ from: low, to: high });
+    renderOverlays(); // same staleness reason as the one in snapToLevel()
   }
 
   // Toggling a level's snap state from either the table or the dropdown

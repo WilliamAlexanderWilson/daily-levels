@@ -239,6 +239,30 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   inventing a reference point when price is beyond every known level in
   that direction (e.g. below the 60-day range low) and no opposite-side
   anchor exists.
+- **Fixed label overlays going stale/disconnected after a price-axis
+  change.** Reported with a screenshot showing every label's colored tag
+  floating with no visible line near it. Root cause, confirmed directly
+  rather than assumed: `candleSeries.priceScale().getVisibleRange()`/
+  `priceToCoordinate()` happily return values far outside
+  `[0, containerHeight]` for a level whose real price is beyond whatever's
+  currently zoomed into view, and `chart.timeScale().subscribeVisibleLogicalRangeChange(renderOverlays)`
+  only fires on a *time*-axis change - there's no equivalent price-scale
+  event in this library version (checked the v5.2.1 typings directly:
+  `IPriceScaleApi` has no subscribe method at all). Two changes needed:
+  (1) `snapToLevel()` and `resetPriceSnap()` now call `renderOverlays()`
+  themselves right after changing the price scale, since the native
+  axis price tags the library draws are always correct (it redraws those
+  itself) but our own `.level-label` divs are positioned by JS that only
+  runs when something tells it to; (2) since the price axis can also be
+  dragged/scroll-zoomed directly by the user (enabled by default, no
+  event to hook), `ensureChart()` now polls `getVisibleRange()` every
+  200ms and calls `renderOverlays()` only when it actually changed - cheap
+  when nothing moved, confirmed working with a real `page.mouse` drag on
+  the price axis in a Playwright test, not just a programmatic shortcut.
+  Also added: a level whose true position lands outside the visible
+  range now gets a `↑`/`↓` prefix on its label and its leader's
+  target clamped to the nearest edge, rather than drawing a connector
+  toward a line that was never going to be on screen.
 
 ---
 

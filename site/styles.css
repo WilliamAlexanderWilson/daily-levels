@@ -337,6 +337,20 @@ main {
   z-index: 1;
 }
 
+/* Marks the exact row the leader bar is pointing to - the thing that was
+   missing before: a label displaced for decluttering had nothing showing
+   which row was actually its real line. */
+.level-label-leader-tick {
+  position: absolute;
+  left: 1px;
+  width: 14px;
+  height: 2px;
+  transform: translateY(-1px);
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .level-label {
   position: absolute;
   left: 6px;
