@@ -537,6 +537,55 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   filtered independently from the entry marker's time since a long-open
   position's entry and exit can straddle a narrow timeframe's loaded-
   candle window differently.
+- **"I don't even see the full life of Bitcoin on the daily chart" - a
+  full visual audit, not a quick patch.** Investigated rather than
+  assumed: confirmed directly that Kraken's public OHLC endpoint always
+  returns just its most recent ~720 candles regardless of `since` (tried
+  `since=1` and a 2020 date - both came back anchored to "now," never
+  further back). There is no way to page past that on this endpoint, from
+  the browser or a server - it's a hard wall on Kraken's side, not a CORS
+  or pagination-logic problem. Checked several alternatives before
+  settling: Binance is geo-blocked from this environment; CoinGecko's
+  `market_chart` needs a paid key past 365 days (confirmed: `days=365`
+  returns 200, `days=366` returns 401). Coinbase's public
+  `/products/{id}/candles` endpoint (CORS-friendly, no key, confirmed
+  directly) has real daily data back to 2015 (BTC-USD) / mid-2016
+  (ETH-USD) and genuinely honors `start`/`end` for pagination, capped at
+  300 candles/request (confirmed: a wider request comes back with an
+  explicit `"Count of aggregations requested exceeds 300"` message, not a
+  silent clamp). `fetchCoinbaseDailyHistory()` pages through that in
+  parallel and merges with Kraken's own fetch, which still owns the
+  live/most-recent end unchanged.
+  Three more real, separate bugs turned up only by actually looking at
+  the rendered result rather than assuming the data alone was the fix:
+  - **`fitContent()` was silently clamping to ~2,100 of the 4,000+
+    candles**, no error - traced to `minBarSpacing`'s default (0.5px),
+    which physically caps how much history can ever fit in a given pixel
+    width. Confirmed directly by reading back the actual visible logical
+    range after a real load and seeing it stop partway through the data
+    every time. Lowered to `0.05` in the chart's `timeScale` options.
+  - **Years of real price history were visually invisible on a linear
+    scale** - BTC/ETH moved through multiple orders of magnitude over
+    this stretch, so anything before ~2020 rendered as a flat line
+    hugging the bottom of the chart. `candleSeries.priceScale()` now
+    switches to `PriceScaleMode.Logarithmic` specifically for `range ===
+    "1d"` (reverted to `Normal` for every other timeframe, where it
+    doesn't apply and would look wrong).
+  - **The volume series was showing its own stray "latest value" label**
+    (e.g. "3.27K") right in among the real price labels, from
+    `lastValueVisible`'s default of `true` on every series - visible in
+    the user's own screenshot but easy to miss as "just more clutter"
+    without specifically asking what a number with no apparent price
+    context was doing there. Set `lastValueVisible: false` on the volume
+    series.
+  Deep history is also deliberately **not awaited before the Daily view
+  renders** - the first version blocked the whole chart on ~13 sequential
+  Coinbase pages (several real seconds), during which Daily looked
+  exactly like a frozen/broken view on every single switch, not just the
+  first. `loadDeepDailyHistoryInBackground()` fires after the fast
+  Kraken-only render already completed and pops the deeper history in
+  once it's ready, confirmed directly: candle count was ~720 at 0.4s
+  after switching to Daily, ~4,000+ by 6.4s.
 
 ---
 

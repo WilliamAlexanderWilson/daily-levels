@@ -6,6 +6,19 @@
   const KRAKEN_OHLC_URL = "https://api.kraken.com/0/public/OHLC";
   const KRAKEN_DEPTH_URL = "https://api.kraken.com/0/public/Depth";
   const ASSET_PAIRS = { btc: "BTC/USD", eth: "ETH/USD" };
+  // Kraken's public OHLC endpoint always returns just the most recent 720
+  // candles no matter what `since` is set to (confirmed directly: since=1
+  // and since=a 2020 date both came back anchored to "now", never further
+  // back) - there is no way to page past that on this endpoint, from the
+  // browser or a server. For Daily specifically, Coinbase's public candles
+  // endpoint (also CORS-friendly, no key) has real daily data back to
+  // 2015/2016 and supports genuine start/end pagination, so the "Daily"
+  // view's history comes from there instead, with Kraken's own fetch still
+  // covering the live/most-recent end exactly as before.
+  const COINBASE_CANDLES_URL = "https://api.exchange.coinbase.com/products";
+  const COINBASE_PRODUCT_IDS = { btc: "BTC-USD", eth: "ETH-USD" };
+  const COINBASE_HISTORY_START = "2015-01-01T00:00:00Z"; // before this, both products just return empty - handled gracefully, not an error
+  const COINBASE_MAX_DAYS_PER_CALL = 300; // Coinbase rejects a request spanning more than this many daily candles
   // the candle price scale reserves extra room at the bottom for the volume
   // series beneath it, so "fit these candles" must reproduce this same
   // asymmetric split - a flat symmetric margin visibly doesn't match what
@@ -99,6 +112,62 @@
       }
     }
     throw lastErr;
+  }
+
+  // One page of Coinbase's public daily candles (CORS-friendly, no key -
+  // confirmed directly against api.exchange.coinbase.com). Coinbase's own
+  // row shape is [time, low, high, open, close, volume] - a different
+  // column order than Kraken's, mapped here rather than at the call site
+  // so every caller deals in the same {time, open, high, low, close,
+  // volume} shape as fetchKrakenCandles.
+  async function fetchCoinbaseDailyPage(productId, startIso, endIso) {
+    const url = `${COINBASE_CANDLES_URL}/${productId}/candles?granularity=86400&start=${startIso}&end=${endIso}`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Coinbase candles fetch failed: ${res.status}`);
+    const rows = await res.json();
+    if (!Array.isArray(rows)) throw new Error(`Coinbase error: ${rows.message || "unexpected response"}`);
+    return rows.map((row) => ({
+      time: row[0],
+      low: row[1],
+      high: row[2],
+      open: row[3],
+      close: row[4],
+      volume: row[5],
+    }));
+  }
+
+  // Deep daily history for the "Daily" view specifically - Kraken's own
+  // fetch only ever covers its most recent ~720 days (see the constant
+  // comments above), so this fills in everything older than that from
+  // Coinbase instead, paginated in <=300-day windows from
+  // COINBASE_HISTORY_START up to today. Best-effort: any single page
+  // failing just logs and returns whatever pages DID succeed, rather than
+  // losing the whole chart's deep history over one flaky request - this
+  // is a bonus on top of the always-reliable Kraken fetch, not something
+  // the page depends on to render at all.
+  async function fetchCoinbaseDailyHistory(productId) {
+    const start = new Date(COINBASE_HISTORY_START);
+    const now = new Date();
+    const windows = [];
+    let windowStart = start;
+    while (windowStart < now) {
+      const windowEnd = new Date(Math.min(windowStart.getTime() + COINBASE_MAX_DAYS_PER_CALL * 86400 * 1000, now.getTime()));
+      windows.push([windowStart.toISOString(), windowEnd.toISOString()]);
+      windowStart = windowEnd;
+    }
+
+    const pages = await Promise.all(
+      windows.map(([startIso, endIso]) =>
+        fetchCoinbaseDailyPage(productId, startIso, endIso).catch((err) => {
+          console.error("Coinbase deep-history page failed", startIso, endIso, err);
+          return [];
+        })
+      )
+    );
+
+    const byTime = new Map();
+    for (const row of pages.flat()) byTime.set(row.time, row);
+    return [...byTime.values()].sort((a, b) => a.time - b.time);
   }
 
   // Real resting orders on Kraken's spot order book right now - the
@@ -213,7 +282,19 @@
       // current-price line doesn't already give, so it's off; the
       // vertical (time) crosshair line stays, it's unambiguous.
       crosshair: { horzLine: { visible: false, labelVisible: false } },
-      timeScale: { timeVisible: true, borderColor: cssVar("--border") },
+      // minBarSpacing's default (0.5px/candle) physically caps how much
+      // history fitContent() can ever show: with Daily now carrying over
+      // 4000 candles (see COINBASE_* above) against an ~1100px-wide
+      // plot, showing all of them needs ~0.27px/candle - below the
+      // default floor, so fitContent() was silently clamping to only the
+      // most recent ~2100 candles instead of the full history, no error,
+      // just quietly not what was asked for. Confirmed directly: logged
+      // the actual visible logical range after a real deep-history load
+      // and it stopped partway through the data every time. Lowered the
+      // floor so multi-year compression is possible - individual candles
+      // get thin, which is the correct tradeoff for a decade-scale
+      // overview, not a bug to work around.
+      timeScale: { timeVisible: true, borderColor: cssVar("--border"), minBarSpacing: 0.05 },
       rightPriceScale: { borderColor: cssVar("--border") },
     });
 
@@ -238,6 +319,10 @@
       color: cssVar("--text-muted"),
       priceFormat: { type: "volume" },
       priceScaleId: "",
+      // every series shows its own "latest value" axis label by default -
+      // volume's own (e.g. "3.27K") was showing up right in among the
+      // actual price labels, looking like a stray/broken price reading.
+      lastValueVisible: false,
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
@@ -733,6 +818,18 @@
     }));
     candleSeries.setData(candleData);
     volumeSeries.setData(volumeData);
+
+    // Daily now spans over a decade (see the deep-history fetch above) -
+    // BTC/ETH have moved through multiple orders of magnitude in that
+    // time, so a linear scale squashes everything before ~2020 into a
+    // flat line hugging the bottom, visually invisible next to recent
+    // prices. Logarithmic makes a swing from $300 to $1,000 (3x) read as
+    // the same size move as $30,000 to $100,000 (also 3x) - which is
+    // what it actually was. Other timeframes stay linear, where this
+    // doesn't apply and would look unusual for a short window.
+    candleSeries.priceScale().applyOptions({
+      mode: range === "1d" ? LightweightCharts.PriceScaleMode.Logarithmic : LightweightCharts.PriceScaleMode.Normal,
+    });
 
     activeLevelsWindowDays = levelsWindowDays;
     applyDefaultZoom(candleData.length, range, levelsWindowDays);
@@ -1862,13 +1959,43 @@
     });
   }
 
+  // Runs after the Daily view is already rendered and visible with
+  // Kraken's own ~720-day window, so the chart is never blank while this
+  // is in flight. Prepends everything older that Kraken's API
+  // structurally can't return (see the COINBASE_* constants above), then
+  // re-renders once ready - best-effort, and deliberately quiet on
+  // failure beyond a console log: if Coinbase is unreachable the Daily
+  // view still works exactly as it did before this feature existed.
+  async function loadDeepDailyHistoryInBackground(asset, range, krakenCandles, levelsWindowDays) {
+    if (!krakenCandles.length) return;
+    try {
+      const deepHistory = await fetchCoinbaseDailyHistory(COINBASE_PRODUCT_IDS[asset]);
+      if (state.asset !== asset || state.range !== range) return; // user moved on while this was in flight
+      const cutoff = krakenCandles[0].time;
+      const older = deepHistory.filter((c) => c.time < cutoff);
+      if (!older.length) return;
+      const candles = [...older, ...krakenCandles];
+      // renderChart()'s own default-zoom call changes the visible time
+      // range, which fires the existing time-axis subscription straight
+      // into renderOverlays() - label/heatmap positions refresh for free,
+      // no need to redo renderLevels() (that would pointlessly tear down
+      // and recreate every native price line for levels that haven't
+      // actually changed).
+      renderChart(candles, range, levelsWindowDays);
+      activeCandles = candles;
+      renderTradeMarkers(asset, range, candles);
+    } catch (err) {
+      console.error("deep daily history unavailable, Daily keeps showing Kraken's own ~2 years", err);
+    }
+  }
+
   // --- main load ---
 
   async function loadAndRender() {
     const asset = state.asset;
     const range = state.range;
     try {
-      const [levelsData, candles] = await Promise.all([
+      const [levelsData, krakenCandles] = await Promise.all([
         fetchJson(levelsUrl(asset)),
         fetchKrakenCandles(ASSET_PAIRS[asset], RANGE_INTERVALS[range]),
       ]);
@@ -1877,6 +2004,8 @@
       // a newer loadAndRender() call either already finished or is about
       // to - drawing this now-stale result would stomp it.
       if (state.asset !== asset || state.range !== range) return;
+
+      const candles = krakenCandles;
 
       renderHeader(levelsData);
       renderFuturesContext(levelsData.futures_context);
@@ -1892,6 +2021,16 @@
       lastLivePrice = levelsData.price;
       renderTradeMarkers(asset, range, candles);
       renderTradesTable(asset, lastLivePrice);
+
+      // Deliberately not awaited: Coinbase's ~13-page pagination takes a
+      // few real seconds, and blocking the chart on it meant Daily sat
+      // blank that whole time on every switch, not just the first -
+      // looked exactly like a frozen/broken view. Render fast with what
+      // Kraken already gave us (same as before this feature existed),
+      // then pop in the deeper history once it's actually ready.
+      if (range === "1d") {
+        loadDeepDailyHistoryInBackground(asset, range, krakenCandles, levelsData.config.range_days);
+      }
 
       // The scorecard and proximity curve are nice-to-haves, not core - if
       // either is missing (first rollout before a backtest has run, or a

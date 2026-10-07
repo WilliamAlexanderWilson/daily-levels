@@ -112,6 +112,22 @@ These are two independent systems that happen to share one page:
   the volume-profile levels are computed from (read from the levels JSON's
   own `config` block, not duplicated as a constant), so those lines land
   on the actual high/low on screen. The other timeframes use `fitContent()`.
+- **Daily shows real history back to 2015/2016, not just ~2 years.**
+  Kraken's public OHLC endpoint always returns just its most recent ~720
+  candles no matter what date you ask for (confirmed directly - there's no
+  way to page further back on it, from the browser or a server), so Daily
+  pulls everything older than that from Coinbase's public candles endpoint
+  instead (also CORS-friendly, no key, real daily data since BTC-USD's
+  2015 and ETH-USD's 2016 listing there), paginated and merged with
+  Kraken's own fetch, which still owns the live/most-recent end exactly as
+  before. Loads progressively - Kraken's fast ~2-year window renders
+  first, the deeper history pops in a few seconds later once Coinbase's
+  dozen or so paginated requests finish, so Daily is never blank waiting
+  on it, and if Coinbase is ever unreachable it just quietly stays at the
+  ~2-year view instead of breaking. Daily also switches the price scale to
+  logarithmic for this reason - BTC/ETH have moved through multiple orders
+  of magnitude over that stretch, and a linear scale would squash anything
+  before ~2020 into a flat line at the bottom.
 - **Order book liquidity walls** are also live-only: `fetchOrderBookWalls`
   polls Kraken's public spot order book (`/0/public/Depth`) on the same
   15s cadence, and shows the top 3 bid/ask price levels per side that are
