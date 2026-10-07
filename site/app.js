@@ -742,6 +742,23 @@
       writeHash();
       loadAndRender().then(pollLiveCandle);
     });
+
+    const refreshBtn = document.getElementById("refresh-btn");
+    refreshBtn.addEventListener("click", async () => {
+      // Re-fetches levels/scorecard/candles without a full page reload -
+      // useful if the daily job just ran and you don't want to wait for
+      // the next scheduled poll or a manual F5. This only re-fetches
+      // whatever's currently committed; it can't trigger a new
+      // computation - the site is static, there's no server to ask.
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = "⟳ Refreshing…";
+      try {
+        await loadAndRender();
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = "⟳ Refresh";
+      }
+    });
   }
 
   // --- main load ---

@@ -129,6 +129,33 @@ main {
   color: var(--text-muted);
 }
 
+.generated-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.refresh-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.78rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.refresh-btn:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .price-wrap {
   display: inline-flex;
   align-items: center;
