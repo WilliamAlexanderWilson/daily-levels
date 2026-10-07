@@ -102,6 +102,16 @@
           <button type="button" class="trade-dir-btn trade-dir-short" data-direction="short">Short</button>
         </div>
       </div>
+      <div class="trade-form-row trade-form-size-row">
+        <label class="trade-form-field">
+          Size ($)
+          <input type="number" id="trade-form-size" placeholder="e.g. 500" min="0" step="any" inputmode="decimal" />
+        </label>
+        <label class="trade-form-field">
+          Leverage
+          <input type="number" id="trade-form-leverage" placeholder="e.g. 10" min="1" step="any" inputmode="decimal" />
+        </label>
+      </div>
       <textarea id="trade-form-description" class="trade-form-description" placeholder="Why'd you take this trade? (optional)" rows="2"></textarea>
       <div class="trade-form-actions">
         <button type="button" id="trade-form-cancel" class="trade-form-cancel">Cancel</button>
@@ -141,7 +151,11 @@
             <tr>
               <th>Date</th>
               <th>Direction</th>
-              <th>Price</th>
+              <th>Entry</th>
+              <th>Exit</th>
+              <th>Size</th>
+              <th>Leverage</th>
+              <th>P&amp;L</th>
               <th>Note</th>
               <th></th>
             </tr>

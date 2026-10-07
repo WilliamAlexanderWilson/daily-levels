@@ -245,6 +245,19 @@ actually cover it.
 You can also just **type the price** instead of clicking the chart — a
 number field sits right next to "+ Mark trade" for exact fills.
 
+**Size and leverage are optional, and turn on live P&L tracking.** Fill
+them in and the trades table shows a running P&L next to that trade,
+in both dollars and percent, updating on the same 15s cadence as the
+live price — size is treated as margin (what you actually put up), so
+`size x leverage` is the notional position, same mental model a real
+perp exchange uses. Leave them blank and the trade still saves fine,
+just without a P&L column.
+
+**Close a trade with "Close"** in its row — type the exit price you got
+and confirm. That freezes the P&L at that exit price for good (it stops
+following the live price) and adds a second marker on the chart at the
+exit point, colored by whether it was a win or a loss.
+
 ## Jump to a level
 
 The "Jump to level" dropdown above the chart lists every level from the

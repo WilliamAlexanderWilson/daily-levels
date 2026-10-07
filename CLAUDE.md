@@ -512,6 +512,31 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   visible peak renders far dimmer than linear would (0.5^2.2 ≈ 0.22 of
   the way to max, not 50%) - true hotspots stand out against a quiet
   background instead of the whole view looking equally hot.
+- **Position tracking: size, leverage, live P&L, and closing a trade.**
+  The trade form gained two optional fields (`trade-form-size`,
+  `trade-form-leverage`); a trade with both set gets a live P&L column in
+  the trades table (`tradePnl()` in `site/app.js`), re-rendered every
+  live poll tick the same way the nearest-level cards already are. Same
+  mental model as the liquidation estimate: `size` is margin, `size x
+  leverage` is notional, and liquidation price for a leveraged entry is
+  the identical `entry * (1 -+ 1/leverage)` formula used there - this
+  and the liquidation heatmap are really two views of the same math, one
+  modeled from the crowd's volume, one entered by hand for one specific
+  position.
+  Closing a trade (the "Close" button, `closingTradeId` state +
+  `confirmCloseTrade()`) freezes `tradePnl()`'s reference price at
+  `trade.exitPrice` instead of the live price, permanently - confirmed
+  directly by closing a trade, then waiting through a real 15s live poll
+  tick and checking the P&L string was byte-identical before and after,
+  not just inspecting the code. `closingTradeId` exists specifically so
+  the inline exit-price input survives that same 15s re-render instead
+  of vanishing out from under the user mid-entry (the table fully
+  rebuilds its DOM on every render, same as every other table on this
+  site). A closed trade also gets a second chart marker (a colored
+  circle, green/red by whether it was a win) at its exit time, found and
+  filtered independently from the entry marker's time since a long-open
+  position's entry and exit can straddle a narrow timeframe's loaded-
+  candle window differently.
 
 ---
 

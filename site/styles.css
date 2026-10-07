@@ -516,6 +516,33 @@ main {
   color: #fff;
 }
 
+.trade-form-size-row {
+  font-weight: 400;
+  font-size: 0.85rem;
+  justify-content: flex-start;
+  gap: 1.25rem;
+}
+
+.trade-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.trade-form-field input {
+  width: 7rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  box-sizing: border-box;
+}
+
 .trade-form-description {
   width: 100%;
   background: var(--bg);
@@ -574,9 +601,69 @@ main {
   border-color: var(--resistance);
 }
 
+.trade-close-btn {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  margin-right: 0.35rem;
+}
+
+.trade-close-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.trade-close-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.trade-close-input {
+  width: 6.5rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.25rem 0.4rem;
+  font-family: inherit;
+  font-size: 0.78rem;
+  box-sizing: border-box;
+}
+
+.trade-close-confirm-btn {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.trade-close-cancel-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
 .trade-note-cell {
   max-width: 320px;
   white-space: normal;
+}
+
+.trade-pnl-cell {
+  white-space: nowrap;
+  font-weight: 600;
 }
 
 .chart-legend {

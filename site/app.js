@@ -178,6 +178,8 @@
   let activeCandles = []; // current timeframe's loaded candles, so trade markers can be bounds-checked
   let markingMode = false;
   let pendingTrade = null; // {time, price} captured from a chart click, awaiting form submission
+  let lastLivePrice = null; // most recent known price, for live P&L on sized/leveraged trades
+  let closingTradeId = null; // trade mid-close (exit-price input showing in its row), survives the 15s re-render from the live poll
   let snappedMarkerKey = null; // key of whichever marker (table row, dropdown pick, or on-chart label) the price scale is currently locked to, if any
   let activeLevelsWindowDays = null; // RANGE_DAYS from the levels JSON, for the 4H default-zoom calc
   let lastOverlayPriceRange = null; // {from, to} as of the last renderOverlays() call, for the price-scale poll below
@@ -821,9 +823,11 @@
         document.getElementById("price-label").textContent = lastClose.toLocaleString(undefined, {
           maximumFractionDigits: 2,
         });
+        lastLivePrice = lastClose;
         renderNearestLevels(activeLevels, activeScorecard, lastClose);
         renderRoundProximityBands(lastClose, activeProximity);
         renderLevelJumpSelect(activeLevels, lastClose);
+        renderTradesTable(asset, lastClose);
       }
 
       consecutiveMisses = 0;
@@ -1121,6 +1125,8 @@
     const saveBtn = document.getElementById("trade-form-save");
     document.getElementById("trade-form-price").textContent = `Entry: ${formatPriceRange(pendingTrade.price, pendingTrade.price)}`;
     document.getElementById("trade-form-description").value = "";
+    document.getElementById("trade-form-size").value = "";
+    document.getElementById("trade-form-leverage").value = "";
     document.querySelectorAll(".trade-dir-btn").forEach((b) => b.classList.remove("active"));
     saveBtn.disabled = true;
     saveBtn.dataset.direction = "";
@@ -1194,20 +1200,37 @@
     // a trade marked on a wide-history timeframe won't necessarily fall
     // within a narrower timeframe's currently-loaded candles (e.g. a
     // trade from 3 days ago isn't in the 1m view's ~12h window) - skip
-    // rather than hand the library a time it has no bar for.
+    // rather than hand the library a time it has no bar for. Entry and
+    // exit are checked independently since a closed trade's two events
+    // can straddle that window differently.
     const minTime = candles[0].time;
     const maxTime = candles[candles.length - 1].time;
+    const inRange = (t) => t >= minTime && t <= maxTime;
 
-    const markers = trades
-      .filter((t) => t.time >= minTime && t.time <= maxTime)
-      .map((t) => ({
-        time: toTimePoint({ time: t.time }, range),
-        position: t.direction === "long" ? "belowBar" : "aboveBar",
-        color: t.direction === "long" ? cssVar("--support") : cssVar("--resistance"),
-        shape: t.direction === "long" ? "arrowUp" : "arrowDown",
-        text: t.direction === "long" ? "Long" : "Short",
-      }))
-      .sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0));
+    const markers = [];
+    for (const t of trades) {
+      if (inRange(t.time)) {
+        markers.push({
+          time: toTimePoint({ time: t.time }, range),
+          position: t.direction === "long" ? "belowBar" : "aboveBar",
+          color: t.direction === "long" ? cssVar("--support") : cssVar("--resistance"),
+          shape: t.direction === "long" ? "arrowUp" : "arrowDown",
+          text: t.direction === "long" ? "Long" : "Short",
+        });
+      }
+      if (t.exitPrice != null && t.exitTime != null && inRange(t.exitTime)) {
+        const pnl = tradePnl(t, null);
+        const profitable = pnl ? pnl.usd >= 0 : null;
+        markers.push({
+          time: toTimePoint({ time: t.exitTime }, range),
+          position: t.direction === "long" ? "aboveBar" : "belowBar",
+          color: profitable === null ? cssVar("--accent") : profitable ? cssVar("--support") : cssVar("--resistance"),
+          shape: "circle",
+          text: "Exit",
+        });
+      }
+    }
+    markers.sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0));
 
     tradeMarkersPlugin.setMarkers(markers);
   }
@@ -1215,16 +1238,68 @@
   function deleteTrade(asset, id) {
     saveTrades(asset, loadTrades(asset).filter((t) => t.id !== id));
     renderTradeMarkers(state.asset, state.range, activeCandles);
-    renderTradesTable(asset);
+    renderTradesTable(asset, lastLivePrice);
   }
 
-  function renderTradesTable(asset) {
+  // Mirrors the real formula: margin (size) x leverage = notional
+  // position, so a % move in price becomes a leveraged % move on the
+  // margin actually put up - the standard retail-perp mental model, same
+  // one the liquidation estimate's own math (entry * (1 +/- 1/leverage))
+  // is built on. An open trade's reference price is the live price (so
+  // this moves every poll tick); a closed one's is frozen at its own
+  // exitPrice forever, regardless of what currentPrice is passed in -
+  // that's what "closed" means.
+  function tradePnl(trade, currentPrice) {
+    if (!trade.size || !trade.leverage) return null;
+    const referencePrice = trade.exitPrice != null ? trade.exitPrice : currentPrice;
+    if (referencePrice === null || referencePrice === undefined) return null;
+    const priceChangePct =
+      trade.direction === "long"
+        ? (referencePrice - trade.price) / trade.price
+        : (trade.price - referencePrice) / trade.price;
+    return {
+      usd: trade.size * trade.leverage * priceChangePct,
+      pct: trade.leverage * priceChangePct * 100,
+      isRealized: trade.exitPrice != null,
+    };
+  }
+
+  function startClosingTrade(id) {
+    closingTradeId = id;
+    renderTradesTable(state.asset, lastLivePrice);
+  }
+
+  function cancelClosingTrade() {
+    closingTradeId = null;
+    renderTradesTable(state.asset, lastLivePrice);
+  }
+
+  function confirmCloseTrade(asset, id, exitPrice) {
+    if (!Number.isFinite(exitPrice) || exitPrice <= 0) return;
+    const trades = loadTrades(asset);
+    const trade = trades.find((t) => t.id === id);
+    if (!trade) return;
+    trade.exitPrice = exitPrice;
+    trade.exitTime = Math.floor(Date.now() / 1000);
+    saveTrades(asset, trades);
+    closingTradeId = null;
+    renderTradeMarkers(state.asset, state.range, activeCandles);
+    renderTradesTable(asset, lastLivePrice);
+  }
+
+  function deleteTrade(asset, id) {
+    saveTrades(asset, loadTrades(asset).filter((t) => t.id !== id));
+    renderTradeMarkers(state.asset, state.range, activeCandles);
+    renderTradesTable(asset, lastLivePrice);
+  }
+
+  function renderTradesTable(asset, currentPrice) {
     const tbody = document.getElementById("trades-table-body");
     tbody.innerHTML = "";
 
     const trades = [...loadTrades(asset)].sort((a, b) => b.time - a.time);
     if (!trades.length) {
-      tbody.innerHTML = `<tr><td colspan="5">No trades marked yet for ${asset.toUpperCase()}.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9">No trades marked yet for ${asset.toUpperCase()}.</td></tr>`;
       return;
     }
 
@@ -1235,18 +1310,68 @@
         timeStyle: "short",
       });
       const directionColor = trade.direction === "long" ? "var(--support)" : "var(--resistance)";
+      const exitText = trade.exitPrice != null ? formatPriceRange(trade.exitPrice, trade.exitPrice) : "—";
+      const sizeText = trade.size ? `$${trade.size.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "—";
+      const leverageText = trade.leverage ? `${trade.leverage}x` : "—";
+
+      const pnl = tradePnl(trade, currentPrice);
+      let pnlText = "—";
+      let pnlColor = "var(--text-muted)";
+      if (pnl) {
+        const sign = pnl.usd >= 0 ? "+" : "";
+        const suffix = pnl.isRealized ? "" : " (live)";
+        pnlText = `${sign}$${pnl.usd.toLocaleString(undefined, { maximumFractionDigits: 2 })} (${sign}${pnl.pct.toFixed(1)}%)${suffix}`;
+        pnlColor = pnl.usd >= 0 ? "var(--support)" : "var(--resistance)";
+      }
+
       tr.innerHTML = `
         <td>${dateText}</td>
         <td class="type-cell" style="color: ${directionColor}">${trade.direction}</td>
         <td>${formatPriceRange(trade.price, trade.price)}</td>
+        <td>${exitText}</td>
+        <td>${sizeText}</td>
+        <td>${leverageText}</td>
+        <td class="trade-pnl-cell" style="color: ${pnlColor}">${pnlText}</td>
         <td class="trade-note-cell">${trade.description ? escapeHtml(trade.description) : "—"}</td>
         <td></td>
       `;
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "trade-delete-btn";
-      deleteBtn.textContent = "Delete";
-      deleteBtn.addEventListener("click", () => deleteTrade(asset, trade.id));
-      tr.lastElementChild.appendChild(deleteBtn);
+      const actionsCell = tr.lastElementChild;
+
+      if (closingTradeId === trade.id) {
+        actionsCell.className = "trade-close-cell";
+        const input = document.createElement("input");
+        input.type = "number";
+        input.step = "any";
+        input.inputMode = "decimal";
+        input.placeholder = "Exit price";
+        input.className = "trade-close-input";
+        const confirmBtn = document.createElement("button");
+        confirmBtn.className = "trade-close-confirm-btn";
+        confirmBtn.textContent = "Confirm";
+        const doConfirm = () => confirmCloseTrade(asset, trade.id, parseFloat(input.value));
+        confirmBtn.addEventListener("click", doConfirm);
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") doConfirm();
+        });
+        const cancelBtn = document.createElement("button");
+        cancelBtn.className = "trade-close-cancel-btn";
+        cancelBtn.textContent = "Cancel";
+        cancelBtn.addEventListener("click", cancelClosingTrade);
+        actionsCell.append(input, confirmBtn, cancelBtn);
+      } else {
+        if (trade.exitPrice == null) {
+          const closeBtn = document.createElement("button");
+          closeBtn.className = "trade-close-btn";
+          closeBtn.textContent = "Close";
+          closeBtn.addEventListener("click", () => startClosingTrade(trade.id));
+          actionsCell.appendChild(closeBtn);
+        }
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "trade-delete-btn";
+        deleteBtn.textContent = "Delete";
+        deleteBtn.addEventListener("click", () => deleteTrade(asset, trade.id));
+        actionsCell.appendChild(deleteBtn);
+      }
       tbody.appendChild(tr);
     }
   }
@@ -1295,12 +1420,21 @@
       const direction = e.currentTarget.dataset.direction;
       if (!pendingTrade || !direction) return;
 
+      // Size/leverage are optional - a trade with neither still saves fine,
+      // it just won't show a live P&L (nothing to compute one from).
+      const sizeRaw = parseFloat(document.getElementById("trade-form-size").value);
+      const leverageRaw = parseFloat(document.getElementById("trade-form-leverage").value);
+      const size = Number.isFinite(sizeRaw) && sizeRaw > 0 ? sizeRaw : null;
+      const leverage = Number.isFinite(leverageRaw) && leverageRaw >= 1 ? leverageRaw : null;
+
       const trades = loadTrades(state.asset);
       trades.push({
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         time: pendingTrade.time,
         price: pendingTrade.price,
         direction,
+        size,
+        leverage,
         description: document.getElementById("trade-form-description").value.trim(),
         createdAt: new Date().toISOString(),
       });
@@ -1308,7 +1442,7 @@
 
       closeTradeForm();
       renderTradeMarkers(state.asset, state.range, activeCandles);
-      renderTradesTable(state.asset);
+      renderTradesTable(state.asset, lastLivePrice);
     });
   }
 
@@ -1755,8 +1889,9 @@
       renderLevels(levelsData.levels);
 
       activeCandles = candles;
+      lastLivePrice = levelsData.price;
       renderTradeMarkers(asset, range, candles);
-      renderTradesTable(asset);
+      renderTradesTable(asset, lastLivePrice);
 
       // The scorecard and proximity curve are nice-to-haves, not core - if
       // either is missing (first rollout before a backtest has run, or a
