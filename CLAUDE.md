@@ -440,6 +440,26 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   actually see it" - confirm the second one with an actual rendered
   screenshot, not a style readback, especially for anything opacity- or
   intensity-based.**
+- **Redesigned as a real background heatmap after the visibility fix
+  shipped.** The two-thin-columns-near-the-axis layout was a design
+  mismatch, not a bug - the user sent a Coinglass-style reference
+  screenshot (full-width horizontal color bands sitting behind the
+  candles) and said a side strip "doesn't help." Rebuilt around that
+  reference: `.liquidation-row` is now one full-width div per bin
+  (`left:0; right:<axisWidth>`), one color per row (whichever side -
+  long or short - has the higher intensity there) rather than two
+  overlapping red+green tints, which read as visual mud rather than
+  information. All rows render into a single `.liquidation-heatmap-layer`
+  wrapper (created once, cached in `liquidationLayerEl`, reused across
+  renders) with `filter: blur(10px)` - individual bins are only ~4px
+  tall at typical zoom and without the blur looked like a stack of extra
+  gridlines, not a heatmap; blurring blends neighbors into the soft,
+  continuous gradient the reference image actually has. Also added
+  `LIQUIDATION_MIN_OPACITY` (0.1) so cold areas still carry a faint tint
+  instead of fading to nothing - a real heatmap colors its whole range,
+  not just the hot spots. z-index stays below the chart's own canvas
+  (`z-index: 0` vs the canvas's `2`) so candles/grid draw on top, exactly
+  like the reference.
 
 ---
 

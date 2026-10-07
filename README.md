@@ -189,7 +189,7 @@ the real ~0.0008%). And Kraken Futures pays funding **hourly**, not every
 8 hours like most exchanges — the site labels it "/hr" explicitly so it
 isn't misread against an 8h mental model.
 
-## Liquidation estimate (the green/red heat strip)
+## Liquidation estimate (the green/red background heatmap)
 
 **This is a model, not real position data** — no exchange, Kraken
 included, publishes actual entry prices or leverage, so nothing can show
@@ -214,13 +214,18 @@ The result (`src/levels/liquidation_estimate.py`, baked into
 `{asset}_levels.json` as `liquidation_estimate`) is a **relative**
 density, not an absolute size — a bin twice as "hot" as another means
 twice as much real volume projects a liquidation there, not "twice as
-many dollars" or "this will definitely happen." Rendered as two thin
-columns docked against the price axis (green = estimated long
-liquidations, red = estimated short), capped to within 25% of the
-current price so it doesn't extrapolate off into irrelevant territory.
-Treat it the way you'd treat any third-party liquidation heatmap: a
-plausible read on where crowded leverage might sit, built transparently
-from real data plus one stated, simple assumption — not a fact.
+many dollars" or "this will definitely happen." Rendered as a soft,
+blurred wash across the full width of the chart, sitting behind the
+candles the same way a Coinglass-style heatmap does — not a sidebar or
+a strip off to the edge. Green rows mean estimated long liquidations
+dominate at that price, red means short; brightness carries the
+modeled intensity, rescaled against whatever's actually in view so a
+far-away hotspot never makes your current screen look falsely cold.
+Capped to within 25% of the current price so it doesn't extrapolate off
+into irrelevant territory. Treat it the way you'd treat any third-party
+liquidation heatmap: a plausible read on where crowded leverage might
+sit, built transparently from real data plus one stated, simple
+assumption — not a fact.
 
 ## Trade journal
 

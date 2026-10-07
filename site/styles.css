@@ -374,25 +374,32 @@ main {
   outline-offset: 1px;
 }
 
-/* the liquidation-estimate heat strip - two thin columns docked against
-   the price axis, one per side, opacity carrying the modeled intensity */
-.liquidation-bar {
+/* the liquidation-estimate heatmap - one full-width translucent row per
+   bin, sitting BEHIND the candles/grid (the chart's own canvas is
+   z-index: 2) so it reads as a real background wash, not a foreground
+   overlay - opacity carries the modeled intensity. The rows themselves
+   are thin (one per narrow price bin) and would look like a stack of
+   crisp gridlines rather than a heatmap; blurring the whole layer
+   blends neighboring bins into the soft, continuous gradient a real
+   heatmap reads as. */
+.liquidation-heatmap-layer {
   position: absolute;
+  inset: 0;
   pointer-events: none;
-  /* The chart's own canvas sits at z-index: 2 - kept this above it to be
-     safe, though the real reason these bars were hard to see turned out
-     to be opacity scaling (see renderLiquidationHeatmap), not paint
-     order: elementFromPoint can't actually see pointer-events:none
-     elements like these at all, so it couldn't confirm or rule out a
-     paint-order problem either way. */
-  z-index: 3;
+  z-index: 0;
+  filter: blur(10px);
 }
 
-.liquidation-bar.short {
+.liquidation-row {
+  position: absolute;
+  left: 0;
+}
+
+.liquidation-row.short {
   background: var(--resistance);
 }
 
-.liquidation-bar.long {
+.liquidation-row.long {
   background: var(--support);
 }
 

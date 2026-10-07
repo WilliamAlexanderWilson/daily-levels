@@ -173,6 +173,7 @@
   let activeProximity = null;
   let activeLiquidationBins = []; // {price_low, price_high, long_intensity, short_intensity} - a model, not real position data, see renderLiquidationHeatmap()
   const liquidationEls = []; // kept separate from overlayEls - purely visual, never clickable/decluttered/part of currentMarkers
+  let liquidationLayerEl = null; // the blurred wrapper all liquidation rows render into, created once and reused
   let tradeMarkersPlugin = null;
   let activeCandles = []; // current timeframe's loaded candles, so trade markers can be bounds-checked
   let markingMode = false;
@@ -457,16 +458,29 @@
     return yLow >= 0 && yHigh <= containerHeight;
   }
 
-  const LIQUIDATION_BAR_WIDTH_PX = 16;
-  const LIQUIDATION_MAX_OPACITY = 0.9;
+  const LIQUIDATION_MAX_OPACITY = 0.55;
+  const LIQUIDATION_MIN_OPACITY = 0.1; // a real heatmap colors its coldest areas too, not just the hot spots
 
-  // Two thin heat-strip columns docked against the price axis (short/red
-  // against the axis itself, long/green just inboard of it) - deliberately
-  // NOT part of currentMarkers: there can be 100+ bins, and treating them
-  // as clickable/decluttered "levels" the way real levels are would wreck
-  // that system and the table/dropdown. Purely a background visual, same
-  // as the always-on current-price line - unaffected by isolate.
+  // A real background heatmap, not a side gutter - the user pointed at a
+  // Coinglass-style screenshot (full-width horizontal bands sitting
+  // behind the candles) and said a narrow strip off to the side "doesn't
+  // help." Each bin becomes one full-width translucent row, z-indexed
+  // below the chart's own canvas so candles/grid draw on top of it, same
+  // as the reference image. One color per row (whichever side - long or
+  // short - is hotter there), not two overlapping tints: real liquidation
+  // heatmaps read as a single clean gradient, and overlapping red+green
+  // at partial opacity turns to visual mud rather than information.
+  // Deliberately NOT part of currentMarkers: there can be 100+ bins, and
+  // treating them as clickable/decluttered "levels" the way real levels
+  // are would wreck that system and the table/dropdown. Purely a
+  // background visual, same as the always-on current-price line -
+  // unaffected by isolate.
   function renderLiquidationHeatmap(container) {
+    if (!liquidationLayerEl) {
+      liquidationLayerEl = document.createElement("div");
+      liquidationLayerEl.className = "liquidation-heatmap-layer";
+      container.appendChild(liquidationLayerEl);
+    }
     for (const el of liquidationEls) el.remove();
     liquidationEls.length = 0;
     if (!activeLiquidationBins.length || !candleSeries) return;
@@ -495,37 +509,23 @@
       Math.max(...visible.flatMap((v) => [v.bin.long_intensity, v.bin.short_intensity])) || 1;
 
     const axisWidth = candleSeries.priceScale().width();
-    const shortRight = axisWidth;
-    const longRight = axisWidth + LIQUIDATION_BAR_WIDTH_PX;
 
     for (const { bin, yTop, yBottom } of visible) {
       const height = Math.max(1, yBottom - yTop);
+      const isLong = bin.long_intensity >= bin.short_intensity;
+      const magnitude = isLong ? bin.long_intensity : bin.short_intensity;
+      if (magnitude <= 0) continue;
 
-      if (bin.short_intensity > 0) {
-        const bar = document.createElement("div");
-        bar.className = "liquidation-bar short";
-        bar.style.top = `${yTop}px`;
-        bar.style.height = `${height}px`;
-        bar.style.right = `${shortRight}px`;
-        bar.style.width = `${LIQUIDATION_BAR_WIDTH_PX}px`;
-        bar.style.opacity = Math.min(1, bin.short_intensity / visiblePeak) * LIQUIDATION_MAX_OPACITY;
-        bar.title = `Est. short liquidations near ${formatPriceRange(bin.price_low, bin.price_high)} (modeled, not real position data)`;
-        container.appendChild(bar);
-        liquidationEls.push(bar);
-      }
-
-      if (bin.long_intensity > 0) {
-        const bar = document.createElement("div");
-        bar.className = "liquidation-bar long";
-        bar.style.top = `${yTop}px`;
-        bar.style.height = `${height}px`;
-        bar.style.right = `${longRight}px`;
-        bar.style.width = `${LIQUIDATION_BAR_WIDTH_PX}px`;
-        bar.style.opacity = Math.min(1, bin.long_intensity / visiblePeak) * LIQUIDATION_MAX_OPACITY;
-        bar.title = `Est. long liquidations near ${formatPriceRange(bin.price_low, bin.price_high)} (modeled, not real position data)`;
-        container.appendChild(bar);
-        liquidationEls.push(bar);
-      }
+      const row = document.createElement("div");
+      row.className = `liquidation-row ${isLong ? "long" : "short"}`;
+      row.style.top = `${yTop}px`;
+      row.style.height = `${height}px`;
+      row.style.right = `${axisWidth}px`;
+      const relative = Math.min(1, magnitude / visiblePeak);
+      row.style.opacity = LIQUIDATION_MIN_OPACITY + relative * (LIQUIDATION_MAX_OPACITY - LIQUIDATION_MIN_OPACITY);
+      row.title = `Est. ${isLong ? "long" : "short"} liquidations near ${formatPriceRange(bin.price_low, bin.price_high)} (modeled, not real position data)`;
+      liquidationLayerEl.appendChild(row);
+      liquidationEls.push(row);
     }
   }
 
