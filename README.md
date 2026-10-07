@@ -167,6 +167,40 @@ across every round number the price actually traded near over the full
 replay — dozens of distinct values per asset, not just whatever's current
 today.
 
+## Futures context (funding rate, open interest)
+
+`src/context/futures.py` fetches Kraken Futures' aggregate perpetual data
+server-side, once a day, and bakes it into `{asset}_levels.json` as
+`futures_context` — read directly off the already-loaded levels JSON on
+the site, no extra client-side fetch. It's server-side because the
+endpoint (`futures.kraken.com/derivatives/api/v3/tickers`) sends **no
+CORS header at all** (checked directly), unlike every other Kraken
+endpoint this project uses.
+
+Two things worth knowing if you touch this: the ticker's `fundingRate`
+field is **not a percentage** — it's an absolute rate (BTC per $1 contract
+per hour); `relativeFundingRate` is the field exchanges actually display
+as "the funding rate" (confirmed against Kraken's docs and a live
+response — using the wrong field would show a nonsensical ~60% instead of
+the real ~0.0008%). And Kraken Futures pays funding **hourly**, not every
+8 hours like most exchanges — the site labels it "/hr" explicitly so it
+isn't misread against an 8h mental model.
+
+## Trade journal
+
+Mark a trade by clicking "+ Mark trade" above the chart, then clicking
+where you got in — a small form asks for long/short and an optional note,
+and `site/app.js` saves it to **this browser's localStorage**, keyed per
+asset. There's no server or account involved, so it won't follow you to a
+different browser or device, and clearing site data wipes it (a
+deliberate tradeoff — the alternative was a real backend). Markers render
+on the chart via lightweight-charts' `createSeriesMarkers` plugin API
+(v5's replacement for v4's `series.setMarkers`), and a trade is stored by
+a canonical unix timestamp rather than whatever display format the active
+timeframe happened to use at click time, so it renders correctly on any
+timeframe later, as long as that timeframe's currently-loaded candles
+actually cover it.
+
 **Proximity curve** (`src/backtest/round_proximity.py`,
 `{asset}_round_proximity.json`): re-runs the round-number touch/hold/break
 classification at 6 tolerance widths instead of 1 (100%/50%/25%/10%/5%/2%

@@ -93,6 +93,7 @@ src/
     golden_pocket.py         # 0.618-0.65 retracement of the most recent qualifying leg
     reference_levels.py      # prior week/month high-low, current week/month open
     flip_level.py             # old resistance/support flipped the other way
+    round_numbers.py           # psychological whole-number levels, scaled to price magnitude
     confluence.py             # merges nearby levels, tags type/distance/strength
     daily_diff.py              # new/moved/unchanged/removed vs. the prior snapshot
     engine.py                  # orchestrates all of the above per asset (live, 4h+daily)
@@ -101,16 +102,22 @@ src/
     replay.py                  # day-by-day replay with the no-lookahead guarantee
     outcomes.py                 # touch/hold/break classification for one level
     scorecard.py                 # aggregates outcomes per level type per asset
+    round_proximity.py           # hold rate at 6 tolerance tiers around a round number
     cli.py                        # entry point: python -m src.backtest.cli
+  context/
+    futures.py                 # open interest + funding rate, server-side (no CORS on Kraken's side)
 tests/                        # hand-built fixtures + one real-Kraken-response fixture
 site/
-  index.html / styles.css / app.js   # live chart (polls Kraken directly) + renders levels/scorecard/diff
+  index.html / styles.css / app.js   # live chart (polls Kraken directly) + renders levels/scorecard/diff/trades
   data/                       # JSON the Action writes; the page reads levels/scorecard from here
     history/{btc,eth}/YYYY-MM-DD.json   # one snapshot per day, feeds daily_diff
 .github/workflows/
   update-levels.yml          # daily cron: level engine + backtest + commit + Pages deploy, all one job
   deploy-pages.yml           # redeploys Pages on a direct push to site/** (editing the site by hand)
 ```
+
+Trade journal (`site/app.js`) saves to the browser's localStorage, not the
+repo — there's nothing server-side to list here for it.
 
 ---
 
@@ -129,7 +136,8 @@ GitHub Action, Pages deployment.
 | Daily diff | ✅ Built. `src/levels/daily_diff.py`, new/moved/unchanged/removed badges on the site. |
 | Multi-range volume profile agreement (30/60/120d) | ❌ Not built. |
 | Telegram morning brief + proximity alerts | ❌ Not built — needs the user to create a Telegram bot and provide a token via GitHub Secrets before this can start. |
-| Context strip (funding rate, 10Y yield, BTC dominance) | ❌ Not built — needs new free data sources, not yet researched. |
+| Context strip: funding rate + open interest | ✅ Built. `src/context/futures.py`, server-side (daily job), no CORS on the browser side. |
+| Context strip: 10Y yield, BTC dominance | ❌ Not built — needs new free data sources, not yet researched. |
 
 Also built, beyond the original Phase 1/2 spec, in response to live usage:
 - **Live chart**, independent of the daily snapshot — 1m/5m/15m/30m/1h/4h/Daily
@@ -170,13 +178,23 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   bids/asks right now. `fetchOrderBookWalls` in `site/app.js` takes the
   top 3 per side that are at least 2x the book's median size, polled on
   the same 15s cadence as the live candle, rendered as thin teal lines
-  with size labels. Note: Kraken Futures' open-interest/funding endpoint
+  with size labels. Kraken Futures' open-interest/funding endpoint
   (`futures.kraken.com/derivatives/api/v3/tickers`) has **no CORS header
-  at all** (checked the raw response headers directly) - that data isn't
-  fetchable live from the browser. If it gets added, it has to go through
-  the daily Python engine (server-side fetch, no CORS issue there) and
-  get baked into the once-a-day snapshot, not the live poll. Not built
-  yet.
+  at all** (checked the raw response headers directly) - not fetchable
+  live from the browser, so it's a separate feature (below), fetched
+  server-side once a day instead of polled live.
+- **Futures context** (`src/context/futures.py`) — open interest + perp
+  funding rate, fetched server-side in the daily job (the CORS gap above)
+  and baked into `{asset}_levels.json` as `futures_context`, read directly
+  off the already-loaded levels JSON with no extra client fetch. Real unit
+  gotcha caught before shipping: the ticker's `fundingRate` field is
+  **not a percentage** - it's BTC-per-$1-contract-per-hour; using it
+  directly would have shown a nonsensical ~60% "funding rate" instead of
+  the real ~0.0008%. `relativeFundingRate` is the field exchanges actually
+  display as "the funding rate" (verified against Kraken's own docs and a
+  live response). Also: Kraken Futures pays funding **hourly**, not every
+  8h like most exchanges - labeled explicitly on the site so it doesn't
+  get misread against an 8h mental model.
 - A refresh button next to the levels timestamp — re-fetches without a
   full reload. Explicitly does NOT trigger new computation (the site is
   static, no server) - see the daily-run gating gotcha below for what

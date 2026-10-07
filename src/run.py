@@ -22,6 +22,7 @@ import os
 import pandas as pd
 
 import config
+from src.context.futures import fetch_futures_context
 from src.levels.engine import build_asset_levels
 from src.output import write_asset_outputs
 
@@ -55,6 +56,17 @@ def main() -> int:
         try:
             print(f"Running engine for {asset_key} ({pair})...")
             engine_result = build_asset_levels(pair)
+
+            # Futures context (open interest, funding rate) has no CORS
+            # header on Kraken's side, so it can't be fetched live from the
+            # browser like everything else - fetched here instead, server
+            # side, and baked into the same once-a-day snapshot. Fails
+            # gracefully to None (omitted from the output) without
+            # affecting the level engine's own result.
+            context = fetch_futures_context(asset_key)
+            if context is not None:
+                engine_result["result"]["futures_context"] = context
+
             write_asset_outputs(asset_key, engine_result)
             n_levels = len(engine_result["result"]["levels"])
             price = engine_result["result"]["price"]

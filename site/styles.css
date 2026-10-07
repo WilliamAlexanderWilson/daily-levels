@@ -205,6 +205,22 @@ main {
   50% { opacity: 0.3; }
 }
 
+.futures-context {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.3rem 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.futures-context strong {
+  color: var(--text);
+}
+
 .nearest-levels {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;

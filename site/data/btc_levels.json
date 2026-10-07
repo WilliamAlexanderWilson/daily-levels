@@ -1,6 +1,6 @@
 {
-  "generated_at_utc": "2026-10-07T01:35:45.306619+00:00",
-  "generated_at_central": "2026-10-06T20:35:45.306619-05:00",
+  "generated_at_utc": "2026-10-07T03:53:08.580136+00:00",
+  "generated_at_central": "2026-10-06T22:53:08.580136-05:00",
   "price": 85542.1,
   "config": {
     "range_days": 60,
@@ -115,6 +115,14 @@
     "leg_start_date": "2026-09-15T00:00:00+00:00",
     "leg_end_price": 87446.7,
     "leg_end_date": "2026-09-21T00:00:00+00:00"
+  },
+  "futures_context": {
+    "symbol": "PF_XBTUSD",
+    "mark_price": 84205.82345809648,
+    "open_interest": 2169.126,
+    "volume_24h": 4095.6208,
+    "funding_rate_hourly_pct": -0.0008014016666667,
+    "funding_rate_prediction_hourly_pct": -2.16866666667e-05
   },
   "diff": [
     {

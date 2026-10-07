@@ -1112,6 +1112,42 @@
     }
   }
 
+  // Kraken Futures' open-interest/funding endpoint has no CORS header at
+  // all (checked the raw response headers directly) - can't be polled
+  // live from the browser like everything else, so this comes from the
+  // once-a-day snapshot instead (fetched server-side in the daily Action).
+  // Kraken Futures pays funding hourly, not every 8h like most exchanges -
+  // labeled explicitly so it isn't misread against an 8h-funding mental
+  // model from other exchanges.
+  function renderFuturesContext(context) {
+    const el = document.getElementById("futures-context");
+    if (!context) {
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
+
+    const fundingPct = context.funding_rate_hourly_pct;
+    const fundingText =
+      fundingPct === null || fundingPct === undefined
+        ? "—"
+        : `${fundingPct >= 0 ? "+" : ""}${fundingPct.toFixed(4)}%/hr`;
+
+    const oiAsset = context.open_interest;
+    const oiUsd = oiAsset !== null && oiAsset !== undefined && context.mark_price ? oiAsset * context.mark_price : null;
+    const oiText =
+      oiAsset === null || oiAsset === undefined
+        ? "—"
+        : `${oiAsset.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${state.asset.toUpperCase()}${
+            oiUsd ? ` (~$${(oiUsd / 1_000_000).toFixed(1)}M)` : ""
+          }`;
+
+    el.innerHTML = `
+      <span>Perp funding: <strong>${fundingText}</strong></span>
+      <span>Open interest: <strong>${oiText}</strong></span>
+    `;
+  }
+
   // --- scorecard table ---
 
   function renderScorecardTable(scorecard) {
@@ -1208,6 +1244,7 @@
       if (state.asset !== asset || state.range !== range) return;
 
       renderHeader(levelsData);
+      renderFuturesContext(levelsData.futures_context);
       renderChart(candles, range, levelsData.config.range_days);
       renderLevels(levelsData.levels);
 

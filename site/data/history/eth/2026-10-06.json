@@ -1,6 +1,6 @@
 {
-  "generated_at_utc": "2026-10-07T01:35:45.753052+00:00",
-  "generated_at_central": "2026-10-06T20:35:45.753052-05:00",
+  "generated_at_utc": "2026-10-07T03:53:09.759239+00:00",
+  "generated_at_central": "2026-10-06T22:53:09.759239-05:00",
   "price": 2697.24,
   "config": {
     "range_days": 60,
@@ -115,6 +115,14 @@
     "leg_start_date": "2026-09-15T00:00:00+00:00",
     "leg_end_price": 2806.69,
     "leg_end_date": "2026-09-21T00:00:00+00:00"
+  },
+  "futures_context": {
+    "symbol": "PF_ETHUSD",
+    "mark_price": 2614.17110220004,
+    "open_interest": 29678.743,
+    "volume_24h": 47366.508,
+    "funding_rate_hourly_pct": -0.0011812495833333,
+    "funding_rate_prediction_hourly_pct": 0.00050716375
   },
   "diff": [
     {
