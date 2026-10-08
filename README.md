@@ -357,6 +357,75 @@ The browser-side `fetchKrakenCandles` in `site/app.js` has its own,
 separate retry logic for the live chart — see "The live chart vs. the
 daily levels" above.
 
+## SPY: exhaustion-reversal options backtest
+
+SPY gets fundamentally different treatment than BTC/ETH — it isn't a level
+map, it's a mechanical backtest of one user-described intraday options
+setup: on Heikin-Ashi candles (10m/15m/20m/30m) during 10:00–12:00 ET, a
+run of same-direction candles followed by a doji/exhaustion candle whose
+rejection-side wick exceeds the full range of at least one trend candle
+before it, entered as an ATM option 2 trading days out, targeting +20% /
+stopping at -10% of the option's premium.
+
+**Data source: Alpaca for SPY, Yahoo for VIX — not Kraken.** SPY is a
+stock, so `src/spy/fetch.py` pulls 5-minute SPY bars from Alpaca's market
+data API (`data.alpaca.markets`, free IEX feed, needs a free API key - see
+below) and daily VIX closes from Yahoo's public chart endpoint (no key,
+daily-only history has no rolling-window cap the way Yahoo's intraday data
+does). Neither is pollable live from the browser — Alpaca needs an auth
+header, and Yahoo's intraday endpoint sends no CORS header (confirmed
+live) — so the chart, signal markers, and backtest table are baked once
+per cron run into `site/data/spy_*.json`, same staleness as everything
+else on this site. There's no live SPY ticking the way there is for
+crypto.
+
+**Alpaca needs `ALPACA_API_KEY` / `ALPACA_SECRET_KEY`.** Free account at
+alpaca.markets (Trading API, not Broker API — the latter is for building a
+brokerage product for other people's customers), data-only key, no funding
+needed. Locally, put both in a gitignored `.env` file in the repo root
+(`src/spy/fetch.py` loads it automatically, never overwriting a real
+environment variable if one's already set). In CI, set them as repo
+secrets (Settings → Secrets and variables → Actions) — `update-levels.yml`
+passes them through as env vars to the SPY export step.
+
+**Sample depth vs. chart display are two different numbers, on purpose.**
+Signal detection and the backtest run on `ALPACA_HISTORY_DAYS` (~2 years,
+`src/spy/fetch.py`) of real 5-minute data — confirmed live, Alpaca's free
+IEX feed actually goes back to at least 2016, genuinely paginated via
+`next_page_token` rather than truncated to a rolling window the way
+Yahoo's intraday endpoint is. But the exported CHART only shows the most
+recent `CHART_DISPLAY_DAYS` (60, `src/spy/export.py`) of each timeframe:
+two years of 10-minute candles would be both an enormous JSON payload
+committed to git on every 3-hour cron run and visually unreadable as a
+candlestick chart. The signal history table and backtest stats reflect the
+full ~2-year window regardless of what the chart draws — a signal older
+than 60 days just won't have a marker on the visible chart, same
+bounds-checking pattern the crypto trade journal already uses for markers
+outside the loaded candle range.
+
+**Premiums are modeled, not real quotes.** No free source publishes
+historical SPY options chains, so `src/spy/options_pricing.py` prices the
+ATM 2-trading-day option with Black-Scholes, using the daily VIX close as a
+stand-in for SPY's own short-dated implied vol (not the same number, just
+the best free proxy). This is the single biggest source of error versus
+real fills — short-dated ATM options carry extreme gamma, and small
+differences between modeled and real IV can matter a lot over a 20%/10%
+band. Treat the backtest as a directional read on the setup, not a precise
+win rate.
+
+**Timeframe confluence is reported, not assumed.** "Watching 4 timeframes"
+didn't specify whether all 4 must agree, a majority, or just one — rather
+than guess, `src/spy/exhaustion_signal.py` tags every signal with how many
+of the 4 timeframes confirm it at that moment, and the backtest table on
+the site reports results at every threshold (1+, 2+, 3+, 4) side by side.
+
+Pipeline: `src/spy/fetch.py` (Alpaca + VIX) → `src/spy/heikin_ashi.py`
+(resample + HA transform) → `src/spy/exhaustion_signal.py` (signal
+detection) → `src/spy/backtest.py` (Black-Scholes trade simulation,
+target/stop/expiry) → `src/spy/export.py` (writes the static JSON). Run it
+by hand with `python -m src.spy.export`, or see the backtest-only CLI
+output (one run, no JSON write) with `python -m src.spy.cli`.
+
 ## Repo layout
 
 ```
@@ -381,6 +450,14 @@ src/
     outcomes.py                 # touch/hold/break classification for one level
     scorecard.py                 # aggregates outcomes per level type per asset
     cli.py                        # entry point: python -m src.backtest.cli
+  spy/                         # SPY exhaustion-reversal options backtest — Alpaca+Yahoo, not Kraken, different rules entirely
+    fetch.py                    # Alpaca 5m SPY candles (~2y, needs ALPACA_API_KEY/SECRET) + Yahoo daily VIX
+    heikin_ashi.py                # 5m -> 10m/15m/20m/30m resample (anchored to 9:30 ET open) + HA transform
+    exhaustion_signal.py           # doji/trend-wick signal detection, tags confluence count rather than assuming one
+    options_pricing.py              # Black-Scholes, VIX as an IV proxy — a model, not real quotes
+    backtest.py                      # simulates the ATM 2-trading-day option to target/stop/expiry
+    export.py                         # entry point: python -m src.spy.export — writes site/data/spy_*.json
+    cli.py                             # entry point: python -m src.spy.cli — prints results, no JSON write
 tests/                        # unit tests with hand-built fixtures + one real-response fixture
 site/                         # static HTML/CSS/JS, hosted on GitHub Pages
   app.js                     # live chart (direct Kraken polling) + renders the daily levels/scorecard

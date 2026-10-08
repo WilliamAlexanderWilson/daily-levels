@@ -106,6 +106,14 @@ src/
     cli.py                        # entry point: python -m src.backtest.cli
   context/
     futures.py                 # open interest + funding rate, server-side (no CORS on Kraken's side)
+  spy/                        # SPY exhaustion-reversal options backtest — Alpaca+Yahoo, not Kraken, own rules entirely
+    fetch.py                   # Alpaca 5m SPY candles (~2y, needs ALPACA_API_KEY/SECRET) + Yahoo daily VIX
+    heikin_ashi.py               # 5m -> 10m/15m/20m/30m resample (anchored to 9:30 ET) + HA transform
+    exhaustion_signal.py          # doji/trend-wick signal detection, confluence count reported not assumed
+    options_pricing.py             # Black-Scholes, VIX as an IV proxy — a model, not real quotes
+    backtest.py                     # simulates the ATM 2-trading-day option to target/stop/expiry
+    export.py                        # entry point: python -m src.spy.export — writes site/data/spy_*.json
+    cli.py                            # entry point: python -m src.spy.cli — prints results, no JSON write
 tests/                        # hand-built fixtures + one real-Kraken-response fixture
 site/
   index.html / styles.css / app.js   # live chart (polls Kraken directly) + renders levels/scorecard/diff/trades
@@ -586,6 +594,61 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   Kraken-only render already completed and pops the deeper history in
   once it's ready, confirmed directly: candle count was ~720 at 0.4s
   after switching to Daily, ~4,000+ by 6.4s.
+- **SPY exhaustion-reversal options backtest** — the user asked to add SPY
+  alongside BTC/ETH, but with its own rules entirely: they described a
+  specific discretionary setup (Heikin-Ashi exhaustion doji after a trend,
+  on 10m/15m/20m/30m, 10am-noon ET, ATM 2DTE option, +20%/-10%) and wanted
+  it backtested for real odds, not turned into a live signal. See "SPY:
+  exhaustion-reversal options backtest" in README.md for the full mechanics
+  and honesty framing (Black-Scholes/VIX as a modeled premium rather than
+  real quotes, confluence reported at every threshold rather than assumed).
+  `src/spy/`, parallel structure to `src/levels/`/`src/backtest/` but
+  talking to Alpaca (SPY bars) and Yahoo (VIX only) instead of Kraken.
+  Three things worth remembering if this gets touched again:
+  - **The first version ran on Yahoo's free intraday endpoint alone, capped
+    at 60 days** (confirmed live - Yahoo truncates intraday history to a
+    rolling window regardless of what's requested) - only 11 signals, too
+    thin to trust. The user explicitly asked to fix the sample size, which
+    meant a second data source: Alpaca's market data API gives real 5-minute
+    bars back to 2016 on its free IEX feed, genuinely paginated via
+    `next_page_token`, for a free API key (no funding/trading needed - see
+    README's "Alpaca needs..." section for the exact setup). That took the
+    sample from 11 signals to 152. One real gotcha hit getting there:
+    Alpaca 403s with "subscription does not permit querying recent SIP
+    data" unless `feed=iex` is passed explicitly - without it, the default
+    feed is SIP, which free accounts can't query near "now" (confirmed
+    live: the identical call succeeds for an all-past date range and fails
+    only once `end` approaches the present).
+  - **A real bug caught by writing tests, not by eyeballing the backtest
+    numbers**: the wick-side check in `exhaustion_signal.py` was backwards
+    on the first pass - checking the lower wick for an uptrend exhaustion
+    and the upper wick for a downtrend one, the opposite of what "rejection
+    at the top of an uptrend / bottom of a downtrend" actually means.
+    Caught while hand-deriving the test fixtures (the expected wick didn't
+    match the scenario being built), not by noticing the live backtest
+    looked wrong - the before/after numbers (91.7%→72.7% stop rate) looked
+    directionally plausible either way, which is exactly why a hand-traced
+    test mattered more than eyeballing output here.
+  - **`[hidden]` wasn't actually hiding anything** - toggling
+    `el.hidden` on `#futures-context`, `#nearest-levels`, `#chart-legend`,
+    etc. (to switch sections between the crypto and SPY views) silently did
+    nothing, because those elements' own CSS already declares
+    `display: flex/grid`, which beats the UA stylesheet's
+    `[hidden] { display: none }` in the normal cascade. Confirmed by
+    reading `el.hidden` (true, correct) right next to a screenshot still
+    showing the BTC content (also real). This was a latent bug in the
+    *existing* crypto-only code too (`futures-context`'s own show/hide was
+    never actually proven broken because `context` happened to always be
+    present) - fixed with one global `[hidden] { display: none !important; }`
+    rule rather than patching each class.
+  SPY has no live polling, unlike BTC/ETH's chart - Alpaca needs an auth
+  header the browser can't send cleanly for a public static site, and
+  Yahoo's chart endpoint (VIX only now) has no CORS header either
+  (confirmed live, same way the Kraken Futures gap above was confirmed),
+  so the chart/signals/backtest table are baked once per cron run
+  (`python -m src.spy.export`, wired into the same
+  `update-levels.yml` as the level engine) rather than ticking in the
+  browser.
 
 ---
 
@@ -669,6 +732,8 @@ python3 -m venv .venv && source .venv/bin/activate && pip install -r requirement
 
 python -m src.run --force        # level engine, writes site/data/
 python -m src.backtest.cli       # scorecard, writes site/data/{asset}_scorecard.json
+python -m src.spy.export         # SPY backtest, writes site/data/spy_*.json — needs ALPACA_API_KEY/SECRET (.env locally)
+python -m src.spy.cli            # same backtest, prints the confluence table, writes nothing
 python -m pytest                 # full test suite
 cd site && python3 -m http.server 8000   # view locally
 
@@ -681,3 +746,37 @@ Every tunable lives there with an inline comment — don't duplicate the
 list here, it'll drift. Worth knowing the sections exist: Exchange,
 Schedule, Volume profile, Swing pivots/golden pocket, Confluence,
 Backtest/scorecard, Daily diff.
+
+## Next up (as of 2026-10-08)
+
+SPY's exhaustion-reversal backtest is built, tested, and verified locally
+(see "Also built" above) but **not live yet** — the GitHub Actions cron
+will fail the SPY export step until the Alpaca secrets exist there too.
+
+1. **Add `ALPACA_API_KEY` / `ALPACA_SECRET_KEY` as GitHub repo secrets**
+   (Settings → Secrets and variables → Actions). Same values as the local
+   `.env`. Without this, `update-levels.yml`'s SPY step fails every run
+   (harmlessly - it's `|| echo ...`-guarded and won't block the BTC/ETH
+   deploy - but `spy_*.json` on the live site will just stay whatever got
+   committed in this local run, never refreshing).
+2. **Trigger `update-levels.yml` manually once the secrets are in**
+   (`gh workflow run update-levels.yml`) and check the SPY export step's
+   log actually succeeds end to end against the real CI environment, not
+   just locally.
+3. **Re-run the trend-length/doji-tightness parameter sweep on the real
+   ~2-year Alpaca sample**, not the old 60-day Yahoo one it was first run
+   against — that earlier sweep (2-5 candle trend × 15-40% doji body) had
+   cells with as few as 3-5 trades; the same sweep against 152+ signals
+   would actually mean something. Loosening to a 2-candle trend looked
+   best on the thin sample; worth confirming that holds up.
+4. **Real options quotes are still an open question** - the user wanted to
+   check whether ThinkOrSwim OnDemand could supply actual historical SPY
+   options chains instead of the Black-Scholes/VIX model. Last status: it
+   looks like an interactive replay tool, not a bulk-export feature, so
+   this is probably blocked without a paid data source (Polygon/Databento)
+   unless the user has a path I don't know about. Ask before assuming
+   either way.
+5. Watch `site/data/spy_chart.json`'s size over the next few real cron
+   runs (committed every ~3h) - it's ~750KB now at 60 display days; if it
+   creeps up, revisit `CHART_DISPLAY_DAYS` in `src/spy/export.py` before
+   repo size becomes its own problem.

@@ -36,6 +36,18 @@
   box-sizing: border-box;
 }
 
+/* Several sections below (.futures-context, .nearest-levels, .chart-legend,
+   etc.) declare their own `display: flex/grid`, which - by normal cascade
+   rules - overrides the UA stylesheet's `[hidden] { display: none }` even
+   though app.js only ever toggles visibility via the `hidden` attribute,
+   never inline style.display. Without this rule those sections silently
+   stay visible despite `el.hidden = true` (confirmed live when adding the
+   SPY view's section toggling). !important here is the standard fix for
+   this exact conflict, not a workaround for something else. */
+[hidden] {
+  display: none !important;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -734,6 +746,24 @@ main {
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+/* The SPY signal history table runs over the full ~2-year Alpaca backtest
+   window (150+ rows) - without a cap the page grows to several screens of
+   nothing but table, same problem a long BTC/ETH scorecard doesn't have
+   since those stay to a handful of level types. thead sticks so the
+   column headers stay visible while scrolling this one table rather than
+   the whole page. */
+#spy-signals-section .table-wrapper {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+#spy-signals-section thead {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
 }
 
 table {

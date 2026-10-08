@@ -60,6 +60,21 @@ jobs:
         # if something actually changed.
         run: python -m src.backtest.cli
 
+      - name: Run SPY exhaustion-reversal backtest
+        # Also ungated: pulls Alpaca's ~2-year 5m window + Yahoo's VIX,
+        # recomputes signals/backtest fresh every trigger (~every 3h)
+        # rather than once a day - a trading-day-old signal chart shouldn't
+        # wait for the next 5am Central run. Best-effort: an Alpaca/Yahoo
+        # hiccup here shouldn't fail the whole workflow and block the
+        # BTC/ETH commit+deploy below. Needs ALPACA_API_KEY/
+        # ALPACA_SECRET_KEY set as repo secrets (Settings -> Secrets and
+        # variables -> Actions) - a free data-only key from alpaca.markets,
+        # not a trading key, nothing here ever places an order.
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: python -m src.spy.export || echo "SPY export failed, continuing with yesterday's SPY data"
+
       - name: Commit and push data
         id: commit
         run: |

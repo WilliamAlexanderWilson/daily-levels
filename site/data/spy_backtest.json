@@ -1,0 +1,58 @@
+{
+  "generated_at_utc": "2026-10-08T05:02:12.246876+00:00",
+  "data_window_days": 730,
+  "by_min_confirmed": {
+    "1": {
+      "trades": 152,
+      "resolved": 152,
+      "incomplete": 0,
+      "calls": 91,
+      "puts": 61,
+      "target_hits": 51,
+      "stop_hits": 101,
+      "expired_neither": 0,
+      "target_hit_rate_pct": 33.6,
+      "stop_hit_rate_pct": 66.4,
+      "avg_pct_return": -0.13
+    },
+    "2": {
+      "trades": 21,
+      "resolved": 21,
+      "incomplete": 0,
+      "calls": 12,
+      "puts": 9,
+      "target_hits": 3,
+      "stop_hits": 18,
+      "expired_neither": 0,
+      "target_hit_rate_pct": 14.3,
+      "stop_hit_rate_pct": 85.7,
+      "avg_pct_return": -9.12
+    },
+    "3": {
+      "trades": 2,
+      "resolved": 2,
+      "incomplete": 0,
+      "calls": 0,
+      "puts": 2,
+      "target_hits": 0,
+      "stop_hits": 2,
+      "expired_neither": 0,
+      "target_hit_rate_pct": 0.0,
+      "stop_hit_rate_pct": 100.0,
+      "avg_pct_return": -10.78
+    },
+    "4": {
+      "trades": 1,
+      "resolved": 1,
+      "incomplete": 0,
+      "calls": 0,
+      "puts": 1,
+      "target_hits": 0,
+      "stop_hits": 1,
+      "expired_neither": 0,
+      "target_hit_rate_pct": 0.0,
+      "stop_hit_rate_pct": 100.0,
+      "avg_pct_return": -11.01
+    }
+  }
+}

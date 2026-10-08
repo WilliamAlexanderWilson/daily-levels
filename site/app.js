@@ -29,11 +29,13 @@
   const state = {
     asset: "btc",
     range: "4h",
+    spyTimeframe: "15",
   };
 
   function readHash() {
     const params = new URLSearchParams(location.hash.replace(/^#/, ""));
-    if (params.get("asset") === "eth") state.asset = "eth";
+    const asset = params.get("asset");
+    if (asset === "eth" || asset === "spy") state.asset = asset;
     const range = params.get("range");
     if (range && RANGE_INTERVALS[range]) state.range = range;
   }
@@ -872,6 +874,7 @@
   }
 
   async function pollLiveCandle() {
+    if (state.asset === "spy") return; // no CORS-friendly live feed for SPY - chart/backtest are a once-a-day static snapshot
     const asset = state.asset;
     const range = state.range;
     const pair = ASSET_PAIRS[asset];
@@ -1909,6 +1912,205 @@
     }
   }
 
+  // --- SPY (exhaustion-reversal backtest) ---
+  //
+  // A fundamentally different product than BTC/ETH: not a level map, a
+  // mechanical backtest of a user-defined intraday options setup. Yahoo's
+  // chart API sends no CORS header (confirmed live against
+  // query1.finance.yahoo.com directly) so unlike crypto this can't be
+  // polled from the browser - the chart, signal markers and backtest table
+  // are all baked once per cron run into static JSON, same staleness as
+  // the rest of this static site, no live ticking.
+
+  let activeSpyChart = null; // cached spy_chart.json - switching HA timeframe re-renders from this, no refetch
+  let activeSpyTrades = [];
+
+  function spyChartUrl() {
+    return "data/spy_chart.json";
+  }
+  function spySignalsUrl() {
+    return "data/spy_signals.json";
+  }
+  function spyBacktestUrl() {
+    return "data/spy_backtest.json";
+  }
+
+  function applyAssetVisibility(asset) {
+    const isSpy = asset === "spy";
+    document.getElementById("subtitle").textContent = isSpy
+      ? "One intraday SPY options setup, backtested against ~2 years of real data."
+      : "Key price levels for BTC & ETH, recalculated once a day.";
+
+    document.getElementById("range-select").hidden = isSpy;
+    document.getElementById("spy-timeframe-select").hidden = !isSpy;
+    document.getElementById("futures-context").hidden = isSpy; // crypto path's own renderFuturesContext() corrects this right after, for btc/eth
+    document.getElementById("nearest-levels").hidden = isSpy;
+    document.getElementById("level-jump-wrap").hidden = isSpy;
+    document.getElementById("trade-controls").hidden = isSpy;
+    document.getElementById("chart-legend").hidden = isSpy;
+    document.getElementById("spy-legend").hidden = !isSpy;
+    document.getElementById("liquidation-note").hidden = isSpy;
+    document.getElementById("spy-chart-note").hidden = !isSpy;
+    document.getElementById("trades-section").hidden = isSpy;
+    document.getElementById("level-table-section").hidden = isSpy;
+    document.getElementById("scorecard-section").hidden = isSpy;
+    document.getElementById("spy-backtest-section").hidden = !isSpy;
+    document.getElementById("spy-signals-section").hidden = !isSpy;
+    document.getElementById("crypto-explainer").hidden = isSpy;
+    document.getElementById("spy-explainer").hidden = !isSpy;
+    if (isSpy) document.getElementById("live-badge").hidden = true;
+  }
+
+  function renderSpyChart(bars) {
+    ensureChart();
+    clearPriceSnapState();
+    // SPY has no levels/heatmap of its own - strip any leftover crypto
+    // price lines/labels/liquidation rows rather than leaving them drawn
+    // over a chart they no longer describe.
+    clearPriceLines();
+    clearOverlays();
+    activeLiquidationBins = [];
+    // Order book walls are drawn separately from activePriceLines (they
+    // redraw on every live poll tick, not just on load) and SPY has no live
+    // poll to naturally refresh/clear them - without this a BTC/ETH wall
+    // line stays drawn on the price axis after switching to SPY.
+    for (const line of orderBookPriceLines) candleSeries.removePriceLine(line);
+    orderBookPriceLines.length = 0;
+
+    const candleData = bars.map((b) => ({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close }));
+    candleSeries.setData(candleData);
+    volumeSeries.setData([]); // no HA volume computed - an empty histogram beats a stale crypto one
+    candleSeries.priceScale().applyOptions({ mode: LightweightCharts.PriceScaleMode.Normal });
+    chart.timeScale().fitContent();
+    lastLiveUnixTime = bars.length ? bars[bars.length - 1].time : null;
+  }
+
+  function nearestBarTimeAtOrAfter(bars, unixTime) {
+    for (const b of bars) {
+      if (b.time >= unixTime) return b.time;
+    }
+    return bars.length ? bars[bars.length - 1].time : null;
+  }
+
+  function renderSpySignalMarkers(bars, trades) {
+    if (!tradeMarkersPlugin) return;
+    if (!bars.length || !trades.length) {
+      tradeMarkersPlugin.setMarkers([]);
+      return;
+    }
+    const minTime = bars[0].time;
+    const maxTime = bars[bars.length - 1].time;
+    const outcomeSymbol = { target: " ✓", stop: " ✗", expiry: " =", incomplete: " …" };
+
+    const markers = [];
+    for (const t of trades) {
+      if (t.signal_time < minTime || t.signal_time > maxTime) continue;
+      const barTime = nearestBarTimeAtOrAfter(bars, t.signal_time);
+      if (barTime === null) continue;
+      const isCall = t.direction === "call";
+      markers.push({
+        time: barTime,
+        position: isCall ? "belowBar" : "aboveBar",
+        color: isCall ? cssVar("--support") : cssVar("--resistance"),
+        shape: isCall ? "arrowUp" : "arrowDown",
+        text: `${isCall ? "Call" : "Put"}${outcomeSymbol[t.exit_reason] || ""}`,
+      });
+    }
+    markers.sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0));
+    tradeMarkersPlugin.setMarkers(markers);
+  }
+
+  function rerenderSpyTimeframe() {
+    if (!activeSpyChart) return;
+    const bars = activeSpyChart.timeframes[state.spyTimeframe] || [];
+    renderSpyChart(bars);
+    renderSpySignalMarkers(bars, activeSpyTrades);
+  }
+
+  function renderSpyBacktestTable(backtest) {
+    const tbody = document.getElementById("spy-backtest-table-body");
+    tbody.innerHTML = "";
+    if (!backtest || !backtest.by_min_confirmed) {
+      tbody.innerHTML = `<tr><td colspan="6">Backtest not available yet.</td></tr>`;
+      return;
+    }
+    for (const n of ["1", "2", "3", "4"]) {
+      const s = backtest.by_min_confirmed[n];
+      const tr = document.createElement("tr");
+      if (!s || !s.resolved) {
+        tr.innerHTML = `<td>${n}+</td><td>${s ? s.trades : 0}</td><td>0</td><td>—</td><td>—</td><td>—</td>`;
+      } else {
+        const ret = s.avg_pct_return;
+        const retColor = ret >= 0 ? "var(--support)" : "var(--resistance)";
+        tr.innerHTML = `
+          <td>${n}+</td>
+          <td>${s.trades}</td>
+          <td>${s.resolved}</td>
+          <td>${s.target_hit_rate_pct.toFixed(1)}%</td>
+          <td>${s.stop_hit_rate_pct.toFixed(1)}%</td>
+          <td style="color: ${retColor}">${ret >= 0 ? "+" : ""}${ret.toFixed(2)}%</td>
+        `;
+      }
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderSpySignalsTable(trades) {
+    const tbody = document.getElementById("spy-signals-table-body");
+    tbody.innerHTML = "";
+    if (!trades.length) {
+      tbody.innerHTML = `<tr><td colspan="7">No signals detected in the last 60 days.</td></tr>`;
+      return;
+    }
+    const outcomeText = { target: "Target hit", stop: "Stopped out", expiry: "Expired", incomplete: "Incomplete (data horizon)" };
+    const dateFmt = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "America/New_York" });
+    const sorted = [...trades].sort((a, b) => b.signal_time - a.signal_time);
+    for (const t of sorted) {
+      const tr = document.createElement("tr");
+      const dirColor = t.direction === "call" ? "var(--support)" : "var(--resistance)";
+      const retText = t.pct_return === null || t.pct_return === undefined ? "—" : `${t.pct_return >= 0 ? "+" : ""}${(t.pct_return * 100).toFixed(1)}%`;
+      const retColor = t.pct_return === null || t.pct_return === undefined ? "var(--text-muted)" : t.pct_return >= 0 ? "var(--support)" : "var(--resistance)";
+      tr.innerHTML = `
+        <td>${dateFmt.format(new Date(t.signal_time * 1000))} ET</td>
+        <td style="color: ${dirColor}">${t.direction === "call" ? "Call" : "Put"}</td>
+        <td>${t.confirmed_timeframes.join(", ")}m</td>
+        <td>${t.entry_underlying.toFixed(2)}</td>
+        <td>${t.strike.toFixed(0)}</td>
+        <td>${outcomeText[t.exit_reason] || t.exit_reason}</td>
+        <td style="color: ${retColor}">${retText}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  async function loadAndRenderSpy() {
+    try {
+      const [chartData, signalsData, backtestData] = await Promise.all([
+        fetchJson(spyChartUrl()),
+        fetchJson(spySignalsUrl()),
+        fetchJson(spyBacktestUrl()),
+      ]);
+      if (state.asset !== "spy") return; // user moved on while this was in flight
+
+      activeSpyChart = chartData;
+      activeSpyTrades = signalsData.trades || [];
+
+      renderHeader(chartData); // same {generated_at_utc, price} shape renderHeader already expects
+
+      const bars = chartData.timeframes[state.spyTimeframe] || [];
+      renderSpyChart(bars);
+      renderSpySignalMarkers(bars, activeSpyTrades);
+      renderSpyBacktestTable(backtestData);
+      renderSpySignalsTable(activeSpyTrades);
+    } catch (err) {
+      if (state.asset !== "spy") return;
+      console.error(err);
+      const banner = document.getElementById("stale-banner");
+      banner.hidden = false;
+      banner.textContent = "Could not load SPY data — either the daily workflow hasn't run yet, or Yahoo's API is unreachable right now.";
+    }
+  }
+
   // --- toggles ---
 
   function setActiveButtons() {
@@ -1916,6 +2118,8 @@
       btn.classList.toggle("active", btn.dataset.asset === state.asset);
     });
     document.getElementById("range-select").value = state.range;
+    document.getElementById("spy-timeframe-select").value = state.spyTimeframe;
+    applyAssetVisibility(state.asset);
   }
 
   function wireToggles() {
@@ -1939,6 +2143,10 @@
       setMarkingMode(false);
       closeTradeForm();
       loadAndRender().then(pollLiveCandle);
+    });
+    document.getElementById("spy-timeframe-select").addEventListener("change", (e) => {
+      state.spyTimeframe = e.target.value;
+      rerenderSpyTimeframe();
     });
 
     const refreshBtn = document.getElementById("refresh-btn");
@@ -1992,6 +2200,10 @@
   // --- main load ---
 
   async function loadAndRender() {
+    if (state.asset === "spy") {
+      await loadAndRenderSpy();
+      return;
+    }
     const asset = state.asset;
     const range = state.range;
     try {

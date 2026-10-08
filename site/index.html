@@ -10,7 +10,7 @@
 <body>
   <header class="site-header">
     <h1>Daily Levels</h1>
-    <p class="subtitle">Key price levels for BTC &amp; ETH, recalculated once a day.</p>
+    <p class="subtitle" id="subtitle">Key price levels for BTC &amp; ETH, recalculated once a day.</p>
   </header>
 
   <div id="stale-banner" class="stale-banner" hidden></div>
@@ -20,6 +20,7 @@
       <div class="toggle-group" id="asset-toggle" role="group" aria-label="Asset">
         <button type="button" data-asset="btc" class="toggle-btn active">BTC</button>
         <button type="button" data-asset="eth" class="toggle-btn">ETH</button>
+        <button type="button" data-asset="spy" class="toggle-btn">SPY</button>
       </div>
       <select id="range-select" class="range-select" aria-label="Timeframe">
         <option value="1m">1m</option>
@@ -29,6 +30,12 @@
         <option value="1h">1H</option>
         <option value="4h" selected>4H</option>
         <option value="1d">Daily</option>
+      </select>
+      <select id="spy-timeframe-select" class="range-select" aria-label="Heikin-Ashi timeframe" hidden>
+        <option value="10">10m HA</option>
+        <option value="15" selected>15m HA</option>
+        <option value="20">20m HA</option>
+        <option value="30">30m HA</option>
       </select>
     </div>
 
@@ -75,14 +82,14 @@
       </div>
     </div>
 
-    <div class="level-jump">
+    <div class="level-jump" id="level-jump-wrap">
       <label for="level-jump-select">Jump to level</label>
       <select id="level-jump-select">
         <option value="">Default view</option>
       </select>
     </div>
 
-    <div class="trade-controls">
+    <div class="trade-controls" id="trade-controls">
       <button type="button" id="mark-trade-btn" class="mark-trade-btn">+ Mark trade</button>
       <span id="mark-trade-hint" class="mark-trade-hint" hidden>Click the chart where you got in…</span>
       <span class="trade-manual-entry">
@@ -128,7 +135,12 @@
       <span class="legend-item"><i class="swatch support"></i>Est. long liquidations</span>
       <span class="legend-item"><i class="swatch resistance"></i>Est. short liquidations</span>
     </div>
-    <p class="liquidation-note">
+    <div id="spy-legend" class="chart-legend" hidden>
+      <span class="legend-item"><i class="swatch support"></i>Call signal (downtrend exhaustion)</span>
+      <span class="legend-item"><i class="swatch resistance"></i>Put signal (uptrend exhaustion)</span>
+      <span class="legend-item"><i class="swatch current"></i>Current price</span>
+    </div>
+    <p class="liquidation-note" id="liquidation-note">
       The green/red strip next to the price axis is a <strong>model, not
       real position data</strong> — no exchange publishes actual entry
       prices or leverage. It projects the real traded volume at each price
@@ -137,8 +149,18 @@
       there's no signal to weight either way. Read it as "where crowded
       leverage plausibly sits," not a fact.
     </p>
+    <p class="liquidation-note" id="spy-chart-note" hidden>
+      Candles are <strong>Heikin-Ashi</strong>, not real OHLC — that's what
+      the setup is defined on. This chart shows the last 60 days (our own
+      choice, for readability — the backtest below actually runs on ~2
+      years of real 5-minute data). Markers show every detected exhaustion
+      signal that falls in the visible window, colored by direction. This
+      refreshes on the same cron as the rest of the site, not live — SPY's
+      data source (Alpaca) needs an auth header the browser can't send
+      cleanly, so unlike BTC/ETH this gets baked server-side instead.
+    </p>
 
-    <section class="levels-table-section">
+    <section class="levels-table-section" id="trades-section">
       <h2>My trades</h2>
       <p class="scorecard-note">
         Saved in this browser only (no server, no account) — click
@@ -165,7 +187,7 @@
       </div>
     </section>
 
-    <section class="levels-table-section">
+    <section class="levels-table-section" id="level-table-section">
       <h2>Level table</h2>
       <div class="table-wrapper">
         <table id="levels-table">
@@ -185,7 +207,7 @@
       <p id="removed-levels-note" class="removed-note" hidden></p>
     </section>
 
-    <section class="levels-table-section">
+    <section class="levels-table-section" id="scorecard-section">
       <h2>Historical scorecard</h2>
       <p class="scorecard-note">
         Replays this level engine day by day over roughly the last two years
@@ -212,7 +234,63 @@
       </div>
     </section>
 
-    <section class="explainer">
+    <section class="levels-table-section" id="spy-backtest-section" hidden>
+      <h2>Exhaustion-reversal backtest</h2>
+      <p class="scorecard-note">
+        Your rule, simulated: a doji/exhaustion candle after a same-direction
+        run, entered as an ATM 2-trading-day SPY option, targeting +20% /
+        stopping at -10% of the option's modeled premium. Reported at every
+        multi-timeframe agreement level, since the rule didn't specify how
+        many of the 4 timeframes must confirm. <strong>Premiums are
+        Black-Scholes modeled from VIX as an IV proxy, not real historical
+        quotes</strong> — no free source for those exists. The sample runs
+        on ~2 years of real 5-minute SPY data; requiring more timeframes to
+        agree shrinks the sample fast, so weight rows with more trades more
+        heavily. Read this as a
+        directional read on the setup, not a precise number.
+      </p>
+      <div class="table-wrapper">
+        <table id="spy-backtest-table">
+          <thead>
+            <tr>
+              <th>Min. timeframes agreeing</th>
+              <th>Trades</th>
+              <th>Resolved</th>
+              <th>Target hit %</th>
+              <th>Stop hit %</th>
+              <th>Avg return</th>
+            </tr>
+          </thead>
+          <tbody id="spy-backtest-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="levels-table-section" id="spy-signals-section" hidden>
+      <h2>Signal history</h2>
+      <p class="scorecard-note">
+        Every detected signal in the ~2-year backtest window and how its
+        simulated trade resolved, most recent first.
+      </p>
+      <div class="table-wrapper">
+        <table id="spy-signals-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Direction</th>
+              <th>TFs</th>
+              <th>Underlying @ entry</th>
+              <th>Strike</th>
+              <th>Outcome</th>
+              <th>Return</th>
+            </tr>
+          </thead>
+          <tbody id="spy-signals-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="explainer" id="crypto-explainer">
       <h2>How these are calculated</h2>
       <p>
         The <strong>levels</strong> (lines on the chart, table below) are
@@ -242,6 +320,37 @@
           snapshot; a level that moved more than 0.1% shows the change, a level
           that didn't exist yesterday is tagged NEW.</li>
       </ul>
+    </section>
+
+    <section class="explainer" id="spy-explainer" hidden>
+      <h2>How this is calculated</h2>
+      <p>
+        This is a <strong>mechanical backtest of a user-defined rule</strong>,
+        not a signal engine — SPY gets different treatment than BTC/ETH
+        because it's not a level map, it's one specific intraday options
+        setup being tested for odds.
+      </p>
+      <ul>
+        <li><strong>Candles</strong> — Heikin-Ashi, built from real 5-minute
+          SPY candles (Alpaca's free IEX feed, ~2 years of history)
+          resampled into 10m/15m/20m/30m bars anchored to the 9:30&nbsp;AM
+          ET open. VIX comes from Yahoo Finance, daily only.</li>
+        <li><strong>Signal</strong> — a run of same-direction HA candles
+          followed by a doji whose rejection-side wick exceeds the full
+          range of at least one of the trend candles before it, during
+          10:00&ndash;12:00&nbsp;ET.</li>
+        <li><strong>Trade</strong> — an ATM option 2 trading days out,
+          direction set by the exhaustion (downtrend exhaustion → call,
+          uptrend → put), priced with Black-Scholes using VIX as an implied-vol
+          proxy since no free source has real SPY options quotes.</li>
+        <li><strong>Exit</strong> — first of +20% target, -10% stop, or
+          expiry, tracked on the modeled premium.</li>
+      </ul>
+      <p>
+        Nothing here is a buy or sell signal — it's the measured historical
+        odds of the rule you described, with every modeling assumption
+        stated above it, not hidden in the numbers.
+      </p>
     </section>
   </main>
 
