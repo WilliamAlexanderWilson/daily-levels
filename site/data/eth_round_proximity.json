@@ -28,29 +28,29 @@
   },
   {
     "tolerance_fraction": 0.1,
-    "touches": 548,
-    "resolved": 539,
-    "holds": 256,
+    "touches": 547,
+    "resolved": 538,
+    "holds": 255,
     "breaks": 283,
-    "hold_rate_pct": 47.49536178107607,
+    "hold_rate_pct": 47.39776951672863,
     "low_confidence": false
   },
   {
     "tolerance_fraction": 0.05,
-    "touches": 536,
-    "resolved": 527,
-    "holds": 226,
+    "touches": 535,
+    "resolved": 526,
+    "holds": 225,
     "breaks": 301,
-    "hold_rate_pct": 42.8842504743833,
+    "hold_rate_pct": 42.77566539923954,
     "low_confidence": false
   },
   {
     "tolerance_fraction": 0.02,
-    "touches": 529,
-    "resolved": 516,
-    "holds": 208,
+    "touches": 528,
+    "resolved": 515,
+    "holds": 207,
     "breaks": 308,
-    "hold_rate_pct": 40.310077519379846,
+    "hold_rate_pct": 40.19417475728155,
     "low_confidence": false
   }
 ]
