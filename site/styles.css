@@ -722,6 +722,19 @@ main {
   border-top-style: dotted;
 }
 
+.swatch.round-zone {
+  /* The round-number proximity bands are a shaded fill on the chart, not a
+     line like every other swatch here - a border-top swatch would show
+     the right color but the wrong shape, implying a line that isn't
+     actually what's drawn. */
+  width: 18px;
+  height: 10px;
+  border-top: none;
+  background: var(--round);
+  opacity: 0.35;
+  border-radius: 2px;
+}
+
 .swatch.liquidity {
   border-top-color: var(--liquidity);
   border-top-style: dotted;

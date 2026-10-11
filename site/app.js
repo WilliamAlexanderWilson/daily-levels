@@ -1108,7 +1108,11 @@
           high: nearestRoundPrice + tolerance,
           mid: nearestRoundPrice,
           color: cssVar("--round"),
-          label: `Within ${Math.round(fraction * 100)}% of $${nearestRoundPrice.toLocaleString()} — ${tier.hold_rate_pct.toFixed(0)}% held (n=${tier.resolved})`,
+          // Plain dollar tolerance, not "X% of $81,000" - that phrasing
+          // reads as X% of the PRICE (a huge range) when it actually means
+          // X% of the round-number step ($1,000 here, so "50%" is +/-$500)
+          // - confirmed confusing in practice, not just in theory.
+          label: `±$${tolerance.toLocaleString()} of $${nearestRoundPrice.toLocaleString()} — ${tier.hold_rate_pct.toFixed(0)}% held (n=${tier.resolved})`,
           isZone: true,
           isRoundProximity: true,
           opacity,
