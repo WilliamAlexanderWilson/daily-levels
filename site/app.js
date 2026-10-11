@@ -261,6 +261,7 @@
   let pendingTrade = null; // {time, price} captured from a chart click, awaiting form submission
   let lastLivePrice = null; // most recent known price, for live P&L on sized/leveraged trades
   let closingTradeId = null; // trade mid-close (exit-price input showing in its row), survives the 15s re-render from the live poll
+  let deletingTradeId = null; // trade awaiting delete confirmation (same survive-the-re-render need as closingTradeId) - deleting is permanent, localStorage-only, no undo
   let snappedMarkerKey = null; // key of whichever marker (table row, dropdown pick, or on-chart label) the price scale is currently locked to, if any
   let activeLevelsWindowDays = null; // RANGE_DAYS from the levels JSON, for the 4H default-zoom calc
   let lastOverlayPriceRange = null; // {from, to} as of the last renderOverlays() call, for the price-scale poll below
@@ -1349,8 +1350,19 @@
     tradeMarkersPlugin.setMarkers(markers);
   }
 
-  function deleteTrade(asset, id) {
+  function startDeletingTrade(id) {
+    deletingTradeId = id;
+    renderTradesTable(state.asset, lastLivePrice);
+  }
+
+  function cancelDeletingTrade() {
+    deletingTradeId = null;
+    renderTradesTable(state.asset, lastLivePrice);
+  }
+
+  function confirmDeleteTrade(asset, id) {
     saveTrades(asset, loadTrades(asset).filter((t) => t.id !== id));
+    deletingTradeId = null;
     renderTradeMarkers(state.asset, state.range, activeCandles);
     renderTradesTable(asset, lastLivePrice);
   }
@@ -1397,12 +1409,6 @@
     trade.exitTime = Math.floor(Date.now() / 1000);
     saveTrades(asset, trades);
     closingTradeId = null;
-    renderTradeMarkers(state.asset, state.range, activeCandles);
-    renderTradesTable(asset, lastLivePrice);
-  }
-
-  function deleteTrade(asset, id) {
-    saveTrades(asset, loadTrades(asset).filter((t) => t.id !== id));
     renderTradeMarkers(state.asset, state.range, activeCandles);
     renderTradesTable(asset, lastLivePrice);
   }
@@ -1472,6 +1478,17 @@
         cancelBtn.textContent = "Cancel";
         cancelBtn.addEventListener("click", cancelClosingTrade);
         actionsCell.append(input, confirmBtn, cancelBtn);
+      } else if (deletingTradeId === trade.id) {
+        actionsCell.className = "trade-close-cell";
+        const confirmDeleteBtn = document.createElement("button");
+        confirmDeleteBtn.className = "trade-close-confirm-btn trade-delete-confirm-btn";
+        confirmDeleteBtn.textContent = "Confirm delete";
+        confirmDeleteBtn.addEventListener("click", () => confirmDeleteTrade(asset, trade.id));
+        const cancelDeleteBtn = document.createElement("button");
+        cancelDeleteBtn.className = "trade-close-cancel-btn";
+        cancelDeleteBtn.textContent = "Cancel";
+        cancelDeleteBtn.addEventListener("click", cancelDeletingTrade);
+        actionsCell.append(confirmDeleteBtn, cancelDeleteBtn);
       } else {
         if (trade.exitPrice == null) {
           const closeBtn = document.createElement("button");
@@ -1483,7 +1500,10 @@
         const deleteBtn = document.createElement("button");
         deleteBtn.className = "trade-delete-btn";
         deleteBtn.textContent = "Delete";
-        deleteBtn.addEventListener("click", () => deleteTrade(asset, trade.id));
+        // Deleting is permanent (localStorage only, no undo/trash) - this
+        // is a confirm step, not an instant delete, same inline-row pattern
+        // startClosingTrade()/cancelClosingTrade() already use for closing.
+        deleteBtn.addEventListener("click", () => startDeletingTrade(trade.id));
         actionsCell.appendChild(deleteBtn);
       }
       tbody.appendChild(tr);
@@ -2186,6 +2206,12 @@
         // would otherwise save it against the wrong one.
         setMarkingMode(false);
         closeTradeForm();
+        // Same reasoning for an in-progress close/delete confirmation - a
+        // trade id from the asset being left shouldn't silently reopen its
+        // inline form against whatever trade happens to share that id in
+        // the new asset's own trade list.
+        closingTradeId = null;
+        deletingTradeId = null;
         loadAndRender().then(pollLiveCandle);
       });
     });

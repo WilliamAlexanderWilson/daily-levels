@@ -710,6 +710,11 @@ main {
   cursor: pointer;
 }
 
+.trade-close-confirm-btn.trade-delete-confirm-btn {
+  background: var(--resistance);
+  border-color: var(--resistance);
+}
+
 .trade-close-cancel-btn {
   background: transparent;
   border: 1px solid var(--border);
