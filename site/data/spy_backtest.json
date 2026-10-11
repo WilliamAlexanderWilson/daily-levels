@@ -1,19 +1,19 @@
 {
-  "generated_at_utc": "2026-10-08T05:02:12.246876+00:00",
+  "generated_at_utc": "2026-10-11T22:00:41.961447+00:00",
   "data_window_days": 730,
   "by_min_confirmed": {
     "1": {
       "trades": 152,
-      "resolved": 152,
-      "incomplete": 0,
-      "calls": 91,
+      "resolved": 151,
+      "incomplete": 1,
+      "calls": 90,
       "puts": 61,
       "target_hits": 51,
-      "stop_hits": 101,
+      "stop_hits": 100,
       "expired_neither": 0,
-      "target_hit_rate_pct": 33.6,
-      "stop_hit_rate_pct": 66.4,
-      "avg_pct_return": -0.13
+      "target_hit_rate_pct": 33.8,
+      "stop_hit_rate_pct": 66.2,
+      "avg_pct_return": -0.05
     },
     "2": {
       "trades": 21,
