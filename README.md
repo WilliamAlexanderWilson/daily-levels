@@ -435,6 +435,17 @@ differences between modeled and real IV can matter a lot over a 20%/10%
 band. Treat the backtest as a directional read on the setup, not a precise
 win rate.
 
+**No demonstrated persistent edge — an out-of-sample check, not just a
+disclaimer.** A trend-length/doji-width parameter sweep (`src/spy/sweep.py`)
+found a best-performing combination against the full ~2-year sample. Splitting
+that same sample into two 12-month halves and re-running the full sweep on
+each half separately (`src/spy/validate_holdout.py`) found every single
+tested combination profitable on the first half and unprofitable on the
+second — including whichever combination looked best when tuned on just the
+first half. A universal sign flip like that across every combination is a
+sign the apparent edge tracks which period got sampled, not the rule itself.
+Treat every number on this page as "this setup, tested," not "a proven edge."
+
 **Timeframe confluence is reported, not assumed.** "Watching 4 timeframes"
 didn't specify whether all 4 must agree, a majority, or just one — rather
 than guess, `src/spy/exhaustion_signal.py` tags every signal with how many

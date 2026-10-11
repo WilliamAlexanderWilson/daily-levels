@@ -837,6 +837,38 @@ Backtest/scorecard, Daily diff.
   formula, confirmed directly by printing the intermediate HA frame rather than
   hand-deriving it.
 
+- **Out-of-sample validation of the trend/doji sweep - the edge doesn't
+  survive it** (`src/spy/validate_holdout.py`, new file, 2026-10-11). The
+  sweep above picked the best of 24 cells against the whole ~2-year
+  sample, which is exactly the setup where an in-sample winner looks
+  better than it is - asked directly: does that pick (or any pick) hold up
+  on data it wasn't chosen against? Split the sample into two ~12-month
+  halves at the midpoint (2025-10-12) and re-ran the full 24-cell grid on
+  each half independently. **Every single one of the 24 combinations was
+  profitable on TRAIN (+0.19% to +5.16% avg return) and unprofitable on
+  HOLDOUT (-0.52% to -5.55%)** - not one exception either direction.
+  TRAIN's own best pick (trend=2/doji<=0.35, +5.16% in-sample) came in at
+  -3.10% on the untouched holdout half; the live default
+  (trend=4/doji<=0.30, +4.32% in-sample) came in at -0.85%. A universal
+  sign flip across every tested combination is strong evidence the
+  apparent edge tracks which 12-month period got sampled, not the rule
+  itself - exactly the "if a real mechanical edge existed, it'd already be
+  arbitraged away" argument in the Product philosophy section above,
+  showing up directly in this project's own data rather than as an
+  abstract claim. **Did not revert `TREND_LOOKBACK` back to 3** - both
+  values lose out-of-sample, so picking between them based on this result
+  would just be choosing a different overfit point, not a more honest one.
+  Added a prominent caveat to the live site's SPY backtest section
+  (`site/index.html`, directly under the existing Black-Scholes/sample-size
+  note) stating this plainly, rather than leaving the more flattering
+  full-sample number as the only thing a viewer sees. This is the most
+  direct evidence yet that this setup, as currently defined, has no
+  demonstrated persistent edge - the honest framing from here is "this
+  setup, tested" rather than "a proven edge," and that should hold until
+  something changes the picture (meaningfully more data, real options
+  quotes replacing the Black-Scholes model, or the user's own discretionary
+  judgment about regime).
+
 ## Next up (as of 2026-10-11)
 
 SPY's exhaustion-reversal backtest is built, tested, and **now live**: the
