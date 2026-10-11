@@ -18,9 +18,9 @@
   <main>
     <div class="controls">
       <div class="toggle-group" id="asset-toggle" role="group" aria-label="Asset">
-        <button type="button" data-asset="btc" class="toggle-btn active">BTC</button>
-        <button type="button" data-asset="eth" class="toggle-btn">ETH</button>
-        <button type="button" data-asset="spy" class="toggle-btn">SPY</button>
+        <button type="button" data-asset="btc" class="toggle-btn active" aria-pressed="true">BTC</button>
+        <button type="button" data-asset="eth" class="toggle-btn" aria-pressed="false">ETH</button>
+        <button type="button" data-asset="spy" class="toggle-btn" aria-pressed="false">SPY</button>
       </div>
       <select id="range-select" class="range-select" aria-label="Timeframe">
         <option value="1m">1m</option>
@@ -101,7 +101,9 @@
       </span>
     </div>
 
-    <div id="chart-container" class="chart-container"></div>
+    <div id="chart-container" class="chart-container">
+      <div id="chart-loading-overlay" class="chart-loading-overlay" hidden>Loading…</div>
+    </div>
 
     <div id="trade-form" class="trade-form" hidden>
       <div class="trade-form-row">

@@ -55,6 +55,16 @@
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   }
 
+  // Switching asset/timeframe previously left the OLD chart sitting there
+  // with zero visual feedback until the new fetch resolved - looked frozen
+  // on a slow connection or Kraken's own occasional CORS hiccup (see the
+  // gotcha in CLAUDE.md). This dims the chart and shows "Loading…" for the
+  // duration of any loadAndRender()/loadAndRenderSpy() call.
+  function setChartLoading(isLoading) {
+    const el = document.getElementById("chart-loading-overlay");
+    if (el) el.hidden = !isLoading;
+  }
+
   // --- data fetching ---
 
   async function fetchJson(path) {
@@ -2156,7 +2166,9 @@
 
   function setActiveButtons() {
     document.querySelectorAll("#asset-toggle .toggle-btn").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.asset === state.asset);
+      const isActive = btn.dataset.asset === state.asset;
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute("aria-pressed", String(isActive));
     });
     document.getElementById("range-select").value = state.range;
     document.getElementById("spy-timeframe-select").value = state.spyTimeframe;
@@ -2241,84 +2253,89 @@
   // --- main load ---
 
   async function loadAndRender() {
-    if (state.asset === "spy") {
-      await loadAndRenderSpy();
-      return;
-    }
-    const asset = state.asset;
-    const range = state.range;
+    setChartLoading(true);
     try {
-      const [levelsData, krakenCandles] = await Promise.all([
-        fetchJson(levelsUrl(asset)),
-        fetchKrakenCandles(ASSET_PAIRS[asset], RANGE_INTERVALS[range]),
-      ]);
-
-      // if the user switched asset/range again while this was in flight,
-      // a newer loadAndRender() call either already finished or is about
-      // to - drawing this now-stale result would stomp it.
-      if (state.asset !== asset || state.range !== range) return;
-
-      const candles = krakenCandles;
-
-      renderHeader(levelsData);
-      renderFuturesContext(levelsData.futures_context);
-      // set before renderChart(): its zoom call can trigger the time-axis
-      // subscription straight into renderOverlays() (which draws the
-      // heatmap), and that would otherwise run once against the previous
-      // asset's bins before renderLevels() below gets a chance to update it.
-      activeLiquidationBins = levelsData.liquidation_estimate || [];
-      renderChart(candles, range, levelsData.config.range_days);
-      renderLevels(levelsData.levels);
-
-      activeCandles = candles;
-      lastLivePrice = levelsData.price;
-      renderTradeMarkers(asset, range, candles);
-      renderTradesTable(asset, lastLivePrice);
-
-      // Deliberately not awaited: Coinbase's ~13-page pagination takes a
-      // few real seconds, and blocking the chart on it meant Daily sat
-      // blank that whole time on every switch, not just the first -
-      // looked exactly like a frozen/broken view. Render fast with what
-      // Kraken already gave us (same as before this feature existed),
-      // then pop in the deeper history once it's actually ready.
-      if (range === "1d") {
-        loadDeepDailyHistoryInBackground(asset, range, krakenCandles, levelsData.config.range_days);
+      if (state.asset === "spy") {
+        await loadAndRenderSpy();
+        return;
       }
-
-      // The scorecard and proximity curve are nice-to-haves, not core - if
-      // either is missing (first rollout before a backtest has run, or a
-      // fetch hiccup) the levels table and chart should still render
-      // fine, just without hold rates / proximity bands.
-      let scorecard = null;
+      const asset = state.asset;
+      const range = state.range;
       try {
-        scorecard = await fetchJson(scorecardUrl(asset));
-      } catch (err) {
-        console.error("scorecard unavailable", err);
-      }
-      let proximity = null;
-      try {
-        proximity = await fetchJson(proximityUrl(asset));
-      } catch (err) {
-        console.error("round-number proximity curve unavailable", err);
-      }
-      if (state.asset !== asset || state.range !== range) return;
+        const [levelsData, krakenCandles] = await Promise.all([
+          fetchJson(levelsUrl(asset)),
+          fetchKrakenCandles(ASSET_PAIRS[asset], RANGE_INTERVALS[range]),
+        ]);
 
-      renderTable(levelsData.levels, levelsData.price, scorecard, levelsData.diff);
-      renderScorecardTable(scorecard);
+        // if the user switched asset/range again while this was in flight,
+        // a newer loadAndRender() call either already finished or is about
+        // to - drawing this now-stale result would stomp it.
+        if (state.asset !== asset || state.range !== range) return;
 
-      activeLevels = levelsData.levels;
-      activeScorecard = scorecard;
-      activeProximity = proximity;
-      renderNearestLevels(activeLevels, activeScorecard, levelsData.price);
-      renderRoundProximityBands(levelsData.price, activeProximity);
-      renderLevelJumpSelect(activeLevels, levelsData.price);
-      renderExhaustionBanner(levelsData.exhaustion_pattern, scorecard && scorecard["Exhaustion pattern"]);
-    } catch (err) {
-      if (state.asset !== asset || state.range !== range) return;
-      console.error(err);
-      const banner = document.getElementById("stale-banner");
-      banner.hidden = false;
-      banner.textContent = "Could not load level or price data — either the daily workflow hasn't run yet, or Kraken's API is unreachable right now.";
+        const candles = krakenCandles;
+
+        renderHeader(levelsData);
+        renderFuturesContext(levelsData.futures_context);
+        // set before renderChart(): its zoom call can trigger the time-axis
+        // subscription straight into renderOverlays() (which draws the
+        // heatmap), and that would otherwise run once against the previous
+        // asset's bins before renderLevels() below gets a chance to update it.
+        activeLiquidationBins = levelsData.liquidation_estimate || [];
+        renderChart(candles, range, levelsData.config.range_days);
+        renderLevels(levelsData.levels);
+
+        activeCandles = candles;
+        lastLivePrice = levelsData.price;
+        renderTradeMarkers(asset, range, candles);
+        renderTradesTable(asset, lastLivePrice);
+
+        // Deliberately not awaited: Coinbase's ~13-page pagination takes a
+        // few real seconds, and blocking the chart on it meant Daily sat
+        // blank that whole time on every switch, not just the first -
+        // looked exactly like a frozen/broken view. Render fast with what
+        // Kraken already gave us (same as before this feature existed),
+        // then pop in the deeper history once it's actually ready.
+        if (range === "1d") {
+          loadDeepDailyHistoryInBackground(asset, range, krakenCandles, levelsData.config.range_days);
+        }
+
+        // The scorecard and proximity curve are nice-to-haves, not core - if
+        // either is missing (first rollout before a backtest has run, or a
+        // fetch hiccup) the levels table and chart should still render
+        // fine, just without hold rates / proximity bands.
+        let scorecard = null;
+        try {
+          scorecard = await fetchJson(scorecardUrl(asset));
+        } catch (err) {
+          console.error("scorecard unavailable", err);
+        }
+        let proximity = null;
+        try {
+          proximity = await fetchJson(proximityUrl(asset));
+        } catch (err) {
+          console.error("round-number proximity curve unavailable", err);
+        }
+        if (state.asset !== asset || state.range !== range) return;
+
+        renderTable(levelsData.levels, levelsData.price, scorecard, levelsData.diff);
+        renderScorecardTable(scorecard);
+
+        activeLevels = levelsData.levels;
+        activeScorecard = scorecard;
+        activeProximity = proximity;
+        renderNearestLevels(activeLevels, activeScorecard, levelsData.price);
+        renderRoundProximityBands(levelsData.price, activeProximity);
+        renderLevelJumpSelect(activeLevels, levelsData.price);
+        renderExhaustionBanner(levelsData.exhaustion_pattern, scorecard && scorecard["Exhaustion pattern"]);
+      } catch (err) {
+        if (state.asset !== asset || state.range !== range) return;
+        console.error(err);
+        const banner = document.getElementById("stale-banner");
+        banner.hidden = false;
+        banner.textContent = "Could not load level or price data — either the daily workflow hasn't run yet, or Kraken's API is unreachable right now.";
+      }
+    } finally {
+      setChartLoading(false);
     }
   }
 
