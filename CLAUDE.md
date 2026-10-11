@@ -788,6 +788,55 @@ list here, it'll drift. Worth knowing the sections exist: Exchange,
 Schedule, Volume profile, Swing pivots/golden pocket, Confluence,
 Backtest/scorecard, Daily diff.
 
+- **Daily exhaustion-pattern detector for BTC/ETH** (`src/levels/exhaustion_pattern.py`,
+  `src/backtest/exhaustion_pattern.py`, 2026-10-11) - built in direct response to the user
+  asking (again) for a live BTC entry signal after seeing SPY's Call/Put markers and
+  assuming they were real-time. They weren't (SPY is fully retrospective/batch - see the
+  SPY section below) and the user explicitly wanted "when to go long or short." Declined
+  that framing per the Product philosophy at the top of this file, with concrete evidence
+  from the SPY sweep just finished (its best-of-24-cells edge is only +1.43% avg return,
+  and *more* timeframe confirmation makes it perform *worse*, not better) - offered the
+  same pattern-detection machinery reporting real historical frequency instead, which the
+  user accepted.
+  Same exhaustion-candle definition as SPY (`src/spy/exhaustion_signal.py`: a run of
+  same-direction Heikin-Ashi candles followed by a doji whose rejection-side wick exceeds
+  every preceding trend candle's range), but daily-only (no SPY-style intraday session or
+  multi-timeframe confluence - there's no equivalent concept for BTC/ETH) and deliberately
+  NOT importing from `src/spy/` - duplicated the ~15-line HA transform instead, keeping the
+  two systems independent the same way the repo layout already treats them as fully
+  separate (SPY: "own rules entirely"). `TREND_LOOKBACK=3`/`DOJI_BODY_MAX_PCT=0.30` here are
+  explicit, labeled-as-such **generic defaults, not tuned for crypto** - SPY's swept
+  trend=4 came from its own options-expiry economics and has no reason to transfer.
+  Two pieces: `src/levels/exhaustion_pattern.py::detect_latest()` (live engine, once a day,
+  "did the most recent closed daily candle itself qualify") feeds
+  `{asset}_levels.json`'s new `exhaustion_pattern` key; `src/backtest/exhaustion_pattern.py`
+  scans the full ~2yr daily history once (no day-by-day replay needed - unlike
+  POC/VAH/VAL, each candle's qualification only looks at its own fixed small backward
+  window, so it's already point-in-time correct without re-simulating per day) and reuses
+  the **exact same output shape** as a level-type scorecard entry (`touches`/`resolved`/
+  `hold_rate_pct`/etc.), so it drops straight into `{asset}_scorecard.json` as a new
+  "Exhaustion pattern" row and renders in the existing table with zero site changes -
+  same trick "Round number" already uses despite not being a real level either.
+  First real run: BTC and ETH both currently show **no pattern detected** (expected -
+  this is a specific, somewhat rare candle shape, not a "levels exist somewhere" kind of
+  feature) with only 12 historical occurrences each over the ~2-year window (58.3% /
+  50.0% reversal rate, both explicitly flagged low-confidence at n=12 vs. the 30-touch
+  bar) - an honest small sample, not hidden.
+  New site element: `#exhaustion-banner` (hidden whenever nothing's detected, or on the
+  SPY view), styled bullish/bearish via the existing `--support`/`--resistance` CSS
+  variables. Explicitly worded to avoid call-to-action framing ("not a signal, read the
+  odds yourself") and never says "buy"/"sell"/"enter." This is still a once-a-day-cadence
+  feature like every other level, not live-ticking every 15s like price/order-book - said
+  plainly to the user rather than oversold as "live."
+  `tests/test_exhaustion_pattern.py` mirrors the SPY test file's structure (hand-built HA
+  rows for the core logic, bypassing the recursive real-OHLC conversion) but needed one
+  extra real-OHLC-path test since `to_heikin_ashi`'s HA close averages in the WHOLE real
+  candle - a long wick alone doesn't produce a small HA body; the opposite side has to
+  snap back past the open to counteract the wick's pull on the average. That test fixture
+  required numerically iterating a hammer/shooting-star candle shape rather than a simple
+  formula, confirmed directly by printing the intermediate HA frame rather than
+  hand-deriving it.
+
 ## Next up (as of 2026-10-11)
 
 SPY's exhaustion-reversal backtest is built, tested, and **now live**: the

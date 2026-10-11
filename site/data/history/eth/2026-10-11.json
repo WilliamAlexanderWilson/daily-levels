@@ -1,6 +1,6 @@
 {
-  "generated_at_utc": "2026-10-11T22:00:12.898248+00:00",
-  "generated_at_central": "2026-10-11T17:00:12.898248-05:00",
+  "generated_at_utc": "2026-10-11T23:00:47.181755+00:00",
+  "generated_at_central": "2026-10-11T18:00:47.181755-05:00",
   "price": 2534.1,
   "config": {
     "range_days": 60,
@@ -1007,13 +1007,14 @@
       "short_intensity": 0.2936246086618109
     }
   ],
+  "exhaustion_pattern": null,
   "futures_context": {
     "symbol": "PF_ETHUSD",
-    "mark_price": 2525.9284783096,
-    "open_interest": 30956.625,
-    "volume_24h": 23679.497,
-    "funding_rate_hourly_pct": 0.0012522416666667,
-    "funding_rate_prediction_hourly_pct": 0.0012522416666667
+    "mark_price": 2532.21059112616,
+    "open_interest": 30969.171,
+    "volume_24h": 23755.104,
+    "funding_rate_hourly_pct": 0.0015935045833333002,
+    "funding_rate_prediction_hourly_pct": 0.0015935045833333002
   },
   "diff": [
     {

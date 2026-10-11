@@ -6,6 +6,7 @@ and site/data/{asset}_round_proximity.json.
 """
 
 import config
+from src.backtest.exhaustion_pattern import build_exhaustion_scorecard_entry
 from src.backtest.replay import replay_levels
 from src.backtest.round_proximity import build_proximity_curve
 from src.backtest.scorecard import build_scorecard
@@ -22,6 +23,7 @@ def main() -> int:
             snapshots = replay_levels(candles_1d)
 
             scorecard = build_scorecard(snapshots, candles_1d)
+            scorecard["Exhaustion pattern"] = build_exhaustion_scorecard_entry(candles_1d)
             atomic_write_json(f"{config.DATA_DIR}/{asset_key}_scorecard.json", scorecard)
             total_touches = sum(v["touches"] for v in scorecard.values())
             print(f"  {len(scorecard)} level types, {total_touches} total touches")

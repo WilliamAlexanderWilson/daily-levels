@@ -1,6 +1,6 @@
 {
-  "generated_at_utc": "2026-10-11T22:00:11.692153+00:00",
-  "generated_at_central": "2026-10-11T17:00:11.692153-05:00",
+  "generated_at_utc": "2026-10-11T23:00:46.174417+00:00",
+  "generated_at_central": "2026-10-11T18:00:46.174417-05:00",
   "price": 83576.3,
   "config": {
     "range_days": 60,
@@ -836,13 +836,14 @@
       "short_intensity": 0.6072653368446284
     }
   ],
+  "exhaustion_pattern": null,
   "futures_context": {
     "symbol": "PF_XBTUSD",
-    "mark_price": 83408.59652295001,
-    "open_interest": 2423.775,
-    "volume_24h": 3136.5662,
-    "funding_rate_hourly_pct": 0.0014034466666667,
-    "funding_rate_prediction_hourly_pct": 0.0014034466666667
+    "mark_price": 83591.04246398307,
+    "open_interest": 2426.2009,
+    "volume_24h": 3131.3734,
+    "funding_rate_hourly_pct": 0.0012314904166666999,
+    "funding_rate_prediction_hourly_pct": 0.0012314904166666999
   },
   "diff": [
     {

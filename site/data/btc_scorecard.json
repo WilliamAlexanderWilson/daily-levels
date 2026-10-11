@@ -163,5 +163,16 @@
     "avg_move_after_hold_pct": -2.5357905872535733,
     "avg_move_after_break_pct": 3.382155352828918,
     "low_confidence": false
+  },
+  "Exhaustion pattern": {
+    "touches": 12,
+    "resolved": 12,
+    "holds": 7,
+    "breaks": 5,
+    "inconclusive": 0,
+    "hold_rate_pct": 58.333333333333336,
+    "avg_move_after_hold_pct": -2.0629378087586123,
+    "avg_move_after_break_pct": 2.04705846510989,
+    "low_confidence": true
   }
 }

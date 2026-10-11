@@ -258,6 +258,45 @@ main {
   color: var(--text);
 }
 
+.exhaustion-banner {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.6rem;
+  font-size: 0.82rem;
+  margin-bottom: 0.75rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.exhaustion-banner-label {
+  font-weight: 700;
+}
+
+.exhaustion-banner-odds {
+  color: var(--text-muted);
+}
+
+.exhaustion-banner.exhaustion-bullish {
+  background: color-mix(in srgb, var(--support) 12%, transparent);
+  border-color: var(--support);
+}
+
+.exhaustion-banner.exhaustion-bullish .exhaustion-banner-label {
+  color: var(--support);
+}
+
+.exhaustion-banner.exhaustion-bearish {
+  background: color-mix(in srgb, var(--resistance) 12%, transparent);
+  border-color: var(--resistance);
+}
+
+.exhaustion-banner.exhaustion-bearish .exhaustion-banner-label {
+  color: var(--resistance);
+}
+
 .nearest-levels {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;

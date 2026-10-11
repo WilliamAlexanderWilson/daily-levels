@@ -205,6 +205,28 @@ the real ~0.0008%). And Kraken Futures pays funding **hourly**, not every
 8 hours like most exchanges — the site labels it "/hr" explicitly so it
 isn't misread against an 8h mental model.
 
+## Exhaustion pattern (Daily timeframe)
+
+Detects the same kind of candle pattern SPY's backtest is built around (a
+run of same-direction Heikin-Ashi candles followed by a doji whose
+rejection-side wick exceeds every preceding trend candle's range), applied
+to BTC/ETH's own daily candles. **This reports a pattern, not a call** — if
+one just formed, a banner above the chart says so and shows how often this
+exact shape has reversed historically (with sample size, and a
+low-confidence flag below 30 resolved occurrences) — never "buy" or "sell."
+
+Computed once a day in the same engine run as every other level on this
+site (`src/levels/exhaustion_pattern.py`), not polled live — same cadence
+as POC/VAH/VAL/golden pocket, not the 15-second live price/order-book path.
+Most days nothing is detected at all; this is a specific, fairly rare
+candle shape, not a "there's always something nearby" kind of level.
+
+The historical reversal rate (`src/backtest/exhaustion_pattern.py`) is a
+row in the hold-rate scorecard table below ("Exhaustion pattern"), tested
+the same touch/hold/break way as every other row: did price move back in
+the called direction before closing further the other way, within the next
+10 days.
+
 ## Liquidation estimate (the green/red background heatmap)
 
 **This is a model, not real position data** — no exchange, Kraken

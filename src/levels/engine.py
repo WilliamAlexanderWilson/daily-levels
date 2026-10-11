@@ -7,6 +7,7 @@ import pandas as pd
 import config
 from src.fetch import fetch_candles
 from src.levels.confluence import RawLevel, merge_confluence
+from src.levels.exhaustion_pattern import detect_latest as detect_exhaustion_pattern
 from src.levels.flip_level import find_flip_levels
 from src.levels.golden_pocket import find_golden_pocket
 from src.levels.liquidation_estimate import estimate_liquidation_bins
@@ -45,6 +46,7 @@ def build_asset_levels(pair: str) -> dict:
 
     ref = get_reference_levels(candles_1d)
     flips = find_flip_levels(pivots, candles_1d, current_price)
+    exhaustion_pattern = detect_exhaustion_pattern(candles_1d)
 
     # POC/VAH/VAL/range high-low all come from the same RANGE_DAYS lookback
     # of 4h candles - naming that explicitly keeps the labels honest when
@@ -146,6 +148,7 @@ def build_asset_levels(pair: str) -> dict:
         "levels": levels_out,
         "golden_pocket_leg": golden_pocket_out,
         "liquidation_estimate": liquidation_bins_out,
+        "exhaustion_pattern": exhaustion_pattern,
     }
 
     return {"result": result, "candles_4h": candles_4h, "candles_1d": candles_1d}

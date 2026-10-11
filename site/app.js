@@ -1887,6 +1887,42 @@
     `;
   }
 
+  // --- exhaustion pattern banner ---
+  //
+  // Purely descriptive, like everything else on this site - reports that a
+  // Heikin-Ashi exhaustion candle just formed on the Daily timeframe and
+  // what that pattern has historically done, never a call to go long/short.
+  // Computed once a day in the same engine run as every other level
+  // (src/levels/exhaustion_pattern.py via src/levels/engine.py), not polled
+  // live - same cadence as POC/VAH/VAL/golden pocket, not the 15s-live
+  // price/order-book path.
+
+  function renderExhaustionBanner(detected, scorecardEntry) {
+    const el = document.getElementById("exhaustion-banner");
+    if (!detected) {
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
+
+    const isBullish = detected.direction === "bullish_reversal";
+    el.className = `exhaustion-banner ${isBullish ? "exhaustion-bullish" : "exhaustion-bearish"}`;
+
+    const label = isBullish ? "Bullish exhaustion" : "Bearish exhaustion";
+    const arrow = isBullish ? "▲" : "▼";
+
+    let oddsText = "no historical read yet";
+    if (scorecardEntry && scorecardEntry.resolved > 0) {
+      const lowConfNote = scorecardEntry.low_confidence ? " (low confidence, small sample)" : "";
+      oddsText = `reversed within 10 days ${scorecardEntry.hold_rate_pct.toFixed(1)}% of the time historically (n=${scorecardEntry.resolved})${lowConfNote}`;
+    }
+
+    el.innerHTML = `
+      <span class="exhaustion-banner-label">${arrow} ${label} pattern on Daily (${detected.date})</span>
+      <span class="exhaustion-banner-odds">${oddsText} — not a signal, read the odds yourself</span>
+    `;
+  }
+
   // --- scorecard table ---
 
   function renderScorecardTable(scorecard) {
@@ -1948,6 +1984,7 @@
     document.getElementById("range-select").hidden = isSpy;
     document.getElementById("spy-timeframe-select").hidden = !isSpy;
     document.getElementById("futures-context").hidden = isSpy; // crypto path's own renderFuturesContext() corrects this right after, for btc/eth
+    document.getElementById("exhaustion-banner").hidden = true; // crypto path's own renderExhaustionBanner() corrects this right after, for btc/eth
     document.getElementById("nearest-levels").hidden = isSpy;
     document.getElementById("level-jump-wrap").hidden = isSpy;
     document.getElementById("trade-controls").hidden = isSpy;
@@ -2275,6 +2312,7 @@
       renderNearestLevels(activeLevels, activeScorecard, levelsData.price);
       renderRoundProximityBands(levelsData.price, activeProximity);
       renderLevelJumpSelect(activeLevels, levelsData.price);
+      renderExhaustionBanner(levelsData.exhaustion_pattern, scorecard && scorecard["Exhaustion pattern"]);
     } catch (err) {
       if (state.asset !== asset || state.range !== range) return;
       console.error(err);
