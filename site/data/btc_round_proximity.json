@@ -11,10 +11,10 @@
   {
     "tolerance_fraction": 0.5,
     "touches": 677,
-    "resolved": 668,
-    "holds": 343,
+    "resolved": 667,
+    "holds": 342,
     "breaks": 325,
-    "hold_rate_pct": 51.34730538922155,
+    "hold_rate_pct": 51.2743628185907,
     "low_confidence": false
   },
   {
