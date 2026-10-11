@@ -26,7 +26,11 @@ from dataclasses import dataclass, field
 import pandas as pd
 
 DOJI_BODY_MAX_PCT = 0.30  # candidate candle's body must be <= this fraction of its own range
-TREND_LOOKBACK = 3        # how many same-direction HA candles must precede the candidate
+TREND_LOOKBACK = 4        # how many same-direction HA candles must precede the candidate
+# TREND_LOOKBACK was 3 until a parameter sweep (src/spy/sweep.py, 2026-10-11) against the
+# real ~2-year Alpaca sample found trend=4/doji<=0.30 the best-supported cell in a 4x6 grid
+# (150 resolved trades, +1.43% avg premium return vs. -0.05% at trend=3) - see README "Next
+# up" for the full table and the one-cell-of-24 overfitting caveat that comes with it.
 SESSION_START = "10:00"
 SESSION_END = "12:00"
 SIGNAL_CLUSTER_MINUTES = 15  # collapse near-simultaneous multi-TF triggers into one signal

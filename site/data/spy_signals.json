@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-10-11T22:00:41.961447+00:00",
+  "generated_at_utc": "2026-10-11T22:41:24.115009+00:00",
   "trades": [
     {
       "signal_time": 1729178100,
@@ -48,9 +48,9 @@
       "entry_premium": 2.669231825338386,
       "exit_time": 1731516300,
       "exit_underlying": 598.05,
-      "exit_premium": 3.214365232499972,
+      "exit_premium": 3.2143652324999152,
       "exit_reason": "target",
-      "pct_return": 0.2042285731747852
+      "pct_return": 0.20422857317476392
     },
     {
       "signal_time": 1731948600,
@@ -65,9 +65,26 @@
       "entry_premium": 2.554550119668022,
       "exit_time": 1731957600,
       "exit_underlying": 587.25,
-      "exit_premium": 3.0743184474582677,
+      "exit_premium": 3.074318447458211,
       "exit_reason": "target",
-      "pct_return": 0.20346765709877418
+      "pct_return": 0.20346765709875192
+    },
+    {
+      "signal_time": 1732029000,
+      "direction": "call",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        10
+      ],
+      "entry_underlying": 585.41,
+      "strike": 585.0,
+      "expiry_date": "2024-11-21",
+      "entry_premium": 3.271046928065175,
+      "exit_time": 1732030200,
+      "exit_underlying": 586.735,
+      "exit_premium": 4.011769806586699,
+      "exit_reason": "target",
+      "pct_return": 0.2264482579464739
     },
     {
       "signal_time": 1732030200,
@@ -87,55 +104,55 @@
       "pct_return": 0.21529413224175986
     },
     {
-      "signal_time": 1733152800,
+      "signal_time": 1732201200,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        15
+      ],
+      "entry_underlying": 589.045,
+      "strike": 589.0,
+      "expiry_date": "2024-11-25",
+      "entry_premium": 4.128353446260746,
+      "exit_time": 1732201800,
+      "exit_underlying": 590.65,
+      "exit_premium": 3.394030452233892,
+      "exit_reason": "stop",
+      "pct_return": -0.17787309240490706
+    },
+    {
+      "signal_time": 1732634100,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        15
+      ],
+      "entry_underlying": 598.14,
+      "strike": 598.0,
+      "expiry_date": "2024-11-29",
+      "entry_premium": 3.003192819428591,
+      "exit_time": 1732635600,
+      "exit_underlying": 599.32,
+      "exit_premium": 2.463142987668334,
+      "exit_reason": "stop",
+      "pct_return": -0.1798252274267926
+    },
+    {
+      "signal_time": 1733154000,
       "direction": "put",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         20
       ],
-      "entry_underlying": 602.995,
+      "entry_underlying": 603.4,
       "strike": 603.0,
       "expiry_date": "2024-12-04",
-      "entry_premium": 2.446004287731057,
-      "exit_time": 1733157300,
-      "exit_underlying": 603.51,
-      "exit_premium": 2.1744759024016957,
+      "entry_premium": 2.2455440013975476,
+      "exit_time": 1733158800,
+      "exit_underlying": 603.91,
+      "exit_premium": 1.9875666219589334,
       "exit_reason": "stop",
-      "pct_return": -0.11100895721701055
-    },
-    {
-      "signal_time": 1733155200,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 602.55,
-      "strike": 603.0,
-      "expiry_date": "2024-12-04",
-      "entry_premium": 2.6553890171844614,
-      "exit_time": 1733155500,
-      "exit_underlying": 603.165,
-      "exit_premium": 2.3470313345003433,
-      "exit_reason": "stop",
-      "pct_return": -0.11612523840709156
-    },
-    {
-      "signal_time": 1733244000,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        10
-      ],
-      "entry_underlying": 602.42,
-      "strike": 602.0,
-      "expiry_date": "2024-12-05",
-      "entry_premium": 2.202583516368975,
-      "exit_time": 1733246100,
-      "exit_underlying": 602.995,
-      "exit_premium": 1.9343658315833068,
-      "exit_reason": "stop",
-      "pct_return": -0.12177412697060087
+      "pct_return": -0.11488413465870995
     },
     {
       "signal_time": 1733412600,
@@ -157,8 +174,9 @@
     {
       "signal_time": 1734017400,
       "direction": "call",
-      "n_confirmed": 1,
+      "n_confirmed": 2,
       "confirmed_timeframes": [
+        15,
         20
       ],
       "entry_underlying": 606.64,
@@ -181,63 +199,29 @@
       "entry_underlying": 588.18,
       "strike": 588.0,
       "expiry_date": "2024-12-24",
-      "entry_premium": 4.854101292523239,
+      "entry_premium": 4.854101292523183,
       "exit_time": 1734710400,
       "exit_underlying": 590.33,
-      "exit_premium": 6.036066078387819,
+      "exit_premium": 6.0360660783879325,
       "exit_reason": "target",
-      "pct_return": 0.24349817085299744
+      "pct_return": 0.2434981708530354
     },
     {
-      "signal_time": 1735920600,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        10
-      ],
-      "entry_underlying": 588.5,
-      "strike": 588.0,
-      "expiry_date": "2025-01-07",
-      "entry_premium": 3.6955940608141304,
-      "exit_time": 1735921500,
-      "exit_underlying": 589.51,
-      "exit_premium": 3.238953666474714,
-      "exit_reason": "stop",
-      "pct_return": -0.12356346146925554
-    },
-    {
-      "signal_time": 1736348400,
+      "signal_time": 1734967200,
       "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         10
       ],
-      "entry_underlying": 588.55,
+      "entry_underlying": 589.06,
       "strike": 589.0,
-      "expiry_date": "2025-01-13",
-      "entry_premium": 4.915803720658118,
-      "exit_time": 1736349000,
-      "exit_underlying": 586.4,
-      "exit_premium": 3.9115630374220984,
-      "exit_reason": "stop",
-      "pct_return": -0.2042881978822324
-    },
-    {
-      "signal_time": 1736350200,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        20
-      ],
-      "entry_underlying": 586.94,
-      "strike": 587.0,
-      "expiry_date": "2025-01-13",
-      "entry_premium": 5.085192225979995,
-      "exit_time": 1736354100,
-      "exit_underlying": 589.46,
-      "exit_premium": 6.454478108581668,
+      "expiry_date": "2024-12-26",
+      "entry_premium": 3.83970431335581,
+      "exit_time": 1735050600,
+      "exit_underlying": 596.125,
+      "exit_premium": 7.727833474929184,
       "exit_reason": "target",
-      "pct_return": 0.2692692472087996
+      "pct_return": 1.0126116086723465
     },
     {
       "signal_time": 1736352000,
@@ -252,9 +236,9 @@
       "entry_premium": 5.027240816051574,
       "exit_time": 1736356800,
       "exit_underlying": 586.7,
-      "exit_premium": 4.4450657157757405,
+      "exit_premium": 4.445065715775797,
       "exit_reason": "stop",
-      "pct_return": -0.11580410041567836
+      "pct_return": -0.11580410041566706
     },
     {
       "signal_time": 1736780400,
@@ -303,9 +287,9 @@
       "entry_premium": 3.4319505456290926,
       "exit_time": 1738597200,
       "exit_underlying": 598.19,
-      "exit_premium": 4.165442319638942,
+      "exit_premium": 4.165442319638828,
       "exit_reason": "target",
-      "pct_return": 0.2137244590963057
+      "pct_return": 0.21372445909627255
     },
     {
       "signal_time": 1738772400,
@@ -376,6 +360,40 @@
       "pct_return": 0.2540596131097582
     },
     {
+      "signal_time": 1739373600,
+      "direction": "call",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        30
+      ],
+      "entry_underlying": 601.92,
+      "strike": 602.0,
+      "expiry_date": "2025-02-14",
+      "entry_premium": 3.014478848645922,
+      "exit_time": 1739373900,
+      "exit_underlying": 601.28,
+      "exit_premium": 2.6994957737226173,
+      "exit_reason": "stop",
+      "pct_return": -0.10449005972119936
+    },
+    {
+      "signal_time": 1739547000,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        15
+      ],
+      "entry_underlying": 610.175,
+      "strike": 610.0,
+      "expiry_date": "2025-02-19",
+      "entry_premium": 4.056322077742323,
+      "exit_time": 1739889000,
+      "exit_underlying": 610.685,
+      "exit_premium": 1.844397044323955,
+      "exit_reason": "stop",
+      "pct_return": -0.5453031073532223
+    },
+    {
       "signal_time": 1740069900,
       "direction": "call",
       "n_confirmed": 1,
@@ -393,39 +411,38 @@
       "pct_return": 0.2173776836306848
     },
     {
-      "signal_time": 1741360500,
-      "direction": "put",
-      "n_confirmed": 2,
-      "confirmed_timeframes": [
-        15,
-        30
-      ],
-      "entry_underlying": 572.205,
-      "strike": 572.0,
-      "expiry_date": "2025-03-12",
-      "entry_premium": 6.112216496733481,
-      "exit_time": 1741361700,
-      "exit_underlying": 569.19,
-      "exit_premium": 7.670272414631256,
-      "exit_reason": "target",
-      "pct_return": 0.2549084965708329
-    },
-    {
-      "signal_time": 1741362600,
+      "signal_time": 1741274100,
       "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
-        10
+        15
       ],
-      "entry_underlying": 570.92,
-      "strike": 571.0,
-      "expiry_date": "2025-03-12",
-      "entry_premium": 6.444843151215196,
-      "exit_time": 1741364100,
-      "exit_underlying": 569.07,
-      "exit_premium": 5.531539357412555,
+      "entry_underlying": 578.06,
+      "strike": 578.0,
+      "expiry_date": "2025-03-11",
+      "entry_premium": 7.024340954174704,
+      "exit_time": 1741279200,
+      "exit_underlying": 576.66,
+      "exit_premium": 6.28667792574538,
       "exit_reason": "stop",
-      "pct_return": -0.14171078680641502
+      "pct_return": -0.10501526523864371
+    },
+    {
+      "signal_time": 1741361400,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        30
+      ],
+      "entry_underlying": 570.06,
+      "strike": 570.0,
+      "expiry_date": "2025-03-12",
+      "entry_premium": 6.154553892524348,
+      "exit_time": 1741362300,
+      "exit_underlying": 571.695,
+      "exit_premium": 5.388454973558481,
+      "exit_reason": "stop",
+      "pct_return": -0.12447675856676005
     },
     {
       "signal_time": 1741875300,
@@ -445,40 +462,6 @@
       "pct_return": -0.16742315310089698
     },
     {
-      "signal_time": 1741961700,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        15
-      ],
-      "entry_underlying": 556.91,
-      "strike": 557.0,
-      "expiry_date": "2025-03-18",
-      "entry_premium": 5.13685354250066,
-      "exit_time": 1741962900,
-      "exit_underlying": 558.65,
-      "exit_premium": 4.32098055636223,
-      "exit_reason": "stop",
-      "pct_return": -0.15882737932630583
-    },
-    {
-      "signal_time": 1742397000,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        10
-      ],
-      "entry_underlying": 564.585,
-      "strike": 565.0,
-      "expiry_date": "2025-03-21",
-      "entry_premium": 3.338959155631528,
-      "exit_time": 1742397300,
-      "exit_underlying": 563.75,
-      "exit_premium": 2.9430497535865356,
-      "exit_reason": "stop",
-      "pct_return": -0.11857269993172782
-    },
-    {
       "signal_time": 1744034700,
       "direction": "call",
       "n_confirmed": 1,
@@ -496,6 +479,40 @@
       "pct_return": 1.7526567965427826
     },
     {
+      "signal_time": 1744124700,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        30
+      ],
+      "entry_underlying": 517.42,
+      "strike": 517.0,
+      "expiry_date": "2025-04-10",
+      "entry_premium": 8.124919897527064,
+      "exit_time": 1744125900,
+      "exit_underlying": 514.16,
+      "exit_premium": 9.770379982951624,
+      "exit_reason": "target",
+      "pct_return": 0.2025201609588027
+    },
+    {
+      "signal_time": 1744209000,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        15
+      ],
+      "entry_underlying": 500.99,
+      "strike": 501.0,
+      "expiry_date": "2025-04-11",
+      "entry_premium": 5.198695030270727,
+      "exit_time": 1744209300,
+      "exit_underlying": 498.74,
+      "exit_premium": 6.377566864571804,
+      "exit_reason": "target",
+      "pct_return": 0.22676302945966156
+    },
+    {
       "signal_time": 1744293600,
       "direction": "call",
       "n_confirmed": 1,
@@ -508,17 +525,50 @@
       "entry_premium": 9.16946061976472,
       "exit_time": 1744296900,
       "exit_underlying": 526.37,
-      "exit_premium": 8.052215469550873,
+      "exit_premium": 8.052215469550845,
       "exit_reason": "stop",
-      "pct_return": -0.12184415164024279
+      "pct_return": -0.12184415164024588
+    },
+    {
+      "signal_time": 1744640100,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        20
+      ],
+      "entry_underlying": 540.91,
+      "strike": 541.0,
+      "expiry_date": "2025-04-16",
+      "entry_premium": 5.204350290801301,
+      "exit_time": 1744640700,
+      "exit_underlying": 542.08,
+      "exit_premium": 4.639138930438975,
+      "exit_reason": "stop",
+      "pct_return": -0.10860363518599785
+    },
+    {
+      "signal_time": 1744899000,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        10
+      ],
+      "entry_underlying": 527.4,
+      "strike": 527.0,
+      "expiry_date": "2025-04-22",
+      "entry_premium": 7.135252376794142,
+      "exit_time": 1744900500,
+      "exit_underlying": 524.43,
+      "exit_premium": 8.638193158471665,
+      "exit_reason": "target",
+      "pct_return": 0.21063596664996906
     },
     {
       "signal_time": 1744900200,
       "direction": "put",
-      "n_confirmed": 2,
+      "n_confirmed": 1,
       "confirmed_timeframes": [
-        20,
-        30
+        20
       ],
       "entry_underlying": 525.15,
       "strike": 525.0,
@@ -531,38 +581,55 @@
       "pct_return": -0.1431739317664162
     },
     {
-      "signal_time": 1745591700,
+      "signal_time": 1744904400,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        10
+      ],
+      "entry_underlying": 527.05,
+      "strike": 527.0,
+      "expiry_date": "2025-04-22",
+      "entry_premium": 7.261029193300544,
+      "exit_time": 1744906500,
+      "exit_underlying": 529.33,
+      "exit_premium": 6.191972296672986,
+      "exit_reason": "stop",
+      "pct_return": -0.14723214411724622
+    },
+    {
+      "signal_time": 1746024000,
+      "direction": "call",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        30
+      ],
+      "entry_underlying": 546.94,
+      "strike": 547.0,
+      "expiry_date": "2025-05-02",
+      "entry_premium": 4.236307037622737,
+      "exit_time": 1746025800,
+      "exit_underlying": 548.65,
+      "exit_premium": 5.136846571281637,
+      "exit_reason": "target",
+      "pct_return": 0.21257654973097767
+    },
+    {
+      "signal_time": 1746453600,
       "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         20
       ],
-      "entry_underlying": 545.81,
-      "strike": 546.0,
-      "expiry_date": "2025-04-29",
-      "entry_premium": 5.84042619888595,
-      "exit_time": 1745598000,
-      "exit_underlying": 548.42,
-      "exit_premium": 7.202931838334052,
+      "entry_underlying": 563.1,
+      "strike": 563.0,
+      "expiry_date": "2025-05-07",
+      "entry_premium": 4.283482282017189,
+      "exit_time": 1746456600,
+      "exit_underlying": 564.77,
+      "exit_premium": 5.159176487188631,
       "exit_reason": "target",
-      "pct_return": 0.2332887349399257
-    },
-    {
-      "signal_time": 1745848800,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        15
-      ],
-      "entry_underlying": 550.965,
-      "strike": 551.0,
-      "expiry_date": "2025-04-30",
-      "entry_premium": 4.294320874319396,
-      "exit_time": 1745850000,
-      "exit_underlying": 552.04,
-      "exit_premium": 3.7728198912910216,
-      "exit_reason": "stop",
-      "pct_return": -0.1214396870403931
+      "pct_return": 0.20443511785907456
     },
     {
       "signal_time": 1746540000,
@@ -584,8 +651,9 @@
     {
       "signal_time": 1746541200,
       "direction": "call",
-      "n_confirmed": 1,
+      "n_confirmed": 2,
       "confirmed_timeframes": [
+        15,
         20
       ],
       "entry_underlying": 560.42,
@@ -597,6 +665,23 @@
       "exit_premium": 5.945646748793422,
       "exit_reason": "target",
       "pct_return": 0.28993329059855955
+    },
+    {
+      "signal_time": 1746713400,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        15
+      ],
+      "entry_underlying": 562.84,
+      "strike": 563.0,
+      "expiry_date": "2025-05-12",
+      "entry_premium": 5.400022262834057,
+      "exit_time": 1746714300,
+      "exit_underlying": 564.47,
+      "exit_premium": 4.629295249689733,
+      "exit_reason": "stop",
+      "pct_return": -0.14272663623053813
     },
     {
       "signal_time": 1746800400,
@@ -619,10 +704,9 @@
     {
       "signal_time": 1747236000,
       "direction": "call",
-      "n_confirmed": 2,
+      "n_confirmed": 1,
       "confirmed_timeframes": [
-        20,
-        30
+        20
       ],
       "entry_underlying": 587.67,
       "strike": 588.0,
@@ -633,23 +717,6 @@
       "exit_premium": 2.900615488758149,
       "exit_reason": "stop",
       "pct_return": -0.11740461878300987
-    },
-    {
-      "signal_time": 1747321500,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 587.18,
-      "strike": 587.0,
-      "expiry_date": "2025-05-19",
-      "entry_premium": 4.268789845334993,
-      "exit_time": 1747322100,
-      "exit_underlying": 588.125,
-      "exit_premium": 3.8267002876195306,
-      "exit_reason": "stop",
-      "pct_return": -0.10356320496746531
     },
     {
       "signal_time": 1747926300,
@@ -669,72 +736,21 @@
       "pct_return": 0.20224668770313123
     },
     {
-      "signal_time": 1748619900,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        15
-      ],
-      "entry_underlying": 588.15,
-      "strike": 588.0,
-      "expiry_date": "2025-06-03",
-      "entry_premium": 4.861025376886744,
-      "exit_time": 1748622000,
-      "exit_underlying": 586.77,
-      "exit_premium": 4.165211761774231,
-      "exit_reason": "stop",
-      "pct_return": -0.14314132537159244
-    },
-    {
-      "signal_time": 1748874900,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 588.36,
-      "strike": 588.0,
-      "expiry_date": "2025-06-04",
-      "entry_premium": 3.6155503283001167,
-      "exit_time": 1748879400,
-      "exit_underlying": 589.97,
-      "exit_premium": 4.4829915750540295,
-      "exit_reason": "target",
-      "pct_return": 0.23991956078281118
-    },
-    {
-      "signal_time": 1749048300,
+      "signal_time": 1748959500,
       "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 597.14,
-      "strike": 597.0,
-      "expiry_date": "2025-06-06",
-      "entry_premium": 3.1344715450644003,
-      "exit_time": 1749053400,
-      "exit_underlying": 595.82,
-      "exit_premium": 3.7741863822917026,
-      "exit_reason": "target",
-      "pct_return": 0.20409017214867037
-    },
-    {
-      "signal_time": 1749650400,
-      "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         10
       ],
-      "entry_underlying": 603.52,
-      "strike": 604.0,
-      "expiry_date": "2025-06-13",
-      "entry_premium": 3.095157475133078,
-      "exit_time": 1749651900,
-      "exit_underlying": 604.76,
-      "exit_premium": 3.7220889790920637,
-      "exit_reason": "target",
-      "pct_return": 0.20255237705862777
+      "entry_underlying": 592.67,
+      "strike": 593.0,
+      "expiry_date": "2025-06-05",
+      "entry_premium": 3.3800589468552857,
+      "exit_time": 1748960100,
+      "exit_underlying": 593.35,
+      "exit_premium": 3.041876229953914,
+      "exit_reason": "stop",
+      "pct_return": -0.10005231335270284
     },
     {
       "signal_time": 1750946700,
@@ -754,56 +770,39 @@
       "pct_return": -0.1367224517454171
     },
     {
-      "signal_time": 1751379600,
+      "signal_time": 1752071400,
       "direction": "put",
       "n_confirmed": 1,
       "confirmed_timeframes": [
-        10
+        15
       ],
-      "entry_underlying": 617.22,
-      "strike": 617.0,
-      "expiry_date": "2025-07-03",
-      "entry_premium": 3.0656961244477543,
-      "exit_time": 1751382600,
-      "exit_underlying": 615.74,
-      "exit_premium": 3.8055641450845883,
+      "entry_underlying": 622.56,
+      "strike": 623.0,
+      "expiry_date": "2025-07-11",
+      "entry_premium": 3.246273035724414,
+      "exit_time": 1752074100,
+      "exit_underlying": 621.31,
+      "exit_premium": 3.907227761957813,
       "exit_reason": "target",
-      "pct_return": 0.24133768990888219
+      "pct_return": 0.20360416975397921
     },
     {
-      "signal_time": 1752678600,
+      "signal_time": 1752678000,
       "direction": "call",
       "n_confirmed": 2,
       "confirmed_timeframes": [
         15,
         20
       ],
-      "entry_underlying": 623.3,
+      "entry_underlying": 622.68,
       "strike": 623.0,
       "expiry_date": "2025-07-18",
-      "entry_premium": 3.536465711127846,
+      "entry_premium": 3.226430885847094,
       "exit_time": 1752678900,
       "exit_underlying": 620.27,
-      "exit_premium": 2.1666779744426776,
+      "exit_premium": 2.1666779744427345,
       "exit_reason": "stop",
-      "pct_return": -0.3873323958366098
-    },
-    {
-      "signal_time": 1752679800,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 619.365,
-      "strike": 619.0,
-      "expiry_date": "2025-07-18",
-      "entry_premium": 3.538084408908162,
-      "exit_time": 1752681000,
-      "exit_underlying": 620.7,
-      "exit_premium": 4.2736917155392575,
-      "exit_reason": "target",
-      "pct_return": 0.20791118063181
+      "pct_return": -0.3284598210527368
     },
     {
       "signal_time": 1752681600,
@@ -827,7 +826,7 @@
       "direction": "put",
       "n_confirmed": 1,
       "confirmed_timeframes": [
-        15
+        10
       ],
       "entry_underlying": 635.16,
       "strike": 635.0,
@@ -840,56 +839,21 @@
       "pct_return": -0.10948429801895185
     },
     {
-      "signal_time": 1753453500,
-      "direction": "put",
-      "n_confirmed": 2,
-      "confirmed_timeframes": [
-        15,
-        20
-      ],
-      "entry_underlying": 635.495,
-      "strike": 635.0,
-      "expiry_date": "2025-07-29",
-      "entry_premium": 3.7008033271555973,
-      "exit_time": 1753459800,
-      "exit_underlying": 636.37,
-      "exit_premium": 3.2744789556418255,
-      "exit_reason": "stop",
-      "pct_return": -0.11519779189169742
-    },
-    {
-      "signal_time": 1754668500,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        15
-      ],
-      "entry_underlying": 636.315,
-      "strike": 636.0,
-      "expiry_date": "2025-08-12",
-      "entry_premium": 4.406686819658944,
-      "exit_time": 1754919000,
-      "exit_underlying": 637.22,
-      "exit_premium": 3.1410394506306147,
-      "exit_reason": "stop",
-      "pct_return": -0.2872106461893482
-    },
-    {
-      "signal_time": 1754922600,
+      "signal_time": 1755095700,
       "direction": "put",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         30
       ],
-      "entry_underlying": 637.24,
-      "strike": 637.0,
-      "expiry_date": "2025-08-13",
-      "entry_premium": 3.0388641052464322,
-      "exit_time": 1754927700,
-      "exit_underlying": 637.85,
-      "exit_premium": 2.7151388037117954,
-      "exit_reason": "stop",
-      "pct_return": -0.10652839032049603
+      "entry_underlying": 644.1,
+      "strike": 644.0,
+      "expiry_date": "2025-08-15",
+      "entry_premium": 2.7857049417381745,
+      "exit_time": 1755105000,
+      "exit_underlying": 642.82,
+      "exit_premium": 3.383999986741628,
+      "exit_reason": "target",
+      "pct_return": 0.21477330066052874
     },
     {
       "signal_time": 1755273300,
@@ -911,8 +875,9 @@
     {
       "signal_time": 1755612000,
       "direction": "call",
-      "n_confirmed": 1,
+      "n_confirmed": 2,
       "confirmed_timeframes": [
+        10,
         15
       ],
       "entry_underlying": 644.1,
@@ -926,12 +891,28 @@
       "pct_return": -0.16228649582875068
     },
     {
+      "signal_time": 1755703800,
+      "direction": "call",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        30
+      ],
+      "entry_underlying": 636.735,
+      "strike": 637.0,
+      "expiry_date": "2025-08-22",
+      "entry_premium": 3.024014458548777,
+      "exit_time": 1755704700,
+      "exit_underlying": 635.94,
+      "exit_premium": 2.638378826933547,
+      "exit_reason": "stop",
+      "pct_return": -0.12752440072667393
+    },
+    {
       "signal_time": 1755785700,
       "direction": "call",
-      "n_confirmed": 2,
+      "n_confirmed": 1,
       "confirmed_timeframes": [
-        20,
-        30
+        20
       ],
       "entry_underlying": 637.535,
       "strike": 638.0,
@@ -961,22 +942,21 @@
       "pct_return": 0.289910323258882
     },
     {
-      "signal_time": 1756395000,
+      "signal_time": 1756394700,
       "direction": "put",
-      "n_confirmed": 2,
+      "n_confirmed": 1,
       "confirmed_timeframes": [
-        10,
-        15
+        10
       ],
-      "entry_underlying": 646.88,
-      "strike": 647.0,
+      "entry_underlying": 646.265,
+      "strike": 646.0,
       "expiry_date": "2025-09-02",
-      "entry_premium": 4.328675665334686,
-      "exit_time": 1756398300,
-      "exit_underlying": 648.15,
-      "exit_premium": 3.721878550187796,
+      "entry_premium": 4.137996285966381,
+      "exit_time": 1756397100,
+      "exit_underlying": 647.33,
+      "exit_premium": 3.6416328790169814,
       "exit_reason": "stop",
-      "pct_return": -0.14018077630678139
+      "pct_return": -0.11995259846722635
     },
     {
       "signal_time": 1757081100,
@@ -998,8 +978,9 @@
     {
       "signal_time": 1757340900,
       "direction": "put",
-      "n_confirmed": 1,
+      "n_confirmed": 2,
       "confirmed_timeframes": [
+        10,
         15
       ],
       "entry_underlying": 647.93,
@@ -1030,38 +1011,38 @@
       "pct_return": -0.1117367055094642
     },
     {
-      "signal_time": 1757519400,
+      "signal_time": 1757519100,
       "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
-        20
+        15
       ],
-      "entry_underlying": 653.61,
-      "strike": 654.0,
+      "entry_underlying": 653.43,
+      "strike": 653.0,
       "expiry_date": "2025-09-12",
-      "entry_premium": 2.967675633811723,
-      "exit_time": 1757521200,
-      "exit_underlying": 652.89,
-      "exit_premium": 2.6131257414148195,
+      "entry_premium": 3.3842528252183683,
+      "exit_time": 1757521500,
+      "exit_underlying": 652.64,
+      "exit_premium": 2.9594915504548567,
       "exit_reason": "stop",
-      "pct_return": -0.11947056759081004
+      "pct_return": -0.125511094087985
     },
     {
-      "signal_time": 1758637500,
+      "signal_time": 1758209400,
       "direction": "put",
       "n_confirmed": 1,
       "confirmed_timeframes": [
-        20
+        30
       ],
-      "entry_underlying": 666.635,
-      "strike": 667.0,
-      "expiry_date": "2025-09-25",
-      "entry_premium": 3.5694319190234296,
-      "exit_time": 1758643500,
-      "exit_underlying": 665.165,
-      "exit_premium": 4.3141320036428965,
+      "entry_underlying": 663.67,
+      "strike": 664.0,
+      "expiry_date": "2025-09-22",
+      "entry_premium": 4.47597028991521,
+      "exit_time": 1758294600,
+      "exit_underlying": 661.005,
+      "exit_premium": 5.3724495231741685,
       "exit_reason": "target",
-      "pct_return": 0.20863266242747427
+      "pct_return": 0.2002871277494428
     },
     {
       "signal_time": 1758809400,
@@ -1081,6 +1062,24 @@
       "pct_return": -0.14889427284477152
     },
     {
+      "signal_time": 1758896400,
+      "direction": "put",
+      "n_confirmed": 2,
+      "confirmed_timeframes": [
+        15,
+        20
+      ],
+      "entry_underlying": 658.84,
+      "strike": 659.0,
+      "expiry_date": "2025-09-30",
+      "entry_premium": 4.267189648619478,
+      "exit_time": 1758900300,
+      "exit_underlying": 659.92,
+      "exit_premium": 3.735477250867234,
+      "exit_reason": "stop",
+      "pct_return": -0.12460481992504455
+    },
+    {
       "signal_time": 1758900000,
       "direction": "call",
       "n_confirmed": 1,
@@ -1096,23 +1095,6 @@
       "exit_premium": 5.4258878296752755,
       "exit_reason": "target",
       "pct_return": 0.21674671188086406
-    },
-    {
-      "signal_time": 1759241100,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        20
-      ],
-      "entry_underlying": 662.455,
-      "strike": 662.0,
-      "expiry_date": "2025-10-02",
-      "entry_premium": 3.6850990238234544,
-      "exit_time": 1759257600,
-      "exit_underlying": 664.28,
-      "exit_premium": 4.583290549239393,
-      "exit_reason": "target",
-      "pct_return": 0.24373606234440484
     },
     {
       "signal_time": 1759244100,
@@ -1132,23 +1114,6 @@
       "pct_return": -0.1066547798394056
     },
     {
-      "signal_time": 1759506600,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        10
-      ],
-      "entry_underlying": 672.2,
-      "strike": 672.0,
-      "expiry_date": "2025-10-07",
-      "entry_premium": 5.018053601684869,
-      "exit_time": 1759510800,
-      "exit_underlying": 670.88,
-      "exit_premium": 4.331888141396348,
-      "exit_reason": "stop",
-      "pct_return": -0.13673936445360668
-    },
-    {
       "signal_time": 1759507200,
       "direction": "put",
       "n_confirmed": 1,
@@ -1166,38 +1131,21 @@
       "pct_return": 0.21503699170972962
     },
     {
-      "signal_time": 1760624400,
+      "signal_time": 1760450400,
       "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
-        15
+        10
       ],
-      "entry_underlying": 666.91,
-      "strike": 667.0,
-      "expiry_date": "2025-10-20",
-      "entry_premium": 7.350686407646208,
-      "exit_time": 1760629200,
-      "exit_underlying": 665.12,
-      "exit_premium": 6.424368358313927,
-      "exit_reason": "stop",
-      "pct_return": -0.12601789791613496
-    },
-    {
-      "signal_time": 1761141600,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 671.455,
-      "strike": 671.0,
-      "expiry_date": "2025-10-24",
-      "entry_premium": 4.22126308171903,
-      "exit_time": 1761142800,
-      "exit_underlying": 670.46,
-      "exit_premium": 3.7039133635793746,
-      "exit_reason": "stop",
-      "pct_return": -0.12255803728039016
+      "entry_underlying": 657.52,
+      "strike": 658.0,
+      "expiry_date": "2025-10-16",
+      "entry_premium": 4.1235879193293385,
+      "exit_time": 1760451600,
+      "exit_underlying": 659.16,
+      "exit_premium": 4.964951422976526,
+      "exit_reason": "target",
+      "pct_return": 0.2040367563653225
     },
     {
       "signal_time": 1761145800,
@@ -1217,56 +1165,38 @@
       "pct_return": -0.14098759875576478
     },
     {
-      "signal_time": 1761666000,
+      "signal_time": 1762528200,
       "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
-        30
+        10
       ],
-      "entry_underlying": 685.14,
-      "strike": 685.0,
-      "expiry_date": "2025-10-30",
-      "entry_premium": 3.615568198677863,
-      "exit_time": 1761669000,
-      "exit_underlying": 686.6,
-      "exit_premium": 4.3887442150557945,
-      "exit_reason": "target",
-      "pct_return": 0.21384633725362046
-    },
-    {
-      "signal_time": 1762268400,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 678.99,
-      "strike": 679.0,
-      "expiry_date": "2025-11-06",
-      "entry_premium": 4.1128822256874855,
-      "exit_time": 1762271700,
-      "exit_underlying": 678.14,
-      "exit_premium": 3.659209825454127,
+      "entry_underlying": 666.53,
+      "strike": 667.0,
+      "expiry_date": "2025-11-11",
+      "entry_premium": 5.3789167533038835,
+      "exit_time": 1762529400,
+      "exit_underlying": 665.4,
+      "exit_premium": 4.8246196390044815,
       "exit_reason": "stop",
-      "pct_return": -0.11030522522621597
+      "pct_return": -0.10304995219696177
     },
     {
-      "signal_time": 1762528800,
+      "signal_time": 1762530000,
       "direction": "call",
-      "n_confirmed": 2,
+      "n_confirmed": 1,
       "confirmed_timeframes": [
-        15,
         20
       ],
-      "entry_underlying": 665.61,
-      "strike": 666.0,
+      "entry_underlying": 664.24,
+      "strike": 664.0,
       "expiry_date": "2025-11-11",
-      "entry_premium": 5.40578757185267,
-      "exit_time": 1762530000,
-      "exit_underlying": 664.24,
-      "exit_premium": 4.737474681291985,
+      "entry_premium": 5.700969931021859,
+      "exit_time": 1762531800,
+      "exit_underlying": 662.76,
+      "exit_premium": 4.95035747669823,
       "exit_reason": "stop",
-      "pct_return": -0.12362914407523434
+      "pct_return": -0.13166399111126123
     },
     {
       "signal_time": 1762534800,
@@ -1284,6 +1214,58 @@
       "exit_premium": 6.454866709956093,
       "exit_reason": "target",
       "pct_return": 0.2121318635389367
+    },
+    {
+      "signal_time": 1762960200,
+      "direction": "call",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        10
+      ],
+      "entry_underlying": 683.125,
+      "strike": 683.0,
+      "expiry_date": "2025-11-14",
+      "entry_premium": 3.8815525444711625,
+      "exit_time": 1762962600,
+      "exit_underlying": 682.15,
+      "exit_premium": 3.3759785790452383,
+      "exit_reason": "stop",
+      "pct_return": -0.13025044995102739
+    },
+    {
+      "signal_time": 1763047200,
+      "direction": "call",
+      "n_confirmed": 2,
+      "confirmed_timeframes": [
+        15,
+        20
+      ],
+      "entry_underlying": 679.715,
+      "strike": 680.0,
+      "expiry_date": "2025-11-17",
+      "entry_premium": 5.845018406593795,
+      "exit_time": 1763047800,
+      "exit_underlying": 677.85,
+      "exit_premium": 4.946702094501859,
+      "exit_reason": "stop",
+      "pct_return": -0.15368921868210725
+    },
+    {
+      "signal_time": 1763048400,
+      "direction": "call",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        20
+      ],
+      "entry_underlying": 677.25,
+      "strike": 677.0,
+      "expiry_date": "2025-11-17",
+      "entry_premium": 6.082329531977678,
+      "exit_time": 1763049000,
+      "exit_underlying": 675.58,
+      "exit_premium": 5.248833119786752,
+      "exit_reason": "stop",
+      "pct_return": -0.137035720904111
     },
     {
       "signal_time": 1763132400,
@@ -1371,38 +1353,21 @@
       "pct_return": 0.28407919533861886
     },
     {
-      "signal_time": 1763738100,
+      "signal_time": 1763739000,
       "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         15
       ],
-      "entry_underlying": 654.21,
-      "strike": 654.0,
+      "entry_underlying": 652.72,
+      "strike": 653.0,
       "expiry_date": "2025-11-25",
-      "entry_premium": 6.8351789022911476,
-      "exit_time": 1763739000,
-      "exit_underlying": 652.72,
-      "exit_premium": 6.083543534754028,
-      "exit_reason": "stop",
-      "pct_return": -0.10996571973926997
-    },
-    {
-      "signal_time": 1763996400,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 665.19,
-      "strike": 665.0,
-      "expiry_date": "2025-11-26",
-      "entry_premium": 4.105283077357058,
-      "exit_time": 1763998500,
-      "exit_underlying": 666.45,
-      "exit_premium": 3.5026496975062855,
-      "exit_reason": "stop",
-      "pct_return": -0.14679459820313823
+      "entry_premium": 6.566132529461299,
+      "exit_time": 1763742300,
+      "exit_underlying": 655.94,
+      "exit_premium": 8.28631807582002,
+      "exit_reason": "target",
+      "pct_return": 0.2619784993130269
     },
     {
       "signal_time": 1764082800,
@@ -1426,7 +1391,7 @@
       "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
-        30
+        15
       ],
       "entry_underlying": 669.61,
       "strike": 670.0,
@@ -1434,9 +1399,9 @@
       "entry_premium": 4.578612228774716,
       "exit_time": 1764089400,
       "exit_underlying": 671.645,
-      "exit_premium": 5.619719400979932,
+      "exit_premium": 5.619719400979875,
       "exit_reason": "target",
-      "pct_return": 0.22738487563158993
+      "pct_return": 0.22738487563157753
     },
     {
       "signal_time": 1764088200,
@@ -1504,16 +1469,15 @@
       "entry_premium": 4.664171871011149,
       "exit_time": 1764864000,
       "exit_underlying": 682.74,
-      "exit_premium": 4.149704466210096,
+      "exit_premium": 4.149704466210153,
       "exit_reason": "stop",
-      "pct_return": -0.11030198265175017
+      "pct_return": -0.11030198265173799
     },
     {
       "signal_time": 1765465800,
       "direction": "call",
-      "n_confirmed": 2,
+      "n_confirmed": 1,
       "confirmed_timeframes": [
-        10,
         30
       ],
       "entry_underlying": 685.05,
@@ -1527,29 +1491,11 @@
       "pct_return": 0.21543314416543305
     },
     {
-      "signal_time": 1765471200,
+      "signal_time": 1765897200,
       "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         15
-      ],
-      "entry_underlying": 686.365,
-      "strike": 686.0,
-      "expiry_date": "2025-12-15",
-      "entry_premium": 4.684599662564494,
-      "exit_time": 1765471800,
-      "exit_underlying": 685.25,
-      "exit_premium": 4.115811710968444,
-      "exit_reason": "stop",
-      "pct_return": -0.12141655478937516
-    },
-    {
-      "signal_time": 1765897200,
-      "direction": "call",
-      "n_confirmed": 2,
-      "confirmed_timeframes": [
-        15,
-        20
       ],
       "entry_underlying": 680.01,
       "strike": 680.0,
@@ -1579,6 +1525,23 @@
       "pct_return": 0.24519679110993298
     },
     {
+      "signal_time": 1765983900,
+      "direction": "call",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        10
+      ],
+      "entry_underlying": 678.645,
+      "strike": 679.0,
+      "expiry_date": "2025-12-19",
+      "entry_premium": 3.643444745325894,
+      "exit_time": 1765985700,
+      "exit_underlying": 676.92,
+      "exit_premium": 2.8364307816532914,
+      "exit_reason": "stop",
+      "pct_return": -0.22149751679585794
+    },
+    {
       "signal_time": 1766070000,
       "direction": "put",
       "n_confirmed": 1,
@@ -1594,6 +1557,24 @@
       "exit_premium": 4.0435093663444945,
       "exit_reason": "stop",
       "pct_return": -0.14229206337527267
+    },
+    {
+      "signal_time": 1766072400,
+      "direction": "put",
+      "n_confirmed": 2,
+      "confirmed_timeframes": [
+        15,
+        20
+      ],
+      "entry_underlying": 680.38,
+      "strike": 680.0,
+      "expiry_date": "2025-12-22",
+      "entry_premium": 4.593536984096261,
+      "exit_time": 1766077500,
+      "exit_underlying": 676.87,
+      "exit_premium": 6.427242170066393,
+      "exit_reason": "target",
+      "pct_return": 0.3991924289101806
     },
     {
       "signal_time": 1766588400,
@@ -1613,23 +1594,6 @@
       "pct_return": -0.10210828001961463
     },
     {
-      "signal_time": 1767106800,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 687.8,
-      "strike": 688.0,
-      "expiry_date": "2026-01-02",
-      "entry_premium": 3.723136674788293,
-      "exit_time": 1767107400,
-      "exit_underlying": 686.96,
-      "exit_premium": 3.3109208009599342,
-      "exit_reason": "stop",
-      "pct_return": -0.11071736276020498
-    },
-    {
       "signal_time": 1767108600,
       "direction": "call",
       "n_confirmed": 1,
@@ -1647,38 +1611,38 @@
       "pct_return": 0.21613507547585228
     },
     {
-      "signal_time": 1767366600,
-      "direction": "put",
+      "signal_time": 1768405200,
+      "direction": "call",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        20
+      ],
+      "entry_underlying": 687.79,
+      "strike": 688.0,
+      "expiry_date": "2026-01-16",
+      "entry_premium": 3.5585330441535916,
+      "exit_time": 1768405500,
+      "exit_underlying": 686.685,
+      "exit_premium": 3.0300837105154983,
+      "exit_reason": "stop",
+      "pct_return": -0.14850201672464353
+    },
+    {
+      "signal_time": 1768408200,
+      "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         30
       ],
-      "entry_underlying": 684.38,
-      "strike": 684.0,
-      "expiry_date": "2026-01-06",
-      "entry_premium": 3.9400316635234844,
-      "exit_time": 1767367200,
-      "exit_underlying": 682.15,
-      "exit_premium": 5.081364780452191,
-      "exit_reason": "target",
-      "pct_return": 0.2896761281121373
-    },
-    {
-      "signal_time": 1767972000,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        15
-      ],
-      "entry_underlying": 692.465,
-      "strike": 692.0,
-      "expiry_date": "2026-01-13",
-      "entry_premium": 4.700982971898952,
-      "exit_time": 1767973500,
-      "exit_underlying": 691.5,
-      "exit_premium": 4.196170422455225,
+      "entry_underlying": 688.81,
+      "strike": 689.0,
+      "expiry_date": "2026-01-16",
+      "entry_premium": 3.5445055156545777,
+      "exit_time": 1768408800,
+      "exit_underlying": 687.54,
+      "exit_premium": 2.9385581797466784,
       "exit_reason": "stop",
-      "pct_return": -0.10738446670863164
+      "pct_return": -0.17095398306807166
     },
     {
       "signal_time": 1769101200,
@@ -1713,23 +1677,6 @@
       "exit_premium": 4.449874656501606,
       "exit_reason": "stop",
       "pct_return": -0.12061023221425585
-    },
-    {
-      "signal_time": 1769182200,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        10
-      ],
-      "entry_underlying": 689.54,
-      "strike": 690.0,
-      "expiry_date": "2026-01-27",
-      "entry_premium": 4.846736756939833,
-      "exit_time": 1769184000,
-      "exit_underlying": 690.8,
-      "exit_premium": 4.229722226311253,
-      "exit_reason": "stop",
-      "pct_return": -0.1273051460335872
     },
     {
       "signal_time": 1769613000,
@@ -1784,11 +1731,27 @@
       "pct_return": 0.25454507251566555
     },
     {
+      "signal_time": 1770739800,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        30
+      ],
+      "entry_underlying": 694.975,
+      "strike": 695.0,
+      "expiry_date": "2026-02-12",
+      "entry_premium": 3.765144865500247,
+      "exit_time": 1770748200,
+      "exit_underlying": 693.265,
+      "exit_premium": 4.586493433961948,
+      "exit_reason": "target",
+      "pct_return": 0.21814527668979206
+    },
+    {
       "signal_time": 1770995100,
       "direction": "call",
-      "n_confirmed": 2,
+      "n_confirmed": 1,
       "confirmed_timeframes": [
-        15,
         30
       ],
       "entry_underlying": 682.41,
@@ -1814,9 +1777,9 @@
       "entry_premium": 3.9723577990085346,
       "exit_time": 1772036700,
       "exit_underlying": 691.56,
-      "exit_premium": 3.4841518780692127,
+      "exit_premium": 3.484151878069156,
       "exit_reason": "stop",
-      "pct_return": -0.12290079233576941
+      "pct_return": -0.12290079233578372
     },
     {
       "signal_time": 1772035200,
@@ -1849,9 +1812,9 @@
       "entry_premium": 5.932754790206957,
       "exit_time": 1772209800,
       "exit_underlying": 686.2,
-      "exit_premium": 7.141415856637366,
+      "exit_premium": 7.141415856637309,
       "exit_reason": "target",
-      "pct_return": 0.2037267861509318
+      "pct_return": 0.2037267861509222
     },
     {
       "signal_time": 1772210700,
@@ -1888,21 +1851,55 @@
       "pct_return": 0.20713411569536685
     },
     {
-      "signal_time": 1773239100,
-      "direction": "put",
+      "signal_time": 1773067500,
+      "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         20
       ],
-      "entry_underlying": 676.19,
-      "strike": 676.0,
-      "expiry_date": "2026-03-13",
-      "entry_premium": 4.940626529540509,
-      "exit_time": 1773240000,
-      "exit_underlying": 677.42,
-      "exit_premium": 4.355400999309268,
+      "entry_underlying": 667.53,
+      "strike": 668.0,
+      "expiry_date": "2026-03-11",
+      "entry_premium": 5.136971072895619,
+      "exit_time": 1773069900,
+      "exit_underlying": 669.76,
+      "exit_premium": 6.27983137353641,
+      "exit_reason": "target",
+      "pct_return": 0.2224774647205831
+    },
+    {
+      "signal_time": 1773324900,
+      "direction": "call",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        15
+      ],
+      "entry_underlying": 669.6,
+      "strike": 670.0,
+      "expiry_date": "2026-03-16",
+      "entry_premium": 7.800037861671058,
+      "exit_time": 1773325800,
+      "exit_underlying": 668.02,
+      "exit_premium": 7.019837395909519,
       "exit_reason": "stop",
-      "pct_return": -0.11845168355311182
+      "pct_return": -0.10002521521022342
+    },
+    {
+      "signal_time": 1773928800,
+      "direction": "call",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        30
+      ],
+      "entry_underlying": 658.21,
+      "strike": 658.0,
+      "expiry_date": "2026-03-23",
+      "entry_premium": 7.063127247488353,
+      "exit_time": 1773930300,
+      "exit_underlying": 656.44,
+      "exit_premium": 6.170889607058314,
+      "exit_reason": "stop",
+      "pct_return": -0.12632331390423682
     },
     {
       "signal_time": 1774364400,
@@ -1939,6 +1936,23 @@
       "pct_return": -0.14658958841444708
     },
     {
+      "signal_time": 1774536300,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        20
+      ],
+      "entry_underlying": 652.39,
+      "strike": 652.0,
+      "expiry_date": "2026-03-30",
+      "entry_premium": 7.3429137807119105,
+      "exit_time": 1774542900,
+      "exit_underlying": 649.135,
+      "exit_premium": 8.949674376632515,
+      "exit_reason": "target",
+      "pct_return": 0.21881784859590522
+    },
+    {
       "signal_time": 1774620300,
       "direction": "call",
       "n_confirmed": 1,
@@ -1973,23 +1987,6 @@
       "pct_return": -0.10052637966027647
     },
     {
-      "signal_time": 1775054400,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        10
-      ],
-      "entry_underlying": 655.64,
-      "strike": 656.0,
-      "expiry_date": "2026-04-06",
-      "entry_premium": 7.682486015797053,
-      "exit_time": 1775058000,
-      "exit_underlying": 657.21,
-      "exit_premium": 6.902605356539652,
-      "exit_reason": "stop",
-      "pct_return": -0.10151410072908397
-    },
-    {
       "signal_time": 1775058000,
       "direction": "put",
       "n_confirmed": 1,
@@ -2007,38 +2004,39 @@
       "pct_return": 0.2062963916179697
     },
     {
-      "signal_time": 1775486400,
+      "signal_time": 1775487000,
+      "direction": "put",
+      "n_confirmed": 2,
+      "confirmed_timeframes": [
+        20,
+        30
+      ],
+      "entry_underlying": 657.24,
+      "strike": 657.0,
+      "expiry_date": "2026-04-08",
+      "entry_premium": 4.743930927601127,
+      "exit_time": 1775493300,
+      "exit_underlying": 658.14,
+      "exit_premium": 4.24235255673625,
+      "exit_reason": "stop",
+      "pct_return": -0.10573053834881846
+    },
+    {
+      "signal_time": 1775488200,
       "direction": "put",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         30
       ],
-      "entry_underlying": 657.675,
-      "strike": 658.0,
+      "entry_underlying": 657.29,
+      "strike": 657.0,
       "expiry_date": "2026-04-08",
-      "entry_premium": 5.037269836935366,
-      "exit_time": 1775499600,
-      "exit_underlying": 658.43,
-      "exit_premium": 4.499440187614653,
+      "entry_premium": 4.704754772513013,
+      "exit_time": 1775493600,
+      "exit_underlying": 658.28,
+      "exit_premium": 4.1752585116435625,
       "exit_reason": "stop",
-      "pct_return": -0.1067700692500373
-    },
-    {
-      "signal_time": 1775570400,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 653.5,
-      "strike": 654.0,
-      "expiry_date": "2026-04-09",
-      "entry_premium": 5.104302598217203,
-      "exit_time": 1775570700,
-      "exit_underlying": 652.365,
-      "exit_premium": 4.5595365432509425,
-      "exit_reason": "stop",
-      "pct_return": -0.10672683378068777
+      "pct_return": -0.11254492241826743
     },
     {
       "signal_time": 1776262200,
@@ -2059,29 +2057,45 @@
       "pct_return": -0.12324058287730151
     },
     {
-      "signal_time": 1777039500,
+      "signal_time": 1776354000,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        10
+      ],
+      "entry_underlying": 701.38,
+      "strike": 701.0,
+      "expiry_date": "2026-04-20",
+      "entry_premium": 5.037114283084577,
+      "exit_time": 1776355800,
+      "exit_underlying": 702.45,
+      "exit_premium": 4.532006468524685,
+      "exit_reason": "stop",
+      "pct_return": -0.10027721948976297
+    },
+    {
+      "signal_time": 1777040400,
       "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         15
       ],
-      "entry_underlying": 709.98,
+      "entry_underlying": 710.4,
       "strike": 710.0,
       "expiry_date": "2026-04-28",
-      "entry_premium": 5.857895740346919,
+      "entry_premium": 6.067956349334452,
       "exit_time": 1777045200,
       "exit_underlying": 713.24,
       "exit_premium": 7.627251113583839,
       "exit_reason": "target",
-      "pct_return": 0.30204623838732475
+      "pct_return": 0.2569719810888907
     },
     {
       "signal_time": 1777298700,
       "direction": "call",
-      "n_confirmed": 2,
+      "n_confirmed": 1,
       "confirmed_timeframes": [
-        15,
-        30
+        15
       ],
       "entry_underlying": 713.76,
       "strike": 714.0,
@@ -2092,6 +2106,23 @@
       "exit_premium": 3.5408879002251865,
       "exit_reason": "stop",
       "pct_return": -0.11185532144444027
+    },
+    {
+      "signal_time": 1777386000,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        15
+      ],
+      "entry_underlying": 711.36,
+      "strike": 711.0,
+      "expiry_date": "2026-04-30",
+      "entry_premium": 3.7036161831251206,
+      "exit_time": 1777387800,
+      "exit_underlying": 709.64,
+      "exit_premium": 4.564692564656752,
+      "exit_reason": "target",
+      "pct_return": 0.23249611702610432
     },
     {
       "signal_time": 1777388700,
@@ -2128,6 +2159,23 @@
       "pct_return": -0.15795904802163463
     },
     {
+      "signal_time": 1777646400,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        20
+      ],
+      "entry_underlying": 723.01,
+      "strike": 723.0,
+      "expiry_date": "2026-05-05",
+      "entry_premium": 5.1105862857076545,
+      "exit_time": 1777650300,
+      "exit_underlying": 724.29,
+      "exit_premium": 4.4858045725942475,
+      "exit_reason": "stop",
+      "pct_return": -0.1222524536687075
+    },
+    {
       "signal_time": 1777647600,
       "direction": "put",
       "n_confirmed": 1,
@@ -2137,12 +2185,12 @@
       "entry_underlying": 722.37,
       "strike": 722.0,
       "expiry_date": "2026-05-05",
-      "entry_premium": 4.922120387853795,
+      "entry_premium": 4.922120387853738,
       "exit_time": 1777649700,
       "exit_underlying": 723.79,
       "exit_premium": 4.262638217577489,
       "exit_reason": "stop",
-      "pct_return": -0.13398334829511582
+      "pct_return": -0.13398334829510583
     },
     {
       "signal_time": 1777903200,
@@ -2154,80 +2202,47 @@
       "entry_underlying": 720.305,
       "strike": 720.0,
       "expiry_date": "2026-05-06",
-      "entry_premium": 4.3636474666136,
+      "entry_premium": 4.363647466613543,
       "exit_time": 1777907700,
       "exit_underlying": 718.855,
       "exit_premium": 3.599376562437442,
       "exit_reason": "stop",
-      "pct_return": -0.17514496989585382
+      "pct_return": -0.17514496989584308
     },
     {
-      "signal_time": 1777990500,
+      "signal_time": 1777990800,
       "direction": "put",
-      "n_confirmed": 1,
+      "n_confirmed": 2,
       "confirmed_timeframes": [
-        10
+        10,
+        15
       ],
-      "entry_underlying": 722.145,
-      "strike": 722.0,
+      "entry_underlying": 723.22,
+      "strike": 723.0,
       "expiry_date": "2026-05-07",
-      "entry_premium": 3.768444019825722,
-      "exit_time": 1777990800,
-      "exit_underlying": 723.22,
-      "exit_premium": 3.267839890362154,
+      "entry_premium": 3.7346023733671814,
+      "exit_time": 1778001900,
+      "exit_underlying": 723.85,
+      "exit_premium": 3.3297150756759493,
       "exit_reason": "stop",
-      "pct_return": -0.13284106831092563
+      "pct_return": -0.10841510212134814
     },
     {
-      "signal_time": 1777991700,
-      "direction": "put",
+      "signal_time": 1778596200,
+      "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         15
       ],
-      "entry_underlying": 722.675,
-      "strike": 723.0,
-      "expiry_date": "2026-05-07",
-      "entry_premium": 3.9943865874911353,
-      "exit_time": 1777993200,
-      "exit_underlying": 723.5,
-      "exit_premium": 3.5778947271588777,
+      "entry_underlying": 734.015,
+      "strike": 734.0,
+      "expiry_date": "2026-05-14",
+      "entry_premium": 4.207085284571463,
+      "exit_time": 1778598900,
+      "exit_underlying": 732.915,
+      "exit_premium": 3.639861109706885,
       "exit_reason": "stop",
-      "pct_return": -0.10426929171967182
-    },
-    {
-      "signal_time": 1778076000,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 729.405,
-      "strike": 729.0,
-      "expiry_date": "2026-05-08",
-      "entry_premium": 3.692070145478908,
-      "exit_time": 1778077200,
-      "exit_underlying": 730.21,
-      "exit_premium": 3.3114209512877437,
-      "exit_reason": "stop",
-      "pct_return": -0.10309912303732503
-    },
-    {
-      "signal_time": 1778163600,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        20
-      ],
-      "entry_underlying": 734.575,
-      "strike": 735.0,
-      "expiry_date": "2026-05-11",
-      "entry_premium": 5.337238916964111,
-      "exit_time": 1778169600,
-      "exit_underlying": 733.415,
-      "exit_premium": 4.730166031087833,
-      "exit_reason": "stop",
-      "pct_return": -0.11374287254534006
+      "pct_return": -0.13482592733376342
     },
     {
       "signal_time": 1778767200,
@@ -2245,6 +2260,57 @@
       "exit_premium": 4.623652200181141,
       "exit_reason": "stop",
       "pct_return": -0.11668108718793282
+    },
+    {
+      "signal_time": 1780322400,
+      "direction": "call",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        10
+      ],
+      "entry_underlying": 755.6,
+      "strike": 756.0,
+      "expiry_date": "2026-06-03",
+      "entry_premium": 3.6861267174323302,
+      "exit_time": 1780328100,
+      "exit_underlying": 757.405,
+      "exit_premium": 4.585700232084264,
+      "exit_reason": "target",
+      "pct_return": 0.24404302499903086
+    },
+    {
+      "signal_time": 1780411200,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        10
+      ],
+      "entry_underlying": 758.91,
+      "strike": 759.0,
+      "expiry_date": "2026-06-04",
+      "entry_premium": 3.68460250841531,
+      "exit_time": 1780412100,
+      "exit_underlying": 759.725,
+      "exit_premium": 3.2877869893402476,
+      "exit_reason": "stop",
+      "pct_return": -0.10769561117346314
+    },
+    {
+      "signal_time": 1780495800,
+      "direction": "call",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        10
+      ],
+      "entry_underlying": 756.87,
+      "strike": 757.0,
+      "expiry_date": "2026-06-05",
+      "entry_premium": 3.8221141502000364,
+      "exit_time": 1780497900,
+      "exit_underlying": 755.97,
+      "exit_premium": 3.3638465871980543,
+      "exit_reason": "stop",
+      "pct_return": -0.11989897344588674
     },
     {
       "signal_time": 1780500600,
@@ -2266,8 +2332,9 @@
     {
       "signal_time": 1780582200,
       "direction": "put",
-      "n_confirmed": 1,
+      "n_confirmed": 2,
       "confirmed_timeframes": [
+        10,
         15
       ],
       "entry_underlying": 753.33,
@@ -2276,9 +2343,9 @@
       "entry_premium": 4.667082082330239,
       "exit_time": 1780585200,
       "exit_underlying": 754.495,
-      "exit_premium": 4.115282402187461,
+      "exit_premium": 4.115282402187404,
       "exit_reason": "stop",
-      "pct_return": -0.11823226384466523
+      "pct_return": -0.11823226384467742
     },
     {
       "signal_time": 1781107200,
@@ -2299,56 +2366,21 @@
       "pct_return": -0.1340404700582634
     },
     {
-      "signal_time": 1781187600,
-      "direction": "put",
+      "signal_time": 1781625000,
+      "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 729.27,
-      "strike": 729.0,
-      "expiry_date": "2026-06-15",
-      "entry_premium": 5.80254022036695,
-      "exit_time": 1781189700,
-      "exit_underlying": 725.645,
-      "exit_premium": 7.699919595752647,
-      "exit_reason": "target",
-      "pct_return": 0.326991163064391
-    },
-    {
-      "signal_time": 1781625300,
-      "direction": "call",
-      "n_confirmed": 2,
-      "confirmed_timeframes": [
-        10,
         15
       ],
-      "entry_underlying": 752.77,
+      "entry_underlying": 753.18,
       "strike": 753.0,
       "expiry_date": "2026-06-18",
-      "entry_premium": 3.7677019899880975,
-      "exit_time": 1781631300,
-      "exit_underlying": 751.69,
-      "exit_premium": 3.1891704934924405,
+      "entry_premium": 3.9793071163390437,
+      "exit_time": 1781629200,
+      "exit_underlying": 752.45,
+      "exit_premium": 3.5685781638412664,
       "exit_reason": "stop",
-      "pct_return": -0.1535502271764027
-    },
-    {
-      "signal_time": 1781791200,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 744.895,
-      "strike": 745.0,
-      "expiry_date": "2026-06-23",
-      "entry_premium": 5.698132989253168,
-      "exit_time": 1781792100,
-      "exit_underlying": 746.17,
-      "exit_premium": 5.092533886694525,
-      "exit_reason": "stop",
-      "pct_return": -0.10628026823888079
+      "pct_return": -0.10321619832038681
     },
     {
       "signal_time": 1782223800,
@@ -2368,38 +2400,21 @@
       "pct_return": -0.14116604180731662
     },
     {
-      "signal_time": 1782397800,
+      "signal_time": 1782914700,
       "direction": "call",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         20
       ],
-      "entry_underlying": 736.33,
-      "strike": 736.0,
-      "expiry_date": "2026-06-29",
-      "entry_premium": 6.2976545278250455,
-      "exit_time": 1782399900,
-      "exit_underlying": 734.78,
-      "exit_premium": 5.503867549596066,
-      "exit_reason": "stop",
-      "pct_return": -0.12604485919667005
-    },
-    {
-      "signal_time": 1784040600,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        30
-      ],
-      "entry_underlying": 751.595,
-      "strike": 752.0,
-      "expiry_date": "2026-07-16",
-      "entry_premium": 3.973790896018045,
-      "exit_time": 1784041500,
-      "exit_underlying": 752.77,
-      "exit_premium": 3.3976963697451765,
-      "exit_reason": "stop",
-      "pct_return": -0.1449735382025628
+      "entry_underlying": 746.065,
+      "strike": 746.0,
+      "expiry_date": "2026-07-06",
+      "entry_premium": 6.1506234542915195,
+      "exit_time": 1782918900,
+      "exit_underlying": 748.47,
+      "exit_premium": 7.440425572392542,
+      "exit_reason": "target",
+      "pct_return": 0.20970266310175095
     },
     {
       "signal_time": 1784128800,
@@ -2419,55 +2434,21 @@
       "pct_return": -0.1174882957058276
     },
     {
-      "signal_time": 1784556000,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        15
-      ],
-      "entry_underlying": 745.885,
-      "strike": 746.0,
-      "expiry_date": "2026-07-22",
-      "entry_premium": 4.3291245885909575,
-      "exit_time": 1784559300,
-      "exit_underlying": 744.115,
-      "exit_premium": 5.227496783492995,
-      "exit_reason": "target",
-      "pct_return": 0.20751821217380112
-    },
-    {
-      "signal_time": 1786545900,
+      "signal_time": 1786975500,
       "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        15
-      ],
-      "entry_underlying": 772.69,
-      "strike": 773.0,
-      "expiry_date": "2026-08-14",
-      "entry_premium": 3.4292831514530917,
-      "exit_time": 1786546800,
-      "exit_underlying": 771.87,
-      "exit_premium": 3.029295305643757,
-      "exit_reason": "stop",
-      "pct_return": -0.11663890910840881
-    },
-    {
-      "signal_time": 1787238600,
-      "direction": "put",
       "n_confirmed": 1,
       "confirmed_timeframes": [
         10
       ],
-      "entry_underlying": 766.705,
-      "strike": 767.0,
-      "expiry_date": "2026-08-24",
-      "entry_premium": 5.237137566522733,
-      "exit_time": 1787247000,
-      "exit_underlying": 764.61,
-      "exit_premium": 6.2857316099132845,
-      "exit_reason": "target",
-      "pct_return": 0.2002227419217439
+      "entry_underlying": 775.435,
+      "strike": 775.0,
+      "expiry_date": "2026-08-19",
+      "entry_premium": 3.9985828162853636,
+      "exit_time": 1786985700,
+      "exit_underlying": 774.67,
+      "exit_premium": 3.504137714285662,
+      "exit_reason": "stop",
+      "pct_return": -0.12365508599345093
     },
     {
       "signal_time": 1787925900,
@@ -2482,29 +2463,29 @@
       "entry_underlying": 771.075,
       "strike": 771.0,
       "expiry_date": "2026-09-01",
-      "entry_premium": 4.585219350198827,
+      "entry_premium": 4.585219350198884,
       "exit_time": 1787927400,
       "exit_underlying": 772.14,
       "exit_premium": 4.0801851021744255,
       "exit_reason": "stop",
-      "pct_return": -0.11014396683170712
+      "pct_return": -0.11014396683171815
     },
     {
-      "signal_time": 1788966900,
-      "direction": "call",
+      "signal_time": 1788445800,
+      "direction": "put",
       "n_confirmed": 1,
       "confirmed_timeframes": [
-        15
+        20
       ],
-      "entry_underlying": 761.97,
-      "strike": 762.0,
-      "expiry_date": "2026-09-11",
-      "entry_premium": 3.9523143728364403,
-      "exit_time": 1788967200,
-      "exit_underlying": 761.07,
-      "exit_premium": 3.5083220084873687,
+      "entry_underlying": 767.96,
+      "strike": 768.0,
+      "expiry_date": "2026-09-08",
+      "entry_premium": 5.067517031946295,
+      "exit_time": 1788447300,
+      "exit_underlying": 769.265,
+      "exit_premium": 4.451787210751263,
       "exit_reason": "stop",
-      "pct_return": -0.11233730985585376
+      "pct_return": -0.1215052297433615
     },
     {
       "signal_time": 1789395000,
@@ -2524,23 +2505,6 @@
       "pct_return": -0.1833872441225105
     },
     {
-      "signal_time": 1790088600,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        15
-      ],
-      "entry_underlying": 773.53,
-      "strike": 774.0,
-      "expiry_date": "2026-09-24",
-      "entry_premium": 3.2705623304821643,
-      "exit_time": 1790091300,
-      "exit_underlying": 772.72,
-      "exit_premium": 2.865175905362946,
-      "exit_reason": "stop",
-      "pct_return": -0.12395006856801098
-    },
-    {
       "signal_time": 1790258400,
       "direction": "call",
       "n_confirmed": 1,
@@ -2558,22 +2522,38 @@
       "pct_return": -0.10944101249554058
     },
     {
-      "signal_time": 1790351100,
+      "signal_time": 1790350800,
       "direction": "put",
-      "n_confirmed": 2,
+      "n_confirmed": 1,
       "confirmed_timeframes": [
-        10,
-        15
+        10
       ],
-      "entry_underlying": 768.295,
+      "entry_underlying": 767.76,
       "strike": 768.0,
       "expiry_date": "2026-09-29",
-      "entry_premium": 4.56924031321978,
+      "entry_premium": 4.830733419094543,
       "exit_time": 1790351700,
       "exit_underlying": 769.89,
       "exit_premium": 3.846687389197541,
       "exit_reason": "stop",
-      "pct_return": -0.15813414801837847
+      "pct_return": -0.20370530611508014
+    },
+    {
+      "signal_time": 1790608200,
+      "direction": "call",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        10
+      ],
+      "entry_underlying": 765.17,
+      "strike": 765.0,
+      "expiry_date": "2026-09-30",
+      "entry_premium": 3.9812433780716674,
+      "exit_time": 1790612400,
+      "exit_underlying": 767.73,
+      "exit_premium": 5.3964922305165715,
+      "exit_reason": "target",
+      "pct_return": 0.3554791099283124
     },
     {
       "signal_time": 1790780700,
@@ -2588,26 +2568,9 @@
       "entry_premium": 4.019611155549626,
       "exit_time": 1790788500,
       "exit_underlying": 766.905,
-      "exit_premium": 4.852169993401958,
+      "exit_premium": 4.852169993402072,
       "exit_reason": "target",
-      "pct_return": 0.20712422312363973
-    },
-    {
-      "signal_time": 1791555300,
-      "direction": "call",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        15
-      ],
-      "entry_underlying": 776.42,
-      "strike": 776.0,
-      "expiry_date": null,
-      "entry_premium": null,
-      "exit_time": 1791555300,
-      "exit_underlying": 776.42,
-      "exit_premium": null,
-      "exit_reason": "incomplete",
-      "pct_return": null
+      "pct_return": 0.20712422312366802
     }
   ]
 }

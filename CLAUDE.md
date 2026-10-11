@@ -649,6 +649,47 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   (`python -m src.spy.export`, wired into the same
   `update-levels.yml` as the level engine) rather than ticking in the
   browser.
+- **Alpaca secrets added to GitHub Actions, SPY export confirmed live in
+  CI** (2026-10-11) - `gh secret set ALPACA_API_KEY`/`ALPACA_SECRET_KEY`
+  from the local `.env`, then `gh workflow run update-levels.yml` and
+  watched the run: the "Run SPY exhaustion-reversal backtest" step
+  succeeded and `site/data/spy_chart.json` got a fresh CI-generated
+  `generated_at_utc`, not the stale locally-committed one. The real
+  ongoing-cost gate from here is just the normal public-repo free Actions
+  minutes, same as BTC/ETH.
+- **Trend/doji parameter sweep re-run against the real ~2-year Alpaca
+  sample** (`src/spy/sweep.py`, new file, 2026-10-11) - the earlier sweep
+  (see "Next up" history) ran against the thin 60-day Yahoo sample and had
+  cells with as few as 3-5 trades, not trustworthy. Re-run as a 4x6 grid
+  (`TREND_LOOKBACK` 2-5 × `DOJI_BODY_MAX_PCT` 0.15-0.40, step 0.05) against
+  the full 41,661-candle/730-day sample, every cell landing at 73-212
+  signals - comfortably past the 30-trade confidence bar used elsewhere in
+  this project. Real findings, not assumed: `TREND_LOOKBACK=5` is
+  uniformly the worst column at every doji width (-0.3% to -4.2% avg
+  return); the prior default (`TREND_LOOKBACK=3`, `DOJI_BODY_MAX_PCT=0.30`)
+  is flat-to-negative (-0.05%); `TREND_LOOKBACK=4`/`DOJI_BODY_MAX_PCT<=0.30`
+  is the standout cell (150 resolved, 37.3% target-hit rate, +1.43% avg
+  premium return) and is now the live default in
+  `src/spy/exhaustion_signal.py`. Changing `TREND_LOOKBACK` meant updating
+  `tests/test_spy_exhaustion_signal.py`'s hand-built fixtures too - they're
+  traced by hand against the exact constant, so a 3-trend-candle fixture
+  silently stops firing any signal once the code requires 4 (confirmed:
+  `range(TREND_LOOKBACK, len(frame))` goes empty, not an error, so this
+  would have been a silent false-negative in the test suite rather than a
+  loud failure if left unfixed). The multi-timeframe confluence test needed
+  its two synthetic frequencies changed too (10/15 -> 10/12) since the
+  longer trend requirement pushed each frame's doji candle past
+  `SIGNAL_CLUSTER_MINUTES` apart at the old spacing.
+  **Explicitly not oversold**: this is the best of 24 tested cells on one
+  sample - exactly the shape of result that tends to look better in-sample
+  than out-of-sample. Treat "trend=4 is the better-supported choice" as the
+  honest claim here, not "this is a proven edge." The deeper, separate
+  finding that motivated re-running this in the first place still holds at
+  the new default too: 2+ timeframe confirmation performs *worse* than 1+
+  (18 trades, -6.30% avg return, vs. 150 trades at +1.43%) - more
+  confluence is not better here, at trend=3 or trend=4 alike. That's a real
+  pattern worth keeping in mind before any future UI change implies "more
+  timeframes agreeing = more confident."
 
 ---
 
@@ -747,36 +788,22 @@ list here, it'll drift. Worth knowing the sections exist: Exchange,
 Schedule, Volume profile, Swing pivots/golden pocket, Confluence,
 Backtest/scorecard, Daily diff.
 
-## Next up (as of 2026-10-08)
+## Next up (as of 2026-10-11)
 
-SPY's exhaustion-reversal backtest is built, tested, and verified locally
-(see "Also built" above) but **not live yet** — the GitHub Actions cron
-will fail the SPY export step until the Alpaca secrets exist there too.
+SPY's exhaustion-reversal backtest is built, tested, and **now live**: the
+Alpaca secrets are in GitHub Actions, `update-levels.yml`'s SPY export step
+has been confirmed succeeding end-to-end in real CI (not just locally), and
+the trend/doji parameter sweep below has been re-run against the real
+sample and adopted as the new default.
 
-1. **Add `ALPACA_API_KEY` / `ALPACA_SECRET_KEY` as GitHub repo secrets**
-   (Settings → Secrets and variables → Actions). Same values as the local
-   `.env`. Without this, `update-levels.yml`'s SPY step fails every run
-   (harmlessly - it's `|| echo ...`-guarded and won't block the BTC/ETH
-   deploy - but `spy_*.json` on the live site will just stay whatever got
-   committed in this local run, never refreshing).
-2. **Trigger `update-levels.yml` manually once the secrets are in**
-   (`gh workflow run update-levels.yml`) and check the SPY export step's
-   log actually succeeds end to end against the real CI environment, not
-   just locally.
-3. **Re-run the trend-length/doji-tightness parameter sweep on the real
-   ~2-year Alpaca sample**, not the old 60-day Yahoo one it was first run
-   against — that earlier sweep (2-5 candle trend × 15-40% doji body) had
-   cells with as few as 3-5 trades; the same sweep against 152+ signals
-   would actually mean something. Loosening to a 2-candle trend looked
-   best on the thin sample; worth confirming that holds up.
-4. **Real options quotes are still an open question** - the user wanted to
+1. **Real options quotes are still an open question** - the user wanted to
    check whether ThinkOrSwim OnDemand could supply actual historical SPY
    options chains instead of the Black-Scholes/VIX model. Last status: it
    looks like an interactive replay tool, not a bulk-export feature, so
    this is probably blocked without a paid data source (Polygon/Databento)
    unless the user has a path I don't know about. Ask before assuming
    either way.
-5. Watch `site/data/spy_chart.json`'s size over the next few real cron
+2. Watch `site/data/spy_chart.json`'s size over the next few real cron
    runs (committed every ~3h) - it's ~750KB now at 60 display days; if it
    creeps up, revisit `CHART_DISPLAY_DAYS` in `src/spy/export.py` before
    repo size becomes its own problem.
