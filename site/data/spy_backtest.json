@@ -1,58 +1,58 @@
 {
-  "generated_at_utc": "2026-10-19T09:23:05.916974+00:00",
+  "generated_at_utc": "2026-10-19T14:11:21.450005+00:00",
   "data_window_days": 730,
   "by_min_confirmed": {
     "1": {
       "trades": 150,
-      "resolved": 149,
-      "incomplete": 1,
-      "calls": 88,
+      "resolved": 150,
+      "incomplete": 0,
+      "calls": 89,
       "puts": 61,
-      "target_hits": 56,
+      "target_hits": 57,
       "stop_hits": 93,
       "expired_neither": 0,
-      "target_hit_rate_pct": 37.6,
-      "stop_hit_rate_pct": 62.4,
-      "avg_pct_return": 1.51
+      "target_hit_rate_pct": 38.0,
+      "stop_hit_rate_pct": 62.0,
+      "avg_pct_return": 1.64
     },
     "2": {
       "trades": 19,
-      "resolved": 18,
-      "incomplete": 1,
-      "calls": 8,
+      "resolved": 19,
+      "incomplete": 0,
+      "calls": 9,
       "puts": 10,
-      "target_hits": 3,
+      "target_hits": 4,
       "stop_hits": 15,
       "expired_neither": 0,
-      "target_hit_rate_pct": 16.7,
-      "stop_hit_rate_pct": 83.3,
-      "avg_pct_return": -6.3
+      "target_hit_rate_pct": 21.1,
+      "stop_hit_rate_pct": 78.9,
+      "avg_pct_return": -4.83
     },
     "3": {
       "trades": 3,
-      "resolved": 2,
-      "incomplete": 1,
-      "calls": 0,
+      "resolved": 3,
+      "incomplete": 0,
+      "calls": 1,
       "puts": 2,
-      "target_hits": 0,
+      "target_hits": 1,
       "stop_hits": 2,
       "expired_neither": 0,
-      "target_hit_rate_pct": 0.0,
-      "stop_hit_rate_pct": 100.0,
-      "avg_pct_return": -10.78
+      "target_hit_rate_pct": 33.3,
+      "stop_hit_rate_pct": 66.7,
+      "avg_pct_return": -0.03
     },
     "4": {
       "trades": 2,
-      "resolved": 1,
-      "incomplete": 1,
-      "calls": 0,
+      "resolved": 2,
+      "incomplete": 0,
+      "calls": 1,
       "puts": 1,
-      "target_hits": 0,
+      "target_hits": 1,
       "stop_hits": 1,
       "expired_neither": 0,
-      "target_hit_rate_pct": 0.0,
-      "stop_hit_rate_pct": 100.0,
-      "avg_pct_return": -11.01
+      "target_hit_rate_pct": 50.0,
+      "stop_hit_rate_pct": 50.0,
+      "avg_pct_return": 5.23
     }
   }
 }
