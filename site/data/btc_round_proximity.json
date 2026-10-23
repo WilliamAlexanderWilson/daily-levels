@@ -10,7 +10,7 @@
   },
   {
     "tolerance_fraction": 0.5,
-    "touches": 682,
+    "touches": 683,
     "resolved": 671,
     "holds": 339,
     "breaks": 332,
@@ -19,7 +19,7 @@
   },
   {
     "tolerance_fraction": 0.25,
-    "touches": 655,
+    "touches": 656,
     "resolved": 639,
     "holds": 294,
     "breaks": 345,
@@ -28,7 +28,7 @@
   },
   {
     "tolerance_fraction": 0.1,
-    "touches": 638,
+    "touches": 639,
     "resolved": 623,
     "holds": 264,
     "breaks": 359,
@@ -37,7 +37,7 @@
   },
   {
     "tolerance_fraction": 0.05,
-    "touches": 633,
+    "touches": 635,
     "resolved": 618,
     "holds": 258,
     "breaks": 360,
@@ -46,7 +46,7 @@
   },
   {
     "tolerance_fraction": 0.02,
-    "touches": 630,
+    "touches": 632,
     "resolved": 615,
     "holds": 254,
     "breaks": 361,
