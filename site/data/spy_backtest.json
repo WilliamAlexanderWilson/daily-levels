@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-10-26T13:40:56.035251+00:00",
+  "generated_at_utc": "2026-10-26T16:35:52.764104+00:00",
   "data_window_days": 730,
   "by_min_confirmed": {
     "1": {
-      "trades": 151,
+      "trades": 152,
       "resolved": 151,
-      "incomplete": 0,
+      "incomplete": 1,
       "calls": 89,
       "puts": 62,
       "target_hits": 57,
@@ -16,9 +16,9 @@
       "avg_pct_return": 1.56
     },
     "2": {
-      "trades": 19,
+      "trades": 20,
       "resolved": 19,
-      "incomplete": 0,
+      "incomplete": 1,
       "calls": 9,
       "puts": 10,
       "target_hits": 4,
