@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-10-28T13:38:18.302142+00:00",
+  "generated_at_utc": "2026-10-28T16:29:04.518150+00:00",
   "data_window_days": 730,
   "by_min_confirmed": {
     "1": {
@@ -13,7 +13,7 @@
       "expired_neither": 0,
       "target_hit_rate_pct": 37.5,
       "stop_hit_rate_pct": 62.5,
-      "avg_pct_return": 1.45
+      "avg_pct_return": 1.41
     },
     "2": {
       "trades": 20,
