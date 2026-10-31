@@ -1,46 +1,13 @@
 {
   "Range low (60d)": {
     "touches": 61,
-    "resolved": 61,
+    "resolved": 60,
     "holds": 18,
-    "breaks": 43,
-    "inconclusive": 0,
-    "hold_rate_pct": 29.508196721311474,
-    "avg_move_after_hold_pct": 8.06592780685542,
-    "avg_move_after_break_pct": -4.629513996132005,
-    "low_confidence": false
-  },
-  "Prior month low": {
-    "touches": 68,
-    "resolved": 67,
-    "holds": 40,
-    "breaks": 27,
+    "breaks": 42,
     "inconclusive": 1,
-    "hold_rate_pct": 59.70149253731343,
-    "avg_move_after_hold_pct": 1.9443569409410322,
-    "avg_move_after_break_pct": -6.295181809138209,
-    "low_confidence": false
-  },
-  "Round number": {
-    "touches": 604,
-    "resolved": 597,
-    "holds": 346,
-    "breaks": 251,
-    "inconclusive": 7,
-    "hold_rate_pct": 57.95644891122278,
-    "avg_move_after_hold_pct": -0.09337459437803641,
-    "avg_move_after_break_pct": 0.42207806497013456,
-    "low_confidence": false
-  },
-  "Flip support": {
-    "touches": 192,
-    "resolved": 185,
-    "holds": 84,
-    "breaks": 101,
-    "inconclusive": 7,
-    "hold_rate_pct": 45.40540540540541,
-    "avg_move_after_hold_pct": 3.8490951243042004,
-    "avg_move_after_break_pct": -2.9457169606753557,
+    "hold_rate_pct": 30.0,
+    "avg_move_after_hold_pct": 8.06592780685542,
+    "avg_move_after_break_pct": -4.714228119203379,
     "low_confidence": false
   },
   "Prior week low": {
@@ -52,6 +19,39 @@
     "hold_rate_pct": 33.83458646616541,
     "avg_move_after_hold_pct": 1.2400597797328847,
     "avg_move_after_break_pct": -2.0401414689418704,
+    "low_confidence": false
+  },
+  "Prior month low": {
+    "touches": 67,
+    "resolved": 66,
+    "holds": 40,
+    "breaks": 26,
+    "inconclusive": 1,
+    "hold_rate_pct": 60.60606060606061,
+    "avg_move_after_hold_pct": 1.9443569409410322,
+    "avg_move_after_break_pct": -6.320551734072004,
+    "low_confidence": false
+  },
+  "Round number": {
+    "touches": 603,
+    "resolved": 595,
+    "holds": 345,
+    "breaks": 250,
+    "inconclusive": 8,
+    "hold_rate_pct": 57.98319327731093,
+    "avg_move_after_hold_pct": -0.07870321639072635,
+    "avg_move_after_break_pct": 0.4335469486585864,
+    "low_confidence": false
+  },
+  "Flip support": {
+    "touches": 198,
+    "resolved": 184,
+    "holds": 84,
+    "breaks": 100,
+    "inconclusive": 14,
+    "hold_rate_pct": 45.65217391304348,
+    "avg_move_after_hold_pct": 3.8490951243042004,
+    "avg_move_after_break_pct": -2.9435292068561307,
     "low_confidence": false
   },
   "Current week open": {
@@ -66,11 +66,11 @@
     "low_confidence": false
   },
   "Flip resistance": {
-    "touches": 270,
+    "touches": 271,
     "resolved": 255,
     "holds": 135,
     "breaks": 120,
-    "inconclusive": 15,
+    "inconclusive": 16,
     "hold_rate_pct": 52.94117647058824,
     "avg_move_after_hold_pct": -3.6612078047959815,
     "avg_move_after_break_pct": 4.220009303345312,
