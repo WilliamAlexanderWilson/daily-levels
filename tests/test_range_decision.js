@@ -5,6 +5,7 @@ const {
   build,
   buildStrategyRange,
   completedCloseAbove,
+  confirmedSetup,
   patienceAlertFingerprint,
   patienceState,
   rangeZonePrices,
@@ -110,6 +111,36 @@ test("patience state refuses a confirmed candle when price is no longer at an ed
   assert.equal(gate.readyCount, 0);
   assert.equal(gate.isReady, false);
   assert.equal(gate.boundaryTest, null);
+});
+
+test("an older reclaim cannot masquerade as a live confirmed setup", () => {
+  const decision = build(levels, scorecard, 92);
+  const candles = [
+    { time: 1, low: 89, high: 94, close: 91 },
+    { time: 2, low: 91, high: 94, close: 92 },
+    { time: 3, low: 91, high: 93, close: 92 }, // forming: ignored
+  ];
+  const gate = patienceState(decision, candles);
+  assert.equal(gate.hasTouch, true);
+  assert.equal(gate.hasConfirmation, false);
+  assert.equal(gate.isReady, false);
+  assert.equal(confirmedSetup(decision, candles), null);
+});
+
+test("returns a marker only for a setup confirmed by the latest completed candle", () => {
+  const decision = build(levels, scorecard, 92);
+  const candles = [
+    { time: 1, low: 91, high: 94, close: 92 },
+    { time: 2, low: 89, high: 94, close: 91 },
+    { time: 3, low: 91, high: 93, close: 92 }, // forming: ignored
+  ];
+  assert.deepEqual(confirmedSetup(decision, candles), {
+    direction: "long",
+    time: 2,
+    close: 91,
+    boundaryName: "VAL (60d)",
+    label: "LONG SETUP ✓",
+  });
 });
 
 test("alert fingerprint deduplicates one confirmed setup and changes for a new candle", () => {

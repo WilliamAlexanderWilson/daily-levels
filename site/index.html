@@ -234,6 +234,7 @@
     <div id="chart-legend" class="chart-legend">
       <span class="legend-item"><i class="swatch support"></i>Support</span>
       <span class="legend-item"><i class="swatch resistance"></i>Resistance</span>
+      <span class="legend-item"><i class="swatch support"></i>LIVE setup = latest completed candle confirmed</span>
       <span class="legend-item"><i class="swatch flip"></i>Flip (must hold)</span>
       <span class="legend-item"><i class="swatch current"></i>Current price</span>
       <span class="legend-item"><i class="swatch liquidity"></i>Order book wall</span>
@@ -242,23 +243,26 @@
       <span class="legend-item"><i class="swatch round-zone"></i>Round-number proximity (hold rate)</span>
     </div>
     <div id="spy-legend" class="chart-legend" hidden>
-      <span class="legend-item"><i class="swatch support"></i>Call signal (downtrend exhaustion)</span>
-      <span class="legend-item"><i class="swatch resistance"></i>Put signal (uptrend exhaustion)</span>
-      <span class="legend-item"><i class="swatch current"></i>Current price</span>
+      <span class="legend-item"><i class="swatch support"></i>Historical call setup</span>
+      <span class="legend-item"><i class="swatch resistance"></i>Historical put setup</span>
+      <span class="legend-item"><i class="swatch current"></i>Last batch price — not live</span>
     </div>
     <p class="liquidation-note" id="liquidation-note">
       <strong>Estimated liquidation risk · daily model.</strong> Only the
       strongest clusters are shown. They project real traded volume through
       assumed 10x/25x/50x/100x leverage — not actual trader positions. Use
-      the 10-second order-book walls and price reaction as live confirmation;
+      the 10-second order-book walls plus the per-trade streamed price reaction as live confirmation;
       never use this background alone as an entry signal.
     </p>
     <p class="liquidation-note" id="spy-chart-note" hidden>
+      <strong>Historical backtest only — not a live recommendation.</strong>
+      Every arrow was detected after loading past data, and ✓ / ✗ describes
+      a modeled outcome known later, not information available at the arrow.
       Candles are <strong>Heikin-Ashi</strong>, not real OHLC — that's what
       the setup is defined on. This chart shows the last 60 days (our own
       choice, for readability — the backtest below actually runs on ~2
-      years of real 5-minute data). Markers show every detected exhaustion
-      signal that falls in the visible window, colored by direction. This
+      years of real 5-minute data). Markers show every historical exhaustion
+      setup that falls in the visible window, colored by direction. This
       refreshes on the same cron as the rest of the site, not live — SPY's
       data source (Alpaca) needs an auth header the browser can't send
       cleanly, so unlike BTC/ETH this gets baked server-side instead.
@@ -382,10 +386,11 @@
     </section>
 
     <section class="levels-table-section" id="spy-signals-section" hidden>
-      <h2>Signal history</h2>
+      <h2>Historical setup record</h2>
       <p class="scorecard-note">
-        Every detected signal in the ~2-year backtest window and how its
-        simulated trade resolved, most recent first.
+        Every detected historical setup in the ~2-year backtest window and
+        how its simulated trade resolved, most recent first. These were not
+        live alerts and the option premiums were modeled, not quoted.
       </p>
       <div class="table-wrapper">
         <table id="spy-signals-table">
@@ -411,9 +416,11 @@
         The <strong>levels</strong> (lines on the chart, table below) are
         recalculated once a day at 5:00&nbsp;AM Central from the last 60-90 days
         of real BTC and ETH trade data, and held fixed until the next run.
-        The <strong>chart</strong> itself is live — it polls real-time prices
-        directly, independent of the daily levels calculation. Nothing here
-        is a buy or sell signal — it's a map of prices worth watching:
+        The <strong>chart</strong> itself is live — Kraken's WebSocket streams
+        the forming candle on every trade, independent of the daily levels
+        calculation. A setup is labeled confirmed only after the latest candle
+        closes through the three-part patience gate; it is context to assess,
+        not an automatic buy or sell order:
       </p>
       <ul>
         <li><strong>Volume profile (POC / VAH / VAL)</strong> — where the most trading
@@ -441,7 +448,7 @@
       <h2>How this is calculated</h2>
       <p>
         This is a <strong>mechanical backtest of a user-defined rule</strong>,
-        not a signal engine — SPY gets different treatment than BTC/ETH
+        not a live signal engine — SPY gets different treatment than BTC/ETH
         because it's not a level map, it's one specific intraday options
         setup being tested for odds.
       </p>
@@ -450,7 +457,7 @@
           SPY candles (Alpaca's free IEX feed, ~2 years of history)
           resampled into 10m/15m/20m/30m bars anchored to the 9:30&nbsp;AM
           ET open. VIX comes from Yahoo Finance, daily only.</li>
-        <li><strong>Signal</strong> — a run of same-direction HA candles
+        <li><strong>Historical setup rule</strong> — a run of same-direction HA candles
           followed by a doji whose rejection-side wick exceeds the full
           range of at least one of the trend candles before it, during
           10:00&ndash;12:00&nbsp;ET.</li>

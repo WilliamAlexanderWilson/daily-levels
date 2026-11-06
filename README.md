@@ -3,13 +3,15 @@
 A focused range-trading workspace. BTC's default screen is organized around
 Mathieu's November 4, 2026 higher-timeframe framework: a $60k floor, $80k
 ceiling, $80k-$82.8k upper deviation/reclaim, and $72k-$77k decision-support
-zone. Live candles and price update every 10 seconds. Rolling calculated
+zone. Live candles and price move with Kraken's per-trade WebSocket stream;
+the REST poll is only a reconnect fallback. Rolling calculated
 levels are optional context, not mislabeled as the macro range. The full level
 map, liquidity model, scorecards, explanations, and local trade journal remain
 available under **Full analysis**.
 
-**A watch area is not an entry signal.** The UI never claims to detect the
-confirmation step that the source material leaves discretionary.
+**A watch area is not an entry signal.** The UI labels a setup confirmed only
+when the latest completed candle supplies all three visible facts below. That
+label is context to assess, not an automatic order or a promise of profit.
 
 Live: https://williamalexanderwilson.github.io/daily-levels/
 
@@ -42,6 +44,10 @@ chart a setup worth reviewing:
 The still-forming candle is always excluded. All three conditions produce
 “setup to assess,” never an automatic order; stop placement, size, and the
 trader's own confirmation remain separate decisions.
+
+When that latest completed candle passes the gate, the chart adds a
+**LIVE LONG SETUP ✓** or **LIVE SHORT SETUP ✓** marker. An older reclaim can
+remain useful history, but it cannot masquerade as a current live setup.
 
 The optional **ready alert** uses that exact same gate. It stays silent at
 0/3, 1/3, and 2/3, then emits one in-page alert per unique completed candle
@@ -440,12 +446,14 @@ stock, so `src/spy/fetch.py` pulls 5-minute SPY bars from Alpaca's market
 data API (`data.alpaca.markets`, free IEX feed, needs a free API key - see
 below) and daily VIX closes from Yahoo's public chart endpoint (no key,
 daily-only history has no rolling-window cap the way Yahoo's intraday data
-does). Neither is pollable live from the browser — Alpaca needs an auth
+does). Neither is safely available live from this static browser app — Alpaca needs an auth
 header, and Yahoo's intraday endpoint sends no CORS header (confirmed
 live) — so the chart, signal markers, and backtest table are baked once
 per cron run into `site/data/spy_*.json`, same staleness as everything
-else on this site. There's no live SPY ticking the way there is for
-crypto.
+else on this site. There's no live SPY ticking the way there is for crypto,
+and the SPY arrows are historical backtest markers, not live alerts. Their
+✓ / ✗ outcomes are retrospective modeled results that were not known when
+the setup occurred.
 
 **Alpaca needs `ALPACA_API_KEY` / `ALPACA_SECRET_KEY`.** Free account at
 alpaca.markets (Trading API, not Broker API — the latter is for building a

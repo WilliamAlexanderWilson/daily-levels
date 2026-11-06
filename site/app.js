@@ -525,7 +525,7 @@
     if (!status) return;
     let message;
     if (state.asset === "spy") {
-      message = "SPY setup view · historical data";
+      message = "SPY historical backtest · not live";
     } else if (fullAnalysisIsOpen()) {
       message = "Level radar · reacts to the real-time price";
     } else {
@@ -1136,6 +1136,7 @@
     renderLevels(activeLevels);
     renderNearestLevels(activeLevels, activeScorecard, price);
     renderRangeDecision(activeLevels, activeScorecard, price);
+    renderTradeMarkers(asset, state.range, activeCandles);
     renderRoundProximityBands(price, activeProximity);
     renderOrderBookWalls(activeOrderBookWalls);
     renderLevelJumpSelect(activeLevels, price, { preserveInteraction: true });
@@ -1571,7 +1572,7 @@
   function showPatienceToast(title, detail, direction) {
     const toast = document.getElementById("patience-alert-toast");
     if (!toast) return;
-    document.getElementById("patience-alert-toast-label").textContent = `PATIENCE GATE · 3/3 · ${direction}`;
+    document.getElementById("patience-alert-toast-label").textContent = `PATIENCE GATE · 3/3 · ${direction} SETUP`;
     document.getElementById("patience-alert-toast-title").textContent = title;
     document.getElementById("patience-alert-toast-detail").textContent = detail;
     toast.hidden = false;
@@ -1586,10 +1587,10 @@
     if (alertedFingerprints().includes(fingerprint)) return;
     rememberAlertFingerprint(fingerprint);
 
-    const direction = decision.status === "long-watch" ? "LONG WATCH" : "SHORT WATCH";
+    const direction = decision.status === "long-watch" ? "LONG" : "SHORT";
     const assetLabel = state.asset.toUpperCase();
     const timeframeLabel = state.range === "1d" ? "Daily" : state.range.toUpperCase();
-    const title = `${assetLabel} ${timeframeLabel} ${direction.toLowerCase()} ready to assess`;
+    const title = `${assetLabel} ${timeframeLabel} ${direction.toLowerCase()} setup confirmed`;
     const detail = `${gateState.boundary.name} was tested and a completed candle closed back inside. Review the stop and size before acting.`;
     showPatienceToast(title, detail, direction);
 
@@ -1652,16 +1653,25 @@
     setPatienceCondition(
       "patience-confirmation",
       hasConfirmation,
-      hasConfirmation ? "Closed back inside" : hasTouch ? "No confirming close" : "Boundary not tested"
+      hasConfirmation
+        ? "Latest completed candle closed back inside"
+        : boundaryTest && boundaryTest.confirmed
+          ? "Prior confirmation expired"
+          : hasTouch
+            ? "No confirming close"
+            : "Boundary not tested"
     );
 
     document.getElementById("patience-count").textContent = `${readyCount} / 3 ready`;
     let instruction = "Price is in the middle. Patience is the trade—wait for an edge.";
     if (hasLocation && !hasTouch) instruction = `Do nothing until price actually tests ${boundary.name}.`;
-    if (hasTouch && !hasConfirmation) instruction = "The boundary was hit, but the candle did not close back inside. Do not front-run confirmation.";
+    if (hasTouch && !hasConfirmation) instruction = boundaryTest && boundaryTest.confirmed
+      ? "The prior reclaim is no longer the latest completed candle. Wait for a fresh boundary test instead of chasing it."
+      : "The boundary was hit, but the candle did not close back inside. Do not front-run confirmation.";
     if (hasConfirmation) instruction = "Location, test, and close are visible. Review the stop and size; this is a setup to assess, not an automatic order.";
     document.getElementById("patience-instruction").textContent = instruction;
     maybeSendPatienceAlert(decision, gateState);
+    return gateState;
   }
 
   function renderRangeDecision(levels, scorecard, currentPrice) {
@@ -1669,12 +1679,14 @@
       ? RangeDecision.buildStrategyRange(currentPrice, RangeDecision.BTC_MACRO_RANGE, activeCandles)
       : RangeDecision.build(levels, scorecard, currentPrice);
     activeRangeDecision = decision;
+    const gateState = renderPatienceGate(decision);
     setDecisionClass(decision.status);
-    document.getElementById("decision-badge").textContent = decision.label;
+    document.getElementById("decision-badge").textContent = gateState.isReady
+      ? `${decision.status === "long-watch" ? "LONG" : "SHORT"} SETUP CONFIRMED`
+      : decision.label;
     document.getElementById("decision-title").textContent = decision.title;
     document.getElementById("decision-summary").textContent = decision.summary;
     document.getElementById("decision-range").hidden = !decision.support || !decision.resistance;
-    renderPatienceGate(decision);
     document.getElementById("decision-metrics").hidden = false;
     document.getElementById("decision-rr-label").textContent = "Range geometry";
     document.getElementById("decision-support-label").textContent = "Support history";
@@ -2078,7 +2090,7 @@
   function renderTradeMarkers(asset, range, candles) {
     if (!tradeMarkersPlugin) return;
     const trades = loadTrades(asset);
-    if (!trades.length || !candles.length) {
+    if (!candles.length) {
       tradeMarkersPlugin.setMarkers([]);
       return;
     }
@@ -2094,6 +2106,16 @@
     const inRange = (t) => t >= minTime && t <= maxTime;
 
     const markers = [];
+    const setup = RangeDecision.confirmedSetup(activeRangeDecision, candles);
+    if (setup && inRange(setup.time)) {
+      markers.push({
+        time: toTimePoint({ time: setup.time }, range),
+        position: setup.direction === "long" ? "belowBar" : "aboveBar",
+        color: setup.direction === "long" ? cssVar("--support") : cssVar("--resistance"),
+        shape: setup.direction === "long" ? "arrowUp" : "arrowDown",
+        text: `LIVE ${setup.label}`,
+      });
+    }
     for (const t of trades) {
       if (inRange(t.time)) {
         markers.push({
@@ -2929,7 +2951,7 @@
         position: isCall ? "belowBar" : "aboveBar",
         color: isCall ? cssVar("--support") : cssVar("--resistance"),
         shape: isCall ? "arrowUp" : "arrowDown",
-        text: `${isCall ? "Call" : "Put"}${outcomeSymbol[t.exit_reason] || ""}`,
+        text: `Historical ${isCall ? "Call" : "Put"} setup${outcomeSymbol[t.exit_reason] || ""}`,
       });
     }
     markers.sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0));
