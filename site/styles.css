@@ -457,6 +457,20 @@ main {
   text-transform: uppercase;
 }
 
+.decision-source-link {
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.decision-source-link:hover,
+.decision-source-link:focus-visible {
+  text-decoration: underline;
+}
+
 .decision-copy-block h2 {
   max-width: 720px;
   margin: 0;

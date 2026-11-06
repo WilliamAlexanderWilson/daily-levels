@@ -24,7 +24,8 @@
     failureLevel: 74000,
     longWatchHigh: 62000,
     sourceDate: "2026-11-04",
-    sourceLabel: "William Wilson Range Desk · sourced macro range",
+    sourceLabel: "Sourced macro-range framework",
+    sourceUrl: "https://youtu.be/cOxjsDvGRTA",
   });
 
   function midpoint(level) {
