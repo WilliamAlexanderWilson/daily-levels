@@ -752,16 +752,57 @@ def _drawdown_duration(trades: list[dict]) -> dict:
     }
 
 
-def _gate_positive(metrics: dict, minimum_profit_factor: float) -> bool:
+def _gate_decision_metrics(trades: list[dict]) -> dict:
+    """Return unrounded values for threshold decisions; never use display metrics."""
+    if not trades:
+        return {
+            "trades": 0,
+            "expectancy_pct": None,
+            "profit_factor": None,
+            "profit_factor_infinite": False,
+            "max_drawdown_pct": None,
+        }
+    returns = [trade["return_pct"] / 100 for trade in trades]
+    wins = [value for value in returns if value > 0]
+    losses = [value for value in returns if value <= 0]
+    equity = 1.0
+    peak = 1.0
+    max_drawdown = 0.0
+    for value in returns:
+        equity *= 1 + value
+        peak = max(peak, equity)
+        max_drawdown = max(max_drawdown, (peak - equity) / peak)
+    gross_loss = abs(sum(losses))
+    return {
+        "trades": len(trades),
+        "expectancy_pct": 100 * sum(returns) / len(returns),
+        "profit_factor": sum(wins) / gross_loss if gross_loss else None,
+        "profit_factor_infinite": bool(wins and not gross_loss),
+        "max_drawdown_pct": max_drawdown * 100,
+    }
+
+
+def _gate_positive(
+    metrics: dict,
+    minimum_profit_factor: float,
+    *,
+    inclusive_profit_factor: bool = True,
+) -> bool:
+    profit_factor = metrics["profit_factor"]
+    profit_factor_passed = (
+        profit_factor is not None
+        and (
+            profit_factor >= minimum_profit_factor
+            if inclusive_profit_factor
+            else profit_factor > minimum_profit_factor
+        )
+    )
     return bool(
         metrics["expectancy_pct"] is not None
         and metrics["expectancy_pct"] > 0
         and (
             metrics["profit_factor_infinite"]
-            or (
-                metrics["profit_factor"] is not None
-                and metrics["profit_factor"] >= minimum_profit_factor
-            )
+            or profit_factor_passed
         )
     )
 
@@ -777,6 +818,7 @@ def forward_qualification_gate(
         key=lambda trade: pd.Timestamp(trade["entry_time"]),
     )
     base_metrics = _metrics(closed)
+    base_decision = _gate_decision_metrics(closed)
     if base_metrics != forward_paper["metrics"]:
         raise RuntimeError("Forward gate diverged from the paper record")
     stressed = backtest_cost_cohort(
@@ -792,14 +834,25 @@ def forward_qualification_gate(
     ]:
         raise RuntimeError("Stressed forward costs changed the closed paper cohort")
     stressed_metrics = _metrics(stressed)
+    stressed_decision = _gate_decision_metrics(stressed)
 
     split_index = len(closed) // 2
     halves = {
         "earlier": _metrics(closed[:split_index]),
         "later": _metrics(closed[split_index:]),
     }
+    half_decisions = {
+        "earlier": _gate_decision_metrics(closed[:split_index]),
+        "later": _gate_decision_metrics(closed[split_index:]),
+    }
     directions = {
         direction: _metrics([trade for trade in closed if trade["direction"] == direction])
+        for direction in ("long", "short")
+    }
+    direction_decisions = {
+        direction: _gate_decision_metrics([
+            trade for trade in closed if trade["direction"] == direction
+        ])
         for direction in ("long", "short")
     }
 
@@ -810,12 +863,12 @@ def forward_qualification_gate(
             "required_trades": FORWARD_GATE_MIN_TRADES,
         },
         "base_edge": {
-            "passed": _gate_positive(base_metrics, FORWARD_GATE_MIN_PROFIT_FACTOR),
+            "passed": _gate_positive(base_decision, FORWARD_GATE_MIN_PROFIT_FACTOR),
             "minimum_profit_factor": FORWARD_GATE_MIN_PROFIT_FACTOR,
             "metrics": base_metrics,
         },
         "stressed_edge": {
-            "passed": _gate_positive(stressed_metrics, FORWARD_GATE_MIN_PROFIT_FACTOR),
+            "passed": _gate_positive(stressed_decision, FORWARD_GATE_MIN_PROFIT_FACTOR),
             "minimum_profit_factor": FORWARD_GATE_MIN_PROFIT_FACTOR,
             "fee_per_side_pct": FORWARD_GATE_STRESSED_FEE_PER_SIDE * 100,
             "slippage_per_side_pct": FORWARD_GATE_STRESSED_SLIPPAGE_PER_SIDE * 100,
@@ -823,8 +876,8 @@ def forward_qualification_gate(
         },
         "drawdown": {
             "passed": bool(
-                base_metrics["max_drawdown_pct"] is not None
-                and base_metrics["max_drawdown_pct"] <= FORWARD_GATE_MAX_DRAWDOWN_PCT
+                base_decision["max_drawdown_pct"] is not None
+                and base_decision["max_drawdown_pct"] <= FORWARD_GATE_MAX_DRAWDOWN_PCT
             ),
             "maximum_pct": FORWARD_GATE_MAX_DRAWDOWN_PCT,
             "observed_pct": base_metrics["max_drawdown_pct"],
@@ -832,8 +885,8 @@ def forward_qualification_gate(
         "halves": {
             "passed": all(
                 metrics["trades"] >= FORWARD_GATE_MIN_HALF_TRADES
-                and _gate_positive(metrics, 1.0)
-                for metrics in halves.values()
+                and _gate_positive(metrics, 1.0, inclusive_profit_factor=False)
+                for metrics in half_decisions.values()
             ),
             "minimum_trades_each": FORWARD_GATE_MIN_HALF_TRADES,
             "earlier": halves["earlier"],
@@ -842,8 +895,8 @@ def forward_qualification_gate(
         "directions": {
             "passed": all(
                 metrics["trades"] >= FORWARD_GATE_MIN_DIRECTION_TRADES
-                and _gate_positive(metrics, 1.0)
-                for metrics in directions.values()
+                and _gate_positive(metrics, 1.0, inclusive_profit_factor=False)
+                for metrics in direction_decisions.values()
             ),
             "minimum_trades_each": FORWARD_GATE_MIN_DIRECTION_TRADES,
             "long": directions["long"],
