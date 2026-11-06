@@ -242,6 +242,73 @@ positive; the frozen rules deliberately prevent those cells from being
 promoted. The dashboard keeps all seven windows available inside a collapsed
 diagnostic and labels under-10-trade windows `LOW SAMPLE`.
 
+## Frozen direction, cost, and drawdown robustness screen
+
+Frozen 2026-11-06 before any robustness results were computed. Version:
+`range-robustness-v1`.
+
+This screen reuses each definition's exact `range-walk-forward-v1` baseline
+cohort: one continuous simulation with entries from 2023-01-01 through
+2026-06-30. It does not search for a new range, holding period, exit, direction
+filter, cost assumption, or sample threshold.
+
+The pre-registered design is:
+
+1. Split the exact completed baseline cohort into long and short trades. A
+   direction is sample-adequate only with at least 30 trades. The candidate is
+   direction-balanced only when both directions meet that sample floor and
+   each has expectancy above zero and profit factor above 1 after base costs.
+2. Require at least 60 completed baseline trades for the overall robustness
+   sample. Smaller cohorts remain visible and receive an explicit warning.
+3. Replay the exact same signal, direction, next-bar entry timestamp, exit
+   reason, and exit timestamp under three frozen per-side execution scenarios:
+
+   | Scenario | Fee per side | Slippage per side |
+   |---|---:|---:|
+   | Base | 0.20% | 0.05% |
+   | Stressed | 0.30% | 0.10% |
+   | Severe | 0.40% | 0.15% |
+
+   The scenarios change only the entry/exit fill adjustment and fee charge;
+   they may not change which observations are compared. A candidate is
+   cost-resilient only when the overall sample is adequate and all three
+   scenarios retain positive expectancy and profit factor above 1.
+4. Measure drawdown duration on the base-cost cohort as the largest number of
+   consecutive completed trades whose compounded equity remained below its
+   previous peak. Also report calendar days from that peak to recovery, or to
+   the final observed exit when the spell remained unrecovered. Drawdown
+   duration is descriptive; no post-result cutoff will be invented.
+5. A candidate receives the historical `robust` label only when it already
+   passed the frozen walk-forward stability screen, is direction-balanced,
+   and is cost-resilient. This is deliberately stricter than any one positive
+   subgroup or cost cell.
+6. Do not change the 60/30 trade floors, cost scenarios, paired-cohort rule,
+   or robustness definition after viewing results. The screen cannot change
+   validation, selection, holdout, forward-paper, or real-order status.
+
+These are already-viewed historical prices. This is a fragility diagnostic,
+not an untouched holdout, proof of profitability, or financial advice.
+
+### Frozen robustness result
+
+Computed only after commit `ff7b722` recorded the rules above.
+
+| Definition | Total trades | Long trades / expectancy | Short trades / expectancy | Severe expectancy / PF | Longest underwater spell | Robust |
+|---|---:|---:|---:|---:|---:|---:|
+| $2k–$4k | 15 | 10 / -1.1645% | 5 / -0.6743% | -1.5991% / 0.250 | 15 trades / 233.83 days | No |
+| $5k–$10k | 31 | 17 / -1.2034% | 14 / -1.5502% | -1.9602% / 0.234 | 31 trades / 1,203.33 days | No |
+| 5%–10% | 39 | 22 / -1.2290% | 17 / -0.7340% | -1.6118% / 0.173 | 39 trades / 1,194.00 days | No |
+| 10%–20% | 66 | 38 / -0.3737% | 28 / -0.7741% | -1.1441% / 0.506 | 53 trades / 911.00 days | No |
+| 4–8 ATR | 52 | 30 / -0.8485% | 22 / -0.0644% | -1.1150% / 0.445 | 50 trades / 1,178.33 days | No |
+| Structure | 92 | 53 / -0.0832% | 39 / -1.0226% | -1.0830% / 0.521 | 75 trades / 1,011.67 days | No |
+
+No definition passed. Only 10%–20% and Structure met the 60-trade overall
+floor. Structure was the only definition with at least 30 trades in both
+directions, but both long and short expectancy remained negative. Every
+candidate was already negative at base costs and worsened monotonically under
+the stressed and severe assumptions. The longest drawdown spell for every
+definition remained unrecovered at the end of its observed cohort.
+
 ## Tomorrow's plan
 
 1. ~~Reconcile the futures candles against Kraken spot over their overlapping
@@ -253,8 +320,9 @@ diagnostic and labels under-10-trade windows `LOW SAMPLE`.
 3. ~~Add walk-forward windows so the dashboard shows whether an edge is stable
    across regimes instead of relying on one split.~~ Completed 2026-11-06; no
    definition passed the frozen stability screen.
-4. Add long/short breakdowns, cost sensitivity, drawdown duration, and a
-   minimum-sample warning.
+4. ~~Add long/short breakdowns, cost sensitivity, drawdown duration, and a
+   minimum-sample warning.~~ Completed 2026-11-06; no definition passed the
+   frozen robustness screen.
 5. Forward-paper-track any candidate that passes, with no real orders, before
    considering it a live setup aid.
 6. Only after BTC survives that process, apply the same frozen methodology to

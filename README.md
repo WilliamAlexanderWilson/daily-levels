@@ -289,6 +289,17 @@ negative overall (-0.4814% expectancy, 0.742 PF, 46.83% max drawdown). The UI
 keeps the seven-window detail collapsed and marks small samples rather than
 turning isolated historical wins into a signal.
 
+The frozen `range-robustness-v1` screen uses that exact walk-forward cohort to
+show long versus short results, paired base/stressed/severe execution costs,
+and the longest compounded-equity drawdown duration. It requires 60 total
+trades, 30 per direction, positive expectancy and PF above 1 for both
+directions and every cost scenario, plus an already-passed walk-forward
+screen. No definition passed. Structure was the only definition with adequate
+overall and per-direction samples, but long expectancy was -0.0832%, short
+expectancy -1.0226%, and severe-cost expectancy -1.0830%; its longest
+unrecovered spell lasted 75 trades / 1,011.67 days. The UI keeps this detail
+collapsed and displays explicit low-sample warnings.
+
 ## Futures context (funding rate, open interest)
 
 `src/context/futures.py` fetches Kraken Futures' aggregate perpetual data

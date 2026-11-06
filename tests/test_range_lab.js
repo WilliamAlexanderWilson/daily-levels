@@ -75,6 +75,41 @@ const data = {
           },
         ],
       },
+      robustness: {
+        robust: false,
+        status: "did not pass the frozen historical robustness screen",
+        sample_adequate: true,
+        sample_warning: null,
+        direction_balanced: false,
+        cost_resilient: false,
+        directions: {
+          long: {
+            sample_adequate: true,
+            positive: false,
+            metrics: { trades: 53, expectancy_pct: -0.0832, profit_factor: 0.952, profit_factor_infinite: false },
+          },
+          short: {
+            sample_adequate: true,
+            positive: false,
+            metrics: { trades: 39, expectancy_pct: -1.0226, profit_factor: 0.503, profit_factor_infinite: false },
+          },
+        },
+        cost_scenarios: [
+          {
+            key: "base", label: "Base", fee_per_side_pct: 0.2, slippage_per_side_pct: 0.05,
+            metrics: { trades: 92, expectancy_pct: -0.4814, profit_factor: 0.742, profit_factor_infinite: false, max_drawdown_pct: 46.83 },
+          },
+          {
+            key: "severe", label: "Severe", fee_per_side_pct: 0.4, slippage_per_side_pct: 0.15,
+            metrics: { trades: 92, expectancy_pct: -1.083, profit_factor: 0.521, profit_factor_infinite: false, max_drawdown_pct: 67.89 },
+          },
+        ],
+        drawdown_duration: {
+          max_underwater_trades: 75,
+          max_underwater_days: 1011.67,
+          recovered: false,
+        },
+      },
     },
     {
       spec: { key: "structure", label: "Structure range", method: "structure" },
@@ -134,6 +169,43 @@ assert.deepEqual(view.walkForward, {
       positive: true,
     },
   ],
+});
+assert.deepEqual(view.robustness, {
+  robust: false,
+  status: "did not pass the frozen historical robustness screen",
+  sampleAdequate: true,
+  sampleWarning: null,
+  directionBalanced: false,
+  costResilient: false,
+  directions: [
+    {
+      direction: "long",
+      trades: 53,
+      expectancy: "-0.0832% / trade",
+      profitFactor: "0.95",
+      sampleAdequate: true,
+      positive: false,
+    },
+    {
+      direction: "short",
+      trades: 39,
+      expectancy: "-1.0226% / trade",
+      profitFactor: "0.50",
+      sampleAdequate: true,
+      positive: false,
+    },
+  ],
+  costScenarios: [
+    {
+      key: "base", label: "Base", fee: "0.2% fee", slippage: "0.05% slip", trades: 92,
+      expectancy: "-0.4814% / trade", profitFactor: "0.74", drawdown: "46.83%", positive: false,
+    },
+    {
+      key: "severe", label: "Severe", fee: "0.4% fee", slippage: "0.15% slip", trades: 92,
+      expectancy: "-1.083% / trade", profitFactor: "0.52", drawdown: "67.89%", positive: false,
+    },
+  ],
+  drawdown: { trades: 75, days: "1011.67", recovered: false },
 });
 assert.equal(RangeLab.freshness(data, Date.parse("2026-11-06T10:00:00Z")).stale, false);
 assert.equal(RangeLab.freshness(data, Date.parse("2026-11-07T10:00:00Z")).stale, true);

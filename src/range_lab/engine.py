@@ -29,6 +29,14 @@ WALK_FORWARD_MIN_ELIGIBLE_WINDOWS = 4
 WALK_FORWARD_MIN_POSITIVE_SHARE = 0.75
 WALK_FORWARD_BULL_THRESHOLD = 0.15
 WALK_FORWARD_BEAR_THRESHOLD = -0.15
+ROBUSTNESS_VERSION = "range-robustness-v1"
+ROBUSTNESS_MIN_TOTAL_TRADES = 60
+ROBUSTNESS_MIN_DIRECTION_TRADES = 30
+ROBUSTNESS_COST_SCENARIOS = (
+    ("base", "Base", 0.0020, 0.0005),
+    ("stressed", "Stressed", 0.0030, 0.0010),
+    ("severe", "Severe", 0.0040, 0.0015),
+)
 WALK_FORWARD_WINDOWS = (
     ("2023_h1", "2023 H1", pd.Timestamp("2023-01-01T00:00:00Z"), pd.Timestamp("2023-07-01T00:00:00Z")),
     ("2023_h2", "2023 H2", pd.Timestamp("2023-07-01T00:00:00Z"), pd.Timestamp("2024-01-01T00:00:00Z")),
@@ -176,12 +184,17 @@ def _signal(candle: pd.Series, range_state: dict) -> str | None:
     return None
 
 
-def _trade_return(direction: str, entry: float, exit_price: float) -> float:
+def _trade_return(
+    direction: str,
+    entry: float,
+    exit_price: float,
+    fee_per_side: float = FEE_PER_SIDE,
+) -> float:
     gross = (exit_price - entry) / entry if direction == "long" else (entry - exit_price) / entry
     # Express both transaction fees relative to entry notional. The exit fee
     # changes with exit notional and therefore is not exactly a second flat
     # entry-price percentage when price moved during the trade.
-    fees = FEE_PER_SIDE + (FEE_PER_SIDE * exit_price / entry)
+    fees = fee_per_side + (fee_per_side * exit_price / entry)
     return gross - fees
 
 
@@ -191,9 +204,13 @@ def _run_trade(
     direction: str,
     range_state: dict,
     max_hold_bars: int,
+    fee_per_side: float = FEE_PER_SIDE,
+    slippage_per_side: float = SLIPPAGE_PER_SIDE,
 ) -> tuple[dict, int]:
     raw_entry = float(candles.iloc[entry_index]["open"])
-    entry = raw_entry * (1 + SLIPPAGE_PER_SIDE if direction == "long" else 1 - SLIPPAGE_PER_SIDE)
+    entry = raw_entry * (
+        1 + slippage_per_side if direction == "long" else 1 - slippage_per_side
+    )
     target = range_state["midpoint"]
     stop = (
         range_state["low"] - STOP_ATR_MULTIPLE * range_state["atr"]
@@ -216,21 +233,25 @@ def _run_trade(
         target_hit = bar["high"] >= target if direction == "long" else bar["low"] <= target
         if stop_hit:
             raw_exit = min(stop, float(bar["open"])) if direction == "long" else max(stop, float(bar["open"]))
-            exit_price = raw_exit * (1 - SLIPPAGE_PER_SIDE if direction == "long" else 1 + SLIPPAGE_PER_SIDE)
+            exit_price = raw_exit * (
+                1 - slippage_per_side if direction == "long" else 1 + slippage_per_side
+            )
             reason = "stop"
             exit_index = cursor
             break
         if target_hit:
-            exit_price = target * (1 - SLIPPAGE_PER_SIDE if direction == "long" else 1 + SLIPPAGE_PER_SIDE)
+            exit_price = target * (
+                1 - slippage_per_side if direction == "long" else 1 + slippage_per_side
+            )
             reason = "target"
             exit_index = cursor
             break
 
     if reason == "time":
-        exit_price *= 1 - SLIPPAGE_PER_SIDE if direction == "long" else 1 + SLIPPAGE_PER_SIDE
+        exit_price *= 1 - slippage_per_side if direction == "long" else 1 + slippage_per_side
 
-    net_return = _trade_return(direction, entry, exit_price)
-    risk_fraction = abs(entry - stop) / entry + (2 * FEE_PER_SIDE)
+    net_return = _trade_return(direction, entry, exit_price, fee_per_side)
+    risk_fraction = abs(entry - stop) / entry + (2 * fee_per_side)
     return {
         "direction": direction,
         "signal_time": candles.index[entry_index - 1].isoformat(),
@@ -420,6 +441,46 @@ def backtest_runner_cohort(
     return trades
 
 
+def backtest_cost_cohort(
+    candles: pd.DataFrame,
+    spec: RangeSpec,
+    baseline_trades: list[dict],
+    fee_per_side: float,
+    slippage_per_side: float,
+) -> list[dict]:
+    """Reprice the exact baseline cohort without changing its trade path."""
+    candles = candles.sort_index()
+    atr = _true_range(candles).rolling(14).mean()
+    repriced: list[dict] = []
+    for baseline in baseline_trades:
+        signal_time = pd.Timestamp(baseline["signal_time"])
+        entry_time = pd.Timestamp(baseline["entry_time"])
+        if signal_time not in candles.index or entry_time not in candles.index:
+            raise ValueError("Baseline cost cohort falls outside candle history")
+        signal_index = int(candles.index.get_loc(signal_time))
+        entry_index = int(candles.index.get_loc(entry_time))
+        if entry_index != signal_index + 1:
+            raise ValueError("Cost comparison requires the same next-bar baseline entry")
+        state = _range_at(candles, signal_index, spec, atr)
+        direction = _signal(candles.iloc[signal_index], state) if state else None
+        if direction != baseline["direction"]:
+            raise ValueError("Baseline signal no longer reproduces for cost comparison")
+        trade, _exit_index = _run_trade(
+            candles,
+            entry_index,
+            direction,
+            state,
+            spec.lookback_bars,
+            fee_per_side,
+            slippage_per_side,
+        )
+        identity = ("signal_time", "entry_time", "exit_time", "direction", "reason")
+        if not trade or any(trade[field] != baseline[field] for field in identity):
+            raise ValueError("Execution costs changed the paired baseline trade path")
+        repriced.append(trade)
+    return repriced
+
+
 def _paper_trade(
     candles: pd.DataFrame,
     entry_index: int,
@@ -593,6 +654,96 @@ def _metrics(trades: list[dict]) -> dict:
     }
 
 
+def _positive_metrics(metrics: dict) -> bool:
+    return bool(
+        metrics["expectancy_pct"] is not None
+        and metrics["expectancy_pct"] > 0
+        and (
+            metrics["profit_factor_infinite"]
+            or (
+                metrics["profit_factor"] is not None
+                and metrics["profit_factor"] > 1
+            )
+        )
+    )
+
+
+def _walk_forward_baseline_trades(
+    candles: pd.DataFrame, spec: RangeSpec
+) -> list[dict] | None:
+    first_start = WALK_FORWARD_WINDOWS[0][2]
+    final_end = WALK_FORWARD_WINDOWS[-1][3]
+    if candles.index[0] >= first_start or candles.index[-1] < final_end:
+        return None
+    simulated = backtest_spec(candles, spec, start=first_start)
+    return [
+        trade
+        for trade in simulated
+        if first_start <= pd.Timestamp(trade["entry_time"]) < final_end
+    ]
+
+
+def _drawdown_duration(trades: list[dict]) -> dict:
+    if not trades:
+        return {
+            "max_underwater_trades": 0,
+            "max_underwater_days": None,
+            "recovered": None,
+            "peak_time": None,
+            "end_time": None,
+        }
+    equity = 1.0
+    peak = 1.0
+    peak_time = pd.Timestamp(trades[0]["entry_time"])
+    spell_count = 0
+    spell_peak_time = peak_time
+    longest = None
+
+    def consider(end_time: pd.Timestamp, recovered: bool) -> None:
+        nonlocal longest
+        duration_days = (end_time - spell_peak_time).total_seconds() / 86_400
+        candidate = {
+            "max_underwater_trades": spell_count,
+            "max_underwater_days": round(duration_days, 2),
+            "recovered": recovered,
+            "peak_time": spell_peak_time.isoformat(),
+            "end_time": end_time.isoformat(),
+        }
+        if (
+            longest is None
+            or candidate["max_underwater_trades"] > longest["max_underwater_trades"]
+            or (
+                candidate["max_underwater_trades"] == longest["max_underwater_trades"]
+                and candidate["max_underwater_days"] > longest["max_underwater_days"]
+            )
+        ):
+            longest = candidate
+
+    for trade in trades:
+        exit_time = pd.Timestamp(trade["exit_time"])
+        equity *= 1 + trade["return_pct"] / 100
+        if equity >= peak:
+            if spell_count:
+                consider(exit_time, True)
+            peak = equity
+            peak_time = exit_time
+            spell_count = 0
+        else:
+            if spell_count == 0:
+                spell_peak_time = peak_time
+            spell_count += 1
+
+    if spell_count:
+        consider(pd.Timestamp(trades[-1]["exit_time"]), False)
+    return longest or {
+        "max_underwater_trades": 0,
+        "max_underwater_days": 0.0,
+        "recovered": True,
+        "peak_time": peak_time.isoformat(),
+        "end_time": peak_time.isoformat(),
+    }
+
+
 def _walk_forward_regime(
     candles: pd.DataFrame, start: pd.Timestamp, end: pd.Timestamp
 ) -> tuple[str, float]:
@@ -621,17 +772,9 @@ def walk_forward_stability(candles: pd.DataFrame, spec: RangeSpec) -> dict | Non
     truncated at a six-month boundary.
     """
     candles = candles.sort_index()
-    first_start = WALK_FORWARD_WINDOWS[0][2]
-    final_end = WALK_FORWARD_WINDOWS[-1][3]
-    if candles.index[0] >= first_start or candles.index[-1] < final_end:
+    trades = _walk_forward_baseline_trades(candles, spec)
+    if trades is None:
         return None
-
-    simulated = backtest_spec(candles, spec, start=first_start)
-    trades = [
-        trade
-        for trade in simulated
-        if first_start <= pd.Timestamp(trade["entry_time"]) < final_end
-    ]
     windows = []
     for key, label, start, end in WALK_FORWARD_WINDOWS:
         window_trades = [
@@ -642,18 +785,7 @@ def walk_forward_stability(candles: pd.DataFrame, spec: RangeSpec) -> dict | Non
         metrics = _metrics(window_trades)
         regime, market_return_pct = _walk_forward_regime(candles, start, end)
         sample_eligible = metrics["trades"] >= WALK_FORWARD_MIN_TRADES
-        positive = bool(
-            sample_eligible
-            and metrics["expectancy_pct"] is not None
-            and metrics["expectancy_pct"] > 0
-            and (
-                metrics["profit_factor_infinite"]
-                or (
-                    metrics["profit_factor"] is not None
-                    and metrics["profit_factor"] > 1
-                )
-            )
-        )
+        positive = sample_eligible and _positive_metrics(metrics)
         windows.append({
             "key": key,
             "label": label,
@@ -670,17 +802,7 @@ def walk_forward_stability(candles: pd.DataFrame, spec: RangeSpec) -> dict | Non
     eligible_windows = sum(window["sample_eligible"] for window in windows)
     positive_windows = sum(window["positive"] for window in windows)
     positive_share = positive_windows / eligible_windows if eligible_windows else 0.0
-    aggregate_positive = bool(
-        aggregate["expectancy_pct"] is not None
-        and aggregate["expectancy_pct"] > 0
-        and (
-            aggregate["profit_factor_infinite"]
-            or (
-                aggregate["profit_factor"] is not None
-                and aggregate["profit_factor"] > 1
-            )
-        )
-    )
+    aggregate_positive = _positive_metrics(aggregate)
     stable = bool(
         eligible_windows >= WALK_FORWARD_MIN_ELIGIBLE_WINDOWS
         and positive_share >= WALK_FORWARD_MIN_POSITIVE_SHARE
@@ -699,6 +821,98 @@ def walk_forward_stability(candles: pd.DataFrame, spec: RangeSpec) -> dict | Non
         "positive_share_pct": round(positive_share * 100, 2),
         "aggregate": aggregate,
         "windows": windows,
+    }
+
+
+def robustness_analysis(
+    candles: pd.DataFrame, spec: RangeSpec, walk_forward: dict | None
+) -> dict | None:
+    """Stress the frozen walk-forward cohort without changing its entries."""
+    if walk_forward is None:
+        return None
+    baseline_trades = _walk_forward_baseline_trades(candles.sort_index(), spec)
+    if baseline_trades is None:
+        return None
+    baseline_metrics = _metrics(baseline_trades)
+    if baseline_metrics != walk_forward["aggregate"]:
+        raise RuntimeError("Robustness cohort diverged from walk-forward aggregate")
+
+    directions = {}
+    for direction in ("long", "short"):
+        metrics = _metrics([
+            trade for trade in baseline_trades if trade["direction"] == direction
+        ])
+        sample_adequate = metrics["trades"] >= ROBUSTNESS_MIN_DIRECTION_TRADES
+        directions[direction] = {
+            "sample_adequate": sample_adequate,
+            "positive": sample_adequate and _positive_metrics(metrics),
+            "metrics": metrics,
+        }
+    direction_balanced = all(item["positive"] for item in directions.values())
+
+    scenarios = []
+    baseline_identity = [
+        (
+            trade["signal_time"],
+            trade["entry_time"],
+            trade["exit_time"],
+            trade["direction"],
+            trade["reason"],
+        )
+        for trade in baseline_trades
+    ]
+    for key, label, fee_per_side, slippage_per_side in ROBUSTNESS_COST_SCENARIOS:
+        repriced = backtest_cost_cohort(
+            candles,
+            spec,
+            baseline_trades,
+            fee_per_side,
+            slippage_per_side,
+        )
+        repriced_identity = [
+            (
+                trade["signal_time"],
+                trade["entry_time"],
+                trade["exit_time"],
+                trade["direction"],
+                trade["reason"],
+            )
+            for trade in repriced
+        ]
+        if repriced_identity != baseline_identity:
+            raise RuntimeError(f"{label} costs changed the paired robustness cohort")
+        scenarios.append({
+            "key": key,
+            "label": label,
+            "fee_per_side_pct": fee_per_side * 100,
+            "slippage_per_side_pct": slippage_per_side * 100,
+            "metrics": _metrics(repriced),
+        })
+
+    sample_adequate = baseline_metrics["trades"] >= ROBUSTNESS_MIN_TOTAL_TRADES
+    cost_resilient = sample_adequate and all(
+        _positive_metrics(scenario["metrics"]) for scenario in scenarios
+    )
+    robust = bool(walk_forward["stable"] and direction_balanced and cost_resilient)
+    return {
+        "version": ROBUSTNESS_VERSION,
+        "status": (
+            "passed the frozen historical robustness screen; not prospective proof"
+            if robust
+            else "did not pass the frozen historical robustness screen"
+        ),
+        "robust": robust,
+        "sample_adequate": sample_adequate,
+        "sample_warning": (
+            None
+            if sample_adequate
+            else f"Only {baseline_metrics['trades']} trades; {ROBUSTNESS_MIN_TOTAL_TRADES} required"
+        ),
+        "direction_balanced": direction_balanced,
+        "cost_resilient": cost_resilient,
+        "directions": directions,
+        "cost_scenarios": scenarios,
+        "drawdown_duration": _drawdown_duration(baseline_trades),
     }
 
 
@@ -771,6 +985,8 @@ def build_range_lab(
                     else None
                 ),
             }
+        walk_forward = walk_forward_stability(candles, spec)
+        robustness = robustness_analysis(candles, spec, walk_forward)
         result = {
             "spec": asdict(spec),
             "latest_range": _latest_range_snapshot(candles, spec),
@@ -781,7 +997,8 @@ def build_range_lab(
                 "runner": runner_metrics,
                 "runner_minus_baseline": deltas,
             },
-            "walk_forward": walk_forward_stability(candles, spec),
+            "walk_forward": walk_forward,
+            "robustness": robustness,
             "forward_paper": forward_paper_track(candles, spec, holdout_end),
         }
         candidates.append(result)
@@ -879,6 +1096,26 @@ def build_range_lab(
             "minimum_trades_per_window": WALK_FORWARD_MIN_TRADES,
             "minimum_eligible_windows": WALK_FORWARD_MIN_ELIGIBLE_WINDOWS,
             "minimum_positive_share_pct": WALK_FORWARD_MIN_POSITIVE_SHARE * 100,
+            "promotion_effect": "none; does not change validation, selection, holdout, or forward-paper labels",
+        },
+        "robustness_screen": {
+            "version": ROBUSTNESS_VERSION,
+            "frozen_at": "2026-11-06",
+            "status": "exploratory historical fragility diagnostic; not an untouched holdout or selection rule",
+            "cohort": "exact range-walk-forward-v1 baseline signals, directions, entries, exit reasons, and exit timestamps",
+            "minimum_total_trades": ROBUSTNESS_MIN_TOTAL_TRADES,
+            "minimum_trades_per_direction": ROBUSTNESS_MIN_DIRECTION_TRADES,
+            "cost_scenarios": [
+                {
+                    "key": key,
+                    "label": label,
+                    "fee_per_side_pct": fee_per_side * 100,
+                    "slippage_per_side_pct": slippage_per_side * 100,
+                }
+                for key, label, fee_per_side, slippage_per_side in ROBUSTNESS_COST_SCENARIOS
+            ],
+            "drawdown_duration": "maximum consecutive completed trades below the prior compounded-equity peak; days run from that peak to recovery or the final observed exit",
+            "robust_rule": "walk-forward stable, both directions sample-adequate and positive, and every cost scenario positive",
             "promotion_effect": "none; does not change validation, selection, holdout, or forward-paper labels",
         },
         "forward_tracking": {

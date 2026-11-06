@@ -192,6 +192,21 @@
         <div id="range-lab-walk-windows" class="range-lab-walk-windows" aria-label="Walk-forward windows"></div>
         <p id="range-lab-walk-verdict">Historical stability diagnostic only—not prospective evidence or a trading instruction.</p>
       </details>
+      <details id="range-lab-robustness" class="range-lab-robustness">
+        <summary>
+          <span><strong>Direction &amp; execution stress</strong><small>Long vs short · higher costs · drawdown duration</small></span>
+          <span id="range-lab-robustness-status">Show</span>
+        </summary>
+        <p id="range-lab-robustness-warning" class="range-lab-robustness-warning">Loading frozen sample checks…</p>
+        <div id="range-lab-direction-grid" class="range-lab-robustness-grid" aria-label="Long and short breakdown"></div>
+        <div id="range-lab-cost-grid" class="range-lab-robustness-grid range-lab-cost-grid" aria-label="Cost stress scenarios"></div>
+        <div class="range-lab-drawdown-duration">
+          <div><small>Longest underwater spell</small><strong id="range-lab-underwater-trades">—</strong></div>
+          <div><small>Calendar duration</small><strong id="range-lab-underwater-days">—</strong></div>
+          <div><small>Recovered?</small><strong id="range-lab-underwater-recovered">—</strong></div>
+        </div>
+        <p id="range-lab-robustness-verdict">Historical fragility diagnostic only—not prospective proof or a trading instruction.</p>
+      </details>
       <p class="range-lab-paper-note" id="range-lab-paper-note">
         Forward paper tracking uses only candles completed after the frozen research cutoff. It places no orders and does not turn an unvalidated candidate into a recommendation.
       </p>

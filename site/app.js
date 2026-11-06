@@ -1926,6 +1926,65 @@
         ? "Passed the frozen historical stability screen, but this is still already-viewed history—not prospective proof or a trade instruction."
         : "Did not pass the frozen historical stability screen. Do not treat isolated positive windows as a live edge or trade instruction.";
     }
+    const robustness = document.getElementById("range-lab-robustness");
+    robustness.hidden = !view.robustness;
+    if (view.robustness) {
+      const status = document.getElementById("range-lab-robustness-status");
+      status.textContent = view.robustness.robust ? "HISTORICALLY ROBUST · SHOW" : "NOT ROBUST · SHOW";
+      status.className = view.robustness.robust ? "is-robust" : "is-failed";
+      const totalTrades = view.robustness.costScenarios.length
+        ? view.robustness.costScenarios[0].trades
+        : 0;
+      document.getElementById("range-lab-robustness-warning").textContent = view.robustness.sampleAdequate
+        ? `${totalTrades} paired trades · 60-trade overall sample floor met. Direction subgroups still require 30 each.`
+        : `${view.robustness.sampleWarning} · Direction subgroups require 30 trades each. Treat every result as low-confidence.`;
+
+      const directionGrid = document.getElementById("range-lab-direction-grid");
+      directionGrid.innerHTML = "";
+      for (const direction of view.robustness.directions) {
+        const card = document.createElement("article");
+        card.className = `range-lab-robustness-card ${direction.sampleAdequate ? (direction.positive ? "is-positive" : "is-negative") : "is-low-sample"}`;
+        const heading = document.createElement("div");
+        const label = document.createElement("strong");
+        label.textContent = direction.direction.toUpperCase();
+        const sample = document.createElement("span");
+        sample.textContent = `${direction.trades} trades${direction.sampleAdequate ? "" : " · LOW SAMPLE"}`;
+        heading.append(label, sample);
+        const result = document.createElement("small");
+        result.textContent = `${direction.expectancy} · PF ${direction.profitFactor}`;
+        card.append(heading, result);
+        directionGrid.appendChild(card);
+      }
+
+      const costGrid = document.getElementById("range-lab-cost-grid");
+      costGrid.innerHTML = "";
+      for (const scenario of view.robustness.costScenarios) {
+        const card = document.createElement("article");
+        card.className = `range-lab-robustness-card ${scenario.positive ? "is-positive" : "is-negative"}`;
+        const heading = document.createElement("div");
+        const label = document.createElement("strong");
+        label.textContent = scenario.label.toUpperCase();
+        const costs = document.createElement("span");
+        costs.textContent = `${scenario.fee} · ${scenario.slippage}`;
+        heading.append(label, costs);
+        const result = document.createElement("small");
+        result.textContent = `${scenario.expectancy} · PF ${scenario.profitFactor} · DD ${scenario.drawdown}`;
+        card.append(heading, result);
+        costGrid.appendChild(card);
+      }
+
+      document.getElementById("range-lab-underwater-trades").textContent =
+        `${view.robustness.drawdown.trades} trades`;
+      document.getElementById("range-lab-underwater-days").textContent =
+        `${view.robustness.drawdown.days} days`;
+      document.getElementById("range-lab-underwater-recovered").textContent =
+        view.robustness.drawdown.recovered === null
+          ? "—"
+          : view.robustness.drawdown.recovered ? "Yes" : "No";
+      document.getElementById("range-lab-robustness-verdict").textContent = view.robustness.robust
+        ? "Passed the frozen historical robustness screen, but this remains already-viewed history—not prospective proof or a trade instruction."
+        : "Did not pass the frozen robustness screen. Direction, cost, or regime fragility remains; do not treat a favorable cell as a live edge.";
+    }
     const forwardStart = RangeLab.forwardStart(activeRangeLabData);
     document.getElementById("range-lab-paper-note").textContent = forwardStart === "not started"
       ? "Forward paper tracking will begin with the next Range Lab data refresh. It places no orders and does not create a recommendation."
@@ -1951,6 +2010,7 @@
         document.getElementById("range-lab-detail").hidden = true;
         document.getElementById("range-lab-exit-test").hidden = true;
         document.getElementById("range-lab-walk-forward").hidden = true;
+        document.getElementById("range-lab-robustness").hidden = true;
       }
       return;
     }
