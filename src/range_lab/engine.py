@@ -200,6 +200,9 @@ def _run_trade(
             exit_index = cursor
             break
 
+    if reason == "time":
+        exit_price *= 1 - SLIPPAGE_PER_SIDE if direction == "long" else 1 + SLIPPAGE_PER_SIDE
+
     net_return = _trade_return(direction, entry, exit_price)
     risk_fraction = abs(entry - stop) / entry + (2 * FEE_PER_SIDE)
     return {
@@ -272,7 +275,15 @@ def _metrics(trades: list[dict]) -> dict:
 
 
 def _split_trades(trades: list[dict], start: pd.Timestamp, end: pd.Timestamp) -> list[dict]:
-    return [trade for trade in trades if start <= pd.Timestamp(trade["entry_time"]) < end]
+    # A validation trade that exits in the holdout has consumed holdout prices
+    # and cannot be used for model selection. Keep both ends of every trade
+    # inside one chronological partition; this is an explicit boundary embargo.
+    return [
+        trade
+        for trade in trades
+        if start <= pd.Timestamp(trade["entry_time"]) < end
+        and pd.Timestamp(trade["exit_time"]) < end
+    ]
 
 
 def build_range_lab(candles: pd.DataFrame, specs: tuple[RangeSpec, ...] = SPECS) -> dict:

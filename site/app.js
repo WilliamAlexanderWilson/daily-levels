@@ -3342,6 +3342,7 @@
             const rangeLabData = await fetchJson(rangeLabUrl());
             if (state.asset === asset && state.range === range) renderRangeLab(rangeLabData);
           } catch (err) {
+            if (state.asset !== asset || state.range !== range) return;
             console.error("range lab unavailable", err);
             renderRangeLab(null);
           }
