@@ -161,7 +161,11 @@ def _signal(candle: pd.Series, range_state: dict) -> str | None:
 
 def _trade_return(direction: str, entry: float, exit_price: float) -> float:
     gross = (exit_price - entry) / entry if direction == "long" else (entry - exit_price) / entry
-    return gross - (2 * FEE_PER_SIDE)
+    # Express both transaction fees relative to entry notional. The exit fee
+    # changes with exit notional and therefore is not exactly a second flat
+    # entry-price percentage when price moved during the trade.
+    fees = FEE_PER_SIDE + (FEE_PER_SIDE * exit_price / entry)
+    return gross - fees
 
 
 def _run_trade(

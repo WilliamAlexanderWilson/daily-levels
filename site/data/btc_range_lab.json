@@ -53,11 +53,11 @@
         "train": {
           "trades": 26,
           "win_rate_pct": 38.46,
-          "expectancy_pct": -0.2191,
+          "expectancy_pct": -0.2184,
           "profit_factor": 0.852,
           "profit_factor_infinite": false,
-          "total_return_pct": -6.57,
-          "max_drawdown_pct": 14.35
+          "total_return_pct": -6.55,
+          "max_drawdown_pct": 14.34
         },
         "validation": {
           "trades": 0,
@@ -91,8 +91,8 @@
           "range_low": 25364.0,
           "range_high": 28482.0,
           "reason": "stop",
-          "return_pct": -2.064,
-          "r_multiple": -1.0244
+          "return_pct": -2.0606,
+          "r_multiple": -1.0228
         },
         {
           "direction": "short",
@@ -106,8 +106,8 @@
           "range_low": 29725.0,
           "range_high": 31885.0,
           "reason": "target",
-          "return_pct": 1.693,
-          "r_multiple": 0.7984
+          "return_pct": 1.6972,
+          "r_multiple": 0.8004
         },
         {
           "direction": "long",
@@ -121,8 +121,8 @@
           "range_low": 29725.0,
           "range_high": 31885.0,
           "reason": "stop",
-          "return_pct": -1.4354,
-          "r_multiple": -1.0357
+          "return_pct": -1.4333,
+          "r_multiple": -1.0342
         },
         {
           "direction": "long",
@@ -136,8 +136,8 @@
           "range_low": 29513.0,
           "range_high": 31885.0,
           "reason": "stop",
-          "return_pct": -2.052,
-          "r_multiple": -1.0246
+          "return_pct": -2.0487,
+          "r_multiple": -1.0229
         },
         {
           "direction": "long",
@@ -151,8 +151,8 @@
           "range_low": 28859.0,
           "range_high": 31885.0,
           "reason": "stop",
-          "return_pct": -1.9413,
-          "r_multiple": -1.026
+          "return_pct": -1.9382,
+          "r_multiple": -1.0244
         },
         {
           "direction": "long",
@@ -166,8 +166,8 @@
           "range_low": 25304.0,
           "range_high": 28150.0,
           "reason": "stop",
-          "return_pct": -2.1776,
-          "r_multiple": -1.0231
+          "return_pct": -2.174,
+          "r_multiple": -1.0214
         },
         {
           "direction": "short",
@@ -181,8 +181,8 @@
           "range_low": 25985.0,
           "range_high": 28501.0,
           "reason": "target",
-          "return_pct": 2.3694,
-          "r_multiple": 0.9916
+          "return_pct": 2.375,
+          "r_multiple": 0.9939
         },
         {
           "direction": "long",
@@ -196,8 +196,8 @@
           "range_low": 26369.0,
           "range_high": 28632.0,
           "reason": "target",
-          "return_pct": 2.2568,
-          "r_multiple": 0.984
+          "return_pct": 2.2515,
+          "r_multiple": 0.9816
         },
         {
           "direction": "short",
@@ -211,8 +211,8 @@
           "range_low": 26527.0,
           "range_high": 30304.0,
           "reason": "stop",
-          "return_pct": -3.4631,
-          "r_multiple": -1.0151
+          "return_pct": -3.4693,
+          "r_multiple": -1.0169
         },
         {
           "direction": "short",
@@ -226,8 +226,8 @@
           "range_low": 35517.0,
           "range_high": 38479.0,
           "reason": "stop",
-          "return_pct": -1.7208,
-          "r_multiple": -1.0303
+          "return_pct": -1.7234,
+          "r_multiple": -1.0319
         },
         {
           "direction": "short",
@@ -241,8 +241,8 @@
           "range_low": 61880.0,
           "range_high": 65662.0,
           "reason": "target",
-          "return_pct": 1.1639,
-          "r_multiple": 0.6317
+          "return_pct": 1.1671,
+          "r_multiple": 0.6334
         },
         {
           "direction": "long",
@@ -256,8 +256,8 @@
           "range_low": 62358.0,
           "range_high": 65432.0,
           "reason": "target",
-          "return_pct": 1.1886,
-          "r_multiple": 0.8975
+          "return_pct": 1.1854,
+          "r_multiple": 0.8951
         }
       ]
     },
@@ -286,16 +286,16 @@
         "train": {
           "trades": 8,
           "win_rate_pct": 12.5,
-          "expectancy_pct": -2.8883,
+          "expectancy_pct": -2.8874,
           "profit_factor": 0.14,
           "profit_factor_infinite": false,
-          "total_return_pct": -21.12,
-          "max_drawdown_pct": 21.12
+          "total_return_pct": -21.11,
+          "max_drawdown_pct": 21.11
         },
         "validation": {
           "trades": 15,
           "win_rate_pct": 13.33,
-          "expectancy_pct": -2.0302,
+          "expectancy_pct": -2.0297,
           "profit_factor": 0.161,
           "profit_factor_infinite": false,
           "total_return_pct": -26.72,
@@ -304,11 +304,11 @@
         "holdout": {
           "trades": 25,
           "win_rate_pct": 40.0,
-          "expectancy_pct": -0.4902,
-          "profit_factor": 0.678,
+          "expectancy_pct": -0.4916,
+          "profit_factor": 0.677,
           "profit_factor_infinite": false,
-          "total_return_pct": -12.37,
-          "max_drawdown_pct": 12.68
+          "total_return_pct": -12.4,
+          "max_drawdown_pct": 12.69
         }
       },
       "recent_trades": [
@@ -324,8 +324,8 @@
           "range_low": 59004.0,
           "range_high": 67263.0,
           "reason": "stop",
-          "return_pct": -4.3787,
-          "r_multiple": -1.0111
+          "return_pct": -4.3707,
+          "r_multiple": -1.0093
         },
         {
           "direction": "long",
@@ -339,8 +339,8 @@
           "range_low": 57680.0,
           "range_high": 67263.0,
           "reason": "target",
-          "return_pct": 3.1783,
-          "r_multiple": 0.5697
+          "return_pct": 3.1712,
+          "r_multiple": 0.5685
         },
         {
           "direction": "short",
@@ -354,8 +354,8 @@
           "range_low": 57330.0,
           "range_high": 65888.0,
           "reason": "stop",
-          "return_pct": -3.9405,
-          "r_multiple": -1.0133
+          "return_pct": -3.9476,
+          "r_multiple": -1.0151
         },
         {
           "direction": "long",
@@ -369,8 +369,8 @@
           "range_low": 61758.0,
           "range_high": 66905.0,
           "reason": "target",
-          "return_pct": 2.1912,
-          "r_multiple": 0.9632
+          "return_pct": 2.186,
+          "r_multiple": 0.961
         },
         {
           "direction": "short",
@@ -384,8 +384,8 @@
           "range_low": 61880.0,
           "range_high": 70485.0,
           "reason": "stop",
-          "return_pct": -2.9283,
-          "r_multiple": -1.0178
+          "return_pct": -2.9334,
+          "r_multiple": -1.0196
         },
         {
           "direction": "long",
@@ -399,8 +399,8 @@
           "range_low": 75307.0,
           "range_high": 82453.0,
           "reason": "target",
-          "return_pct": 1.0133,
-          "r_multiple": 0.2592
+          "return_pct": 1.0105,
+          "r_multiple": 0.2585
         },
         {
           "direction": "long",
@@ -414,8 +414,8 @@
           "range_low": 75766.0,
           "range_high": 82453.0,
           "reason": "stop",
-          "return_pct": -1.7993,
-          "r_multiple": -1.0282
+          "return_pct": -1.7965,
+          "r_multiple": -1.0266
         },
         {
           "direction": "long",
@@ -429,8 +429,8 @@
           "range_low": 74705.0,
           "range_high": 82453.0,
           "reason": "target",
-          "return_pct": 3.2022,
-          "r_multiple": 1.3625
+          "return_pct": 3.195,
+          "r_multiple": 1.3595
         },
         {
           "direction": "short",
@@ -444,8 +444,8 @@
           "range_low": 74705.0,
           "range_high": 82453.0,
           "reason": "stop",
-          "return_pct": -2.5869,
-          "r_multiple": -1.0201
+          "return_pct": -2.5913,
+          "r_multiple": -1.0219
         },
         {
           "direction": "long",
@@ -459,8 +459,8 @@
           "range_low": 80103.0,
           "range_high": 87795.0,
           "reason": "target",
-          "return_pct": 2.2174,
-          "r_multiple": 0.7822
+          "return_pct": 2.2122,
+          "r_multiple": 0.7804
         },
         {
           "direction": "long",
@@ -474,8 +474,8 @@
           "range_low": 80320.0,
           "range_high": 87424.0,
           "reason": "target",
-          "return_pct": 0.261,
-          "r_multiple": 0.0618
+          "return_pct": 0.2596,
+          "r_multiple": 0.0615
         },
         {
           "direction": "long",
@@ -489,8 +489,8 @@
           "range_low": 80122.0,
           "range_high": 87424.0,
           "reason": "stop",
-          "return_pct": -2.6023,
-          "r_multiple": -1.0192
+          "return_pct": -2.5979,
+          "r_multiple": -1.0174
         }
       ]
     },
@@ -519,16 +519,16 @@
         "train": {
           "trades": 16,
           "win_rate_pct": 37.5,
-          "expectancy_pct": -0.7144,
-          "profit_factor": 0.474,
+          "expectancy_pct": -0.7135,
+          "profit_factor": 0.475,
           "profit_factor_infinite": false,
-          "total_return_pct": -11.11,
-          "max_drawdown_pct": 16.04
+          "total_return_pct": -11.09,
+          "max_drawdown_pct": 16.01
         },
         "validation": {
           "trades": 3,
           "win_rate_pct": 0.0,
-          "expectancy_pct": -2.1859,
+          "expectancy_pct": -2.1872,
           "profit_factor": 0.0,
           "profit_factor_infinite": false,
           "total_return_pct": -6.42,
@@ -537,11 +537,11 @@
         "holdout": {
           "trades": 35,
           "win_rate_pct": 31.43,
-          "expectancy_pct": -0.7627,
+          "expectancy_pct": -0.7624,
           "profit_factor": 0.44,
           "profit_factor_infinite": false,
           "total_return_pct": -23.98,
-          "max_drawdown_pct": 25.21
+          "max_drawdown_pct": 25.19
         }
       },
       "recent_trades": [
@@ -557,8 +557,8 @@
           "range_low": 62468.0,
           "range_high": 66905.0,
           "reason": "target",
-          "return_pct": 1.7253,
-          "r_multiple": 0.8374
+          "return_pct": 1.7211,
+          "r_multiple": 0.8354
         },
         {
           "direction": "long",
@@ -572,8 +572,8 @@
           "range_low": 61955.0,
           "range_high": 66905.0,
           "reason": "target",
-          "return_pct": 2.6262,
-          "r_multiple": 1.6429
+          "return_pct": 2.6201,
+          "r_multiple": 1.6392
         },
         {
           "direction": "short",
@@ -587,8 +587,8 @@
           "range_low": 61880.0,
           "range_high": 65662.0,
           "reason": "target",
-          "return_pct": 1.1639,
-          "r_multiple": 0.6317
+          "return_pct": 1.1671,
+          "r_multiple": 0.6334
         },
         {
           "direction": "long",
@@ -602,8 +602,8 @@
           "range_low": 75766.0,
           "range_high": 82453.0,
           "reason": "target",
-          "return_pct": 1.4854,
-          "r_multiple": 0.5004
+          "return_pct": 1.4816,
+          "r_multiple": 0.4992
         },
         {
           "direction": "long",
@@ -617,8 +617,8 @@
           "range_low": 75766.0,
           "range_high": 82453.0,
           "reason": "stop",
-          "return_pct": -1.7993,
-          "r_multiple": -1.0282
+          "return_pct": -1.7965,
+          "r_multiple": -1.0266
         },
         {
           "direction": "long",
@@ -632,8 +632,8 @@
           "range_low": 74705.0,
           "range_high": 82453.0,
           "reason": "target",
-          "return_pct": 3.2022,
-          "r_multiple": 1.3625
+          "return_pct": 3.195,
+          "r_multiple": 1.3595
         },
         {
           "direction": "short",
@@ -647,8 +647,8 @@
           "range_low": 74705.0,
           "range_high": 81925.0,
           "reason": "stop",
-          "return_pct": -2.6921,
-          "r_multiple": -1.0194
+          "return_pct": -2.6966,
+          "r_multiple": -1.0211
         },
         {
           "direction": "long",
@@ -662,8 +662,8 @@
           "range_low": 82552.0,
           "range_high": 87424.0,
           "reason": "stop",
-          "return_pct": -1.9094,
-          "r_multiple": -1.0265
+          "return_pct": -1.9063,
+          "r_multiple": -1.0249
         },
         {
           "direction": "long",
@@ -677,8 +677,8 @@
           "range_low": 80320.0,
           "range_high": 87424.0,
           "reason": "target",
-          "return_pct": 0.261,
-          "r_multiple": 0.0618
+          "return_pct": 0.2596,
+          "r_multiple": 0.0615
         },
         {
           "direction": "short",
@@ -692,8 +692,8 @@
           "range_low": 79616.0,
           "range_high": 84846.0,
           "reason": "target",
-          "return_pct": 1.6395,
-          "r_multiple": 0.9262
+          "return_pct": 1.6436,
+          "r_multiple": 0.9285
         },
         {
           "direction": "long",
@@ -707,8 +707,8 @@
           "range_low": 79056.0,
           "range_high": 84846.0,
           "reason": "stop",
-          "return_pct": -1.6835,
-          "r_multiple": -1.0302
+          "return_pct": -1.6809,
+          "r_multiple": -1.0286
         },
         {
           "direction": "long",
@@ -722,8 +722,8 @@
           "range_low": 75465.0,
           "range_high": 81967.0,
           "reason": "stop",
-          "return_pct": -2.1604,
-          "r_multiple": -1.0233
+          "return_pct": -2.1569,
+          "r_multiple": -1.0216
         }
       ]
     },
@@ -752,29 +752,29 @@
         "train": {
           "trades": 23,
           "win_rate_pct": 39.13,
-          "expectancy_pct": -0.366,
+          "expectancy_pct": -0.3659,
           "profit_factor": 0.802,
           "profit_factor_infinite": false,
-          "total_return_pct": -9.33,
-          "max_drawdown_pct": 18.82
+          "total_return_pct": -9.32,
+          "max_drawdown_pct": 18.81
         },
         "validation": {
           "trades": 23,
           "win_rate_pct": 13.04,
-          "expectancy_pct": -2.0779,
+          "expectancy_pct": -2.0787,
           "profit_factor": 0.183,
           "profit_factor_infinite": false,
-          "total_return_pct": -38.69,
-          "max_drawdown_pct": 41.81
+          "total_return_pct": -38.7,
+          "max_drawdown_pct": 41.82
         },
         "holdout": {
           "trades": 34,
           "win_rate_pct": 41.18,
-          "expectancy_pct": -0.2593,
-          "profit_factor": 0.862,
+          "expectancy_pct": -0.2587,
+          "profit_factor": 0.863,
           "profit_factor_infinite": false,
-          "total_return_pct": -10.47,
-          "max_drawdown_pct": 21.56
+          "total_return_pct": -10.45,
+          "max_drawdown_pct": 21.54
         }
       },
       "recent_trades": [
@@ -790,8 +790,8 @@
           "range_low": 62431.0,
           "range_high": 74068.0,
           "reason": "target",
-          "return_pct": 5.6097,
-          "r_multiple": 1.7276
+          "return_pct": 5.6217,
+          "r_multiple": 1.7313
         },
         {
           "direction": "short",
@@ -805,8 +805,8 @@
           "range_low": 62431.0,
           "range_high": 74068.0,
           "reason": "stop",
-          "return_pct": -4.1183,
-          "r_multiple": -1.0127
+          "return_pct": -4.1258,
+          "r_multiple": -1.0146
         },
         {
           "direction": "long",
@@ -820,8 +820,8 @@
           "range_low": 65615.0,
           "range_high": 76030.0,
           "reason": "stop",
-          "return_pct": -2.5763,
-          "r_multiple": -1.0194
+          "return_pct": -2.5719,
+          "r_multiple": -1.0176
         },
         {
           "direction": "long",
@@ -835,8 +835,8 @@
           "range_low": 64639.0,
           "range_high": 76030.0,
           "reason": "target",
-          "return_pct": 4.3078,
-          "r_multiple": 0.9575
+          "return_pct": 4.2984,
+          "r_multiple": 0.9554
         },
         {
           "direction": "short",
@@ -850,8 +850,8 @@
           "range_low": 64639.0,
           "range_high": 73836.0,
           "reason": "stop",
-          "return_pct": -4.0004,
-          "r_multiple": -1.0131
+          "return_pct": -4.0076,
+          "r_multiple": -1.0149
         },
         {
           "direction": "short",
@@ -865,8 +865,8 @@
           "range_low": 64639.0,
           "range_high": 76092.0,
           "reason": "stop",
-          "return_pct": -3.4538,
-          "r_multiple": -1.0151
+          "return_pct": -3.4599,
+          "r_multiple": -1.0169
         },
         {
           "direction": "short",
@@ -880,8 +880,8 @@
           "range_low": 74447.0,
           "range_high": 82832.0,
           "reason": "target",
-          "return_pct": 2.8911,
-          "r_multiple": 1.1053
+          "return_pct": 2.8976,
+          "r_multiple": 1.1078
         },
         {
           "direction": "long",
@@ -895,8 +895,8 @@
           "range_low": 59004.0,
           "range_high": 67263.0,
           "reason": "stop",
-          "return_pct": -4.3787,
-          "r_multiple": -1.0111
+          "return_pct": -4.3707,
+          "r_multiple": -1.0093
         },
         {
           "direction": "long",
@@ -910,8 +910,8 @@
           "range_low": 57680.0,
           "range_high": 67263.0,
           "reason": "target",
-          "return_pct": 3.1783,
-          "r_multiple": 0.5697
+          "return_pct": 3.1712,
+          "r_multiple": 0.5685
         },
         {
           "direction": "short",
@@ -925,8 +925,8 @@
           "range_low": 57330.0,
           "range_high": 65888.0,
           "reason": "stop",
-          "return_pct": -3.9405,
-          "r_multiple": -1.0133
+          "return_pct": -3.9476,
+          "r_multiple": -1.0151
         },
         {
           "direction": "short",
@@ -940,8 +940,8 @@
           "range_low": 61880.0,
           "range_high": 70485.0,
           "reason": "stop",
-          "return_pct": -2.9283,
-          "r_multiple": -1.0178
+          "return_pct": -2.9334,
+          "r_multiple": -1.0196
         },
         {
           "direction": "short",
@@ -955,8 +955,8 @@
           "range_low": 74705.0,
           "range_high": 87795.0,
           "reason": "target",
-          "return_pct": 4.68,
-          "r_multiple": 1.3828
+          "return_pct": 4.6901,
+          "r_multiple": 1.3858
         }
       ]
     },
@@ -985,20 +985,20 @@
         "train": {
           "trades": 24,
           "win_rate_pct": 45.83,
-          "expectancy_pct": -0.0106,
-          "profit_factor": 0.992,
+          "expectancy_pct": -0.0087,
+          "profit_factor": 0.994,
           "profit_factor_infinite": false,
-          "total_return_pct": -1.37,
-          "max_drawdown_pct": 8.5
+          "total_return_pct": -1.33,
+          "max_drawdown_pct": 8.45
         },
         "validation": {
           "trades": 16,
           "win_rate_pct": 18.75,
-          "expectancy_pct": -1.499,
-          "profit_factor": 0.356,
+          "expectancy_pct": -1.4976,
+          "profit_factor": 0.357,
           "profit_factor_infinite": false,
-          "total_return_pct": -22.11,
-          "max_drawdown_pct": 22.11
+          "total_return_pct": -22.09,
+          "max_drawdown_pct": 22.09
         },
         "holdout": {
           "trades": 29,
@@ -1023,8 +1023,8 @@
           "range_low": 62648.0,
           "range_high": 70944.0,
           "reason": "target",
-          "return_pct": 3.9052,
-          "r_multiple": 1.2506
+          "return_pct": 3.8966,
+          "r_multiple": 1.2479
         },
         {
           "direction": "long",
@@ -1038,8 +1038,8 @@
           "range_low": 62431.0,
           "range_high": 70944.0,
           "reason": "target",
-          "return_pct": 4.0198,
-          "r_multiple": 1.2483
+          "return_pct": 4.0109,
+          "r_multiple": 1.2455
         },
         {
           "direction": "short",
@@ -1053,8 +1053,8 @@
           "range_low": 62431.0,
           "range_high": 70019.0,
           "reason": "target",
-          "return_pct": 3.6883,
-          "r_multiple": 1.4677
+          "return_pct": 3.6965,
+          "r_multiple": 1.471
         },
         {
           "direction": "short",
@@ -1068,8 +1068,8 @@
           "range_low": 62431.0,
           "range_high": 74068.0,
           "reason": "target",
-          "return_pct": 5.6097,
-          "r_multiple": 1.7276
+          "return_pct": 5.6217,
+          "r_multiple": 1.7313
         },
         {
           "direction": "short",
@@ -1083,8 +1083,8 @@
           "range_low": 74447.0,
           "range_high": 80632.0,
           "reason": "stop",
-          "return_pct": -1.6541,
-          "r_multiple": -1.0316
+          "return_pct": -1.6566,
+          "r_multiple": -1.0331
         },
         {
           "direction": "long",
@@ -1098,8 +1098,8 @@
           "range_low": 77281.0,
           "range_high": 82832.0,
           "reason": "stop",
-          "return_pct": -2.1218,
-          "r_multiple": -1.0237
+          "return_pct": -2.1183,
+          "r_multiple": -1.0221
         },
         {
           "direction": "long",
@@ -1113,8 +1113,8 @@
           "range_low": 62468.0,
           "range_high": 66905.0,
           "reason": "target",
-          "return_pct": 1.7253,
-          "r_multiple": 0.8374
+          "return_pct": 1.7211,
+          "r_multiple": 0.8354
         },
         {
           "direction": "long",
@@ -1128,8 +1128,8 @@
           "range_low": 74705.0,
           "range_high": 82453.0,
           "reason": "target",
-          "return_pct": 3.2022,
-          "r_multiple": 1.3625
+          "return_pct": 3.195,
+          "r_multiple": 1.3595
         },
         {
           "direction": "long",
@@ -1143,8 +1143,8 @@
           "range_low": 82552.0,
           "range_high": 87424.0,
           "reason": "stop",
-          "return_pct": -1.9094,
-          "r_multiple": -1.0265
+          "return_pct": -1.9063,
+          "r_multiple": -1.0249
         },
         {
           "direction": "short",
@@ -1158,8 +1158,8 @@
           "range_low": 79616.0,
           "range_high": 84846.0,
           "reason": "target",
-          "return_pct": 1.6395,
-          "r_multiple": 0.9262
+          "return_pct": 1.6436,
+          "r_multiple": 0.9285
         },
         {
           "direction": "long",
@@ -1173,8 +1173,8 @@
           "range_low": 76346.0,
           "range_high": 84846.0,
           "reason": "stop",
-          "return_pct": -2.5451,
-          "r_multiple": -1.0196
+          "return_pct": -2.5408,
+          "r_multiple": -1.0179
         },
         {
           "direction": "long",
@@ -1188,8 +1188,8 @@
           "range_low": 75465.0,
           "range_high": 81967.0,
           "reason": "stop",
-          "return_pct": -2.1604,
-          "r_multiple": -1.0233
+          "return_pct": -2.1569,
+          "r_multiple": -1.0216
         }
       ]
     },
@@ -1218,29 +1218,29 @@
         "train": {
           "trades": 37,
           "win_rate_pct": 37.84,
-          "expectancy_pct": -0.5038,
+          "expectancy_pct": -0.5037,
           "profit_factor": 0.735,
           "profit_factor_infinite": false,
           "total_return_pct": -18.91,
-          "max_drawdown_pct": 20.61
+          "max_drawdown_pct": 20.6
         },
         "validation": {
           "trades": 29,
           "win_rate_pct": 24.14,
-          "expectancy_pct": -0.884,
-          "profit_factor": 0.6,
+          "expectancy_pct": -0.8868,
+          "profit_factor": 0.598,
           "profit_factor_infinite": false,
-          "total_return_pct": -24.36,
-          "max_drawdown_pct": 29.7
+          "total_return_pct": -24.42,
+          "max_drawdown_pct": 29.74
         },
         "holdout": {
           "trades": 54,
           "win_rate_pct": 37.04,
-          "expectancy_pct": -0.4968,
-          "profit_factor": 0.715,
+          "expectancy_pct": -0.4967,
+          "profit_factor": 0.714,
           "profit_factor_infinite": false,
-          "total_return_pct": -25.59,
-          "max_drawdown_pct": 30.11
+          "total_return_pct": -25.58,
+          "max_drawdown_pct": 30.1
         }
       },
       "recent_trades": [
@@ -1256,8 +1256,8 @@
           "range_low": 57680.0,
           "range_high": 67263.0,
           "reason": "target",
-          "return_pct": 3.1783,
-          "r_multiple": 0.5697
+          "return_pct": 3.1712,
+          "r_multiple": 0.5685
         },
         {
           "direction": "short",
@@ -1271,8 +1271,8 @@
           "range_low": 57330.0,
           "range_high": 65888.0,
           "reason": "stop",
-          "return_pct": -3.9405,
-          "r_multiple": -1.0133
+          "return_pct": -3.9476,
+          "r_multiple": -1.0151
         },
         {
           "direction": "long",
@@ -1286,8 +1286,8 @@
           "range_low": 61758.0,
           "range_high": 66905.0,
           "reason": "target",
-          "return_pct": 2.1912,
-          "r_multiple": 0.9632
+          "return_pct": 2.186,
+          "r_multiple": 0.961
         },
         {
           "direction": "short",
@@ -1301,8 +1301,8 @@
           "range_low": 61880.0,
           "range_high": 70485.0,
           "reason": "stop",
-          "return_pct": -2.9283,
-          "r_multiple": -1.0178
+          "return_pct": -2.9334,
+          "r_multiple": -1.0196
         },
         {
           "direction": "long",
@@ -1316,8 +1316,8 @@
           "range_low": 75307.0,
           "range_high": 82453.0,
           "reason": "target",
-          "return_pct": 1.0133,
-          "r_multiple": 0.2592
+          "return_pct": 1.0105,
+          "r_multiple": 0.2585
         },
         {
           "direction": "long",
@@ -1331,8 +1331,8 @@
           "range_low": 75766.0,
           "range_high": 82453.0,
           "reason": "stop",
-          "return_pct": -1.7993,
-          "r_multiple": -1.0282
+          "return_pct": -1.7965,
+          "r_multiple": -1.0266
         },
         {
           "direction": "long",
@@ -1346,8 +1346,8 @@
           "range_low": 74705.0,
           "range_high": 82453.0,
           "reason": "target",
-          "return_pct": 3.2022,
-          "r_multiple": 1.3625
+          "return_pct": 3.195,
+          "r_multiple": 1.3595
         },
         {
           "direction": "short",
@@ -1361,8 +1361,8 @@
           "range_low": 74705.0,
           "range_high": 82453.0,
           "reason": "stop",
-          "return_pct": -2.5869,
-          "r_multiple": -1.0201
+          "return_pct": -2.5913,
+          "r_multiple": -1.0219
         },
         {
           "direction": "short",
@@ -1376,8 +1376,8 @@
           "range_low": 74705.0,
           "range_high": 87795.0,
           "reason": "target",
-          "return_pct": 4.68,
-          "r_multiple": 1.3828
+          "return_pct": 4.6901,
+          "r_multiple": 1.3858
         },
         {
           "direction": "long",
@@ -1391,8 +1391,8 @@
           "range_low": 80103.0,
           "range_high": 87795.0,
           "reason": "target",
-          "return_pct": 2.2174,
-          "r_multiple": 0.7822
+          "return_pct": 2.2122,
+          "r_multiple": 0.7804
         },
         {
           "direction": "long",
@@ -1406,8 +1406,8 @@
           "range_low": 80320.0,
           "range_high": 87424.0,
           "reason": "target",
-          "return_pct": 0.261,
-          "r_multiple": 0.0618
+          "return_pct": 0.2596,
+          "r_multiple": 0.0615
         },
         {
           "direction": "long",
@@ -1421,8 +1421,8 @@
           "range_low": 80122.0,
           "range_high": 87424.0,
           "reason": "stop",
-          "return_pct": -2.6023,
-          "r_multiple": -1.0192
+          "return_pct": -2.5979,
+          "r_multiple": -1.0174
         }
       ]
     }

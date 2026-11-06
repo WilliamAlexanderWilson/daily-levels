@@ -13,8 +13,24 @@ import pandas as pd
 import requests
 
 BASE_URL = "https://futures.kraken.com/api/charts/v1/trade/PF_XBTUSD/4h"
-HISTORY_START = datetime(2022, 3, 23, tzinfo=timezone.utc)
+# First published PF_XBTUSD 4-hour candle. Starting at midnight would imply
+# two nonexistent launch-day bars and make completeness checks ambiguous.
+HISTORY_START = datetime(2022, 3, 23, 8, tzinfo=timezone.utc)
 WINDOW_DAYS = 180
+
+
+def _validate_history(candles: pd.DataFrame, start: datetime, end: datetime) -> None:
+    """Reject incomplete responses instead of backtesting across hidden gaps."""
+    expected_start = pd.Timestamp(start).ceil("4h")
+    expected_end = (pd.Timestamp(end) - pd.Timedelta(hours=4)).floor("4h")
+    expected = pd.date_range(expected_start, expected_end, freq="4h")
+    if not candles.index.equals(expected):
+        missing = expected.difference(candles.index)
+        unexpected = candles.index.difference(expected)
+        raise RuntimeError(
+            "Kraken returned incomplete BTC 4-hour history "
+            f"({len(missing)} missing, {len(unexpected)} unexpected candles)"
+        )
 
 
 def _parse_candles(payload: dict) -> pd.DataFrame:
@@ -78,5 +94,6 @@ def fetch_btc_4h(
     candles = candles[candles.index <= completed_before]
     if candles.empty:
         raise RuntimeError("Kraken returned no completed BTC 4-hour candles")
+    _validate_history(candles, start, end)
     return candles
 

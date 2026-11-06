@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from src.range_lab.engine import RangeSpec, _metrics, _run_trade, backtest_spec, build_range_lab
-from src.range_lab.fetch import _parse_candles
+from src.range_lab.fetch import _parse_candles, _validate_history
 
 
 def test_parse_kraken_futures_candles():
@@ -23,6 +23,19 @@ def test_parse_kraken_futures_candles():
     )
     assert frame.index.tz is not None
     assert frame.iloc[0]["close"] == 105
+
+
+def test_history_validation_rejects_missing_four_hour_candle():
+    start = datetime(2023, 1, 1, tzinfo=timezone.utc)
+    end = datetime(2023, 1, 2, tzinfo=timezone.utc)
+    index = pd.date_range(start, end - pd.Timedelta(hours=4), freq="4h").delete(2)
+    candles = pd.DataFrame({"close": 100.0}, index=index)
+    try:
+        _validate_history(candles, start, end)
+    except RuntimeError as error:
+        assert "1 missing" in str(error)
+    else:
+        raise AssertionError("gapped history must be rejected")
 
 
 def test_metrics_compound_and_include_drawdown():
@@ -63,6 +76,14 @@ def test_time_exit_charges_slippage_on_both_sides():
     )
     assert trade["reason"] == "time"
     assert trade["return_pct"] < -0.49
+
+
+def test_trade_fees_scale_exit_fee_with_exit_notional():
+    from src.range_lab.engine import FEE_PER_SIDE, _trade_return
+
+    result = _trade_return("long", 100.0, 110.0)
+    expected = 0.10 - FEE_PER_SIDE - (FEE_PER_SIDE * 1.10)
+    assert result == expected
 
 
 def test_partition_replay_caps_positions_at_boundary(monkeypatch):
