@@ -25,12 +25,18 @@
   // autoscale actually renders.
   const CANDLE_SCALE_MARGINS = { top: 0.08, bottom: 0.3 };
   const RANGE_INTERVALS = { "1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240, "1d": 1440 };
+  const PATIENCE_ALERT_PREF_KEY = "range-desk:patience-alerts:v1";
+  const PATIENCE_ALERTED_KEY = "range-desk:patience-alerted:v1";
 
   const state = {
     asset: "btc",
     range: "4h",
     spyTimeframe: "15",
   };
+
+  let patienceAlertsEnabled = false;
+  let patienceAlertMemory = [];
+  let patienceToastTimer = null;
 
   function readHash() {
     const params = new URLSearchParams(location.hash.replace(/^#/, ""));
@@ -53,6 +59,24 @@
 
   function cssVar(name) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function readLocalStorage(key, fallback = null) {
+    try {
+      const value = localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  function writeLocalStorage(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   // Switching asset/timeframe previously left the OLD chart sitting there
@@ -1182,18 +1206,117 @@
     element.querySelector("b").textContent = detail;
   }
 
+  function patienceAlertPermission() {
+    if (!("Notification" in window)) return "unsupported";
+    return Notification.permission;
+  }
+
+  function syncPatienceAlertControls() {
+    const button = document.getElementById("patience-alert-toggle");
+    const status = document.getElementById("patience-alert-status");
+    if (!button || !status) return;
+    const permission = patienceAlertPermission();
+    button.setAttribute("aria-pressed", String(patienceAlertsEnabled));
+    button.textContent = patienceAlertsEnabled ? "Disable ready alert" : "Enable ready alert";
+    if (!patienceAlertsEnabled) status.textContent = "Off · no setup notifications";
+    else if (permission === "granted") status.textContent = "On · browser alert when this tab is hidden";
+    else if (permission === "denied") status.textContent = "On · in-page alert only (browser notifications blocked)";
+    else if (permission === "unsupported") status.textContent = "On · in-page alert only on this device";
+    else status.textContent = "On · permission not yet selected";
+  }
+
+  function alertedFingerprints() {
+    try {
+      const values = JSON.parse(readLocalStorage(PATIENCE_ALERTED_KEY, "[]"));
+      const stored = Array.isArray(values) ? values : [];
+      return [...new Set([...stored, ...patienceAlertMemory])];
+    } catch (_) {
+      return [...patienceAlertMemory];
+    }
+  }
+
+  function rememberAlertFingerprint(fingerprint) {
+    const next = [...alertedFingerprints().filter((value) => value !== fingerprint), fingerprint].slice(-20);
+    patienceAlertMemory = next;
+    writeLocalStorage(PATIENCE_ALERTED_KEY, JSON.stringify(next));
+  }
+
+  function hidePatienceToast() {
+    const toast = document.getElementById("patience-alert-toast");
+    if (toast) toast.hidden = true;
+    if (patienceToastTimer) clearTimeout(patienceToastTimer);
+    patienceToastTimer = null;
+  }
+
+  function showPatienceToast(title, detail, direction) {
+    const toast = document.getElementById("patience-alert-toast");
+    if (!toast) return;
+    document.getElementById("patience-alert-toast-label").textContent = `PATIENCE GATE · 3/3 · ${direction}`;
+    document.getElementById("patience-alert-toast-title").textContent = title;
+    document.getElementById("patience-alert-toast-detail").textContent = detail;
+    toast.hidden = false;
+    if (patienceToastTimer) clearTimeout(patienceToastTimer);
+    patienceToastTimer = setTimeout(hidePatienceToast, 12000);
+  }
+
+  function maybeSendPatienceAlert(decision, gateState) {
+    if (!patienceAlertsEnabled || !gateState.isReady || !gateState.boundaryTest) return;
+    const fingerprint = RangeDecision.patienceAlertFingerprint(state.asset, state.range, decision, gateState);
+    if (!fingerprint) return;
+    if (alertedFingerprints().includes(fingerprint)) return;
+    rememberAlertFingerprint(fingerprint);
+
+    const direction = decision.status === "long-watch" ? "LONG WATCH" : "SHORT WATCH";
+    const assetLabel = state.asset.toUpperCase();
+    const timeframeLabel = state.range === "1d" ? "Daily" : state.range.toUpperCase();
+    const title = `${assetLabel} ${timeframeLabel} ${direction.toLowerCase()} ready to assess`;
+    const detail = `${gateState.boundary.name} was tested and a completed candle closed back inside. Review the stop and size before acting.`;
+    showPatienceToast(title, detail, direction);
+
+    if (document.hidden && patienceAlertPermission() === "granted") {
+      try {
+        const notification = new Notification(title, {
+          body: detail,
+          tag: `range-desk-${state.asset}-${state.range}`,
+          renotify: false,
+        });
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+      } catch (err) {
+        console.error("browser notification unavailable; in-page alert still shown", err);
+      }
+    }
+  }
+
+  function wirePatienceAlerts() {
+    patienceAlertsEnabled = readLocalStorage(PATIENCE_ALERT_PREF_KEY, "false") === "true";
+    syncPatienceAlertControls();
+    document.getElementById("patience-alert-toast-close").addEventListener("click", hidePatienceToast);
+    document.getElementById("patience-alert-toggle").addEventListener("click", async () => {
+      patienceAlertsEnabled = !patienceAlertsEnabled;
+      writeLocalStorage(PATIENCE_ALERT_PREF_KEY, String(patienceAlertsEnabled));
+      if (patienceAlertsEnabled && patienceAlertPermission() === "default") {
+        try {
+          await Notification.requestPermission();
+        } catch (err) {
+          console.error("notification permission request failed; in-page alerts remain available", err);
+        }
+      }
+      if (!patienceAlertsEnabled) hidePatienceToast();
+      syncPatienceAlertControls();
+      if (patienceAlertsEnabled && state.asset !== "spy" && activeLevels.length && Number.isFinite(lastLivePrice)) {
+        renderRangeDecision(activeLevels, activeScorecard, lastLivePrice);
+      }
+    });
+  }
+
   function renderPatienceGate(decision) {
     const gate = document.getElementById("patience-gate");
     gate.hidden = false;
-    const hasLocation = decision.status === "long-watch" || decision.status === "short-watch";
-    const boundary = decision.status === "long-watch" ? decision.support : decision.resistance;
-    const side = decision.status === "long-watch" ? "support" : "resistance";
-    const boundaryTest = hasLocation
-      ? RangeDecision.recentBoundaryTest(activeCandles, boundary, side)
-      : null;
-    const hasTouch = Boolean(boundaryTest && boundaryTest.touched);
-    const hasConfirmation = Boolean(boundaryTest && boundaryTest.confirmed);
-    const readyCount = [hasLocation, hasTouch, hasConfirmation].filter(Boolean).length;
+    const gateState = RangeDecision.patienceState(decision, activeCandles);
+    const { hasLocation, hasTouch, hasConfirmation, readyCount, boundary, boundaryTest } = gateState;
     const timeframeLabel = state.range === "1d" ? "Daily" : state.range.toUpperCase();
 
     setPatienceCondition(
@@ -1218,6 +1341,7 @@
     if (hasTouch && !hasConfirmation) instruction = "The boundary was hit, but the candle did not close back inside. Do not front-run confirmation.";
     if (hasConfirmation) instruction = "Location, test, and close are visible. Review the stop and size; this is a setup to assess, not an automatic order.";
     document.getElementById("patience-instruction").textContent = instruction;
+    maybeSendPatienceAlert(decision, gateState);
   }
 
   function renderRangeDecision(levels, scorecard, currentPrice) {
@@ -2114,7 +2238,7 @@
 
   // --- header / staleness ---
 
-  function renderHeader(levelsData) {
+  function renderHeader(levelsData, currentPrice = levelsData.price) {
     const generated = new Date(levelsData.generated_at_utc);
     const formatted = new Intl.DateTimeFormat("en-US", {
       dateStyle: "medium",
@@ -2123,7 +2247,7 @@
     }).format(generated);
 
     document.getElementById("generated-label").textContent = `Levels calculated ${formatted} CT`;
-    document.getElementById("price-label").textContent = levelsData.price.toLocaleString(undefined, {
+    document.getElementById("price-label").textContent = currentPrice.toLocaleString(undefined, {
       maximumFractionDigits: 2,
     });
 
@@ -2601,15 +2725,19 @@
         if (state.asset !== asset || state.range !== range) return;
 
         const candles = krakenCandles;
+        const latestCandle = candles[candles.length - 1];
+        const initialLivePrice = latestCandle && Number.isFinite(latestCandle.close)
+          ? latestCandle.close
+          : levelsData.price;
 
-        renderHeader(levelsData);
+        renderHeader(levelsData, initialLivePrice);
         renderFuturesContext(levelsData.futures_context);
         // set before renderChart(): its zoom call can trigger the time-axis
         // subscription straight into renderOverlays() (which draws the
         // heatmap), and that would otherwise run once against the previous
         // asset's bins before renderLevels() below gets a chance to update it.
         activeLiquidationBins = levelsData.liquidation_estimate || [];
-        lastLivePrice = levelsData.price;
+        lastLivePrice = initialLivePrice;
         // Publish the core asset state before any supplemental scorecard or
         // proximity requests. The interval poll can fire while those are in
         // flight and must never redraw the previous asset's levels.
@@ -2655,15 +2783,15 @@
         }
         if (state.asset !== asset || state.range !== range) return;
 
-        renderTable(levelsData.levels, levelsData.price, scorecard, levelsData.diff);
+        renderTable(levelsData.levels, initialLivePrice, scorecard, levelsData.diff);
         renderScorecardTable(scorecard);
 
         activeScorecard = scorecard;
         activeProximity = proximity;
-        renderNearestLevels(activeLevels, activeScorecard, levelsData.price);
-        renderRangeDecision(activeLevels, activeScorecard, levelsData.price);
-        renderRoundProximityBands(levelsData.price, activeProximity);
-        renderLevelJumpSelect(activeLevels, levelsData.price);
+        renderNearestLevels(activeLevels, activeScorecard, initialLivePrice);
+        renderRangeDecision(activeLevels, activeScorecard, initialLivePrice);
+        renderRoundProximityBands(initialLivePrice, activeProximity);
+        renderLevelJumpSelect(activeLevels, initialLivePrice);
         renderExhaustionBanner(levelsData.exhaustion_pattern, scorecard && scorecard["Exhaustion pattern"]);
       } catch (err) {
         if (state.asset !== asset || state.range !== range) return;
@@ -2683,6 +2811,7 @@
   readHash();
   setActiveButtons();
   wireToggles();
+  wirePatienceAlerts();
   wireTradeForm();
   wireLevelJumpSelect();
   loadAndRender().then(startLivePolling);

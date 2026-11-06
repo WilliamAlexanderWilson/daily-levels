@@ -89,6 +89,10 @@
           <span class="metric-label">Patience gate</span>
           <strong id="patience-count">0 / 3 ready</strong>
           <p id="patience-instruction">Wait for the range data before considering a position.</p>
+          <div class="patience-alert-controls">
+            <button type="button" id="patience-alert-toggle" class="patience-alert-toggle" aria-pressed="false">Enable ready alert</button>
+            <small id="patience-alert-status">Off · no setup notifications</small>
+          </div>
         </div>
         <ol class="patience-conditions">
           <li id="patience-location">
@@ -451,6 +455,15 @@
       </p>
     </section>
   </main>
+
+  <aside id="patience-alert-toast" class="patience-alert-toast" role="status" aria-live="assertive" hidden>
+    <span>
+      <small id="patience-alert-toast-label">PATIENCE GATE · 3/3</small>
+      <strong id="patience-alert-toast-title">Setup ready to assess</strong>
+      <b id="patience-alert-toast-detail">Location, test, and completed close agree.</b>
+    </span>
+    <button type="button" id="patience-alert-toast-close" aria-label="Dismiss patience alert">×</button>
+  </aside>
 
   <footer class="site-footer">
     <p>Informational only. Not financial advice.</p>
