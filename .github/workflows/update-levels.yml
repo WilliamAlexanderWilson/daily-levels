@@ -60,6 +60,12 @@ jobs:
         # if something actually changed.
         run: python -m src.backtest.cli
 
+      - name: Run BTC range-strategy holdout lab
+        # Public Kraken futures candles provide multi-year 4h history; the
+        # spot endpoint's 720-row cap does not. Best-effort so a temporary
+        # history outage cannot block the live levels update.
+        run: python -m src.range_lab.cli || echo "Range Lab refresh failed, continuing with the prior artifact"
+
       - name: Run SPY exhaustion-reversal backtest
         # Also ungated: pulls Alpaca's ~2-year 5m window + Yahoo's VIX,
         # recomputes signals/backtest fresh every trigger (~every 3h)

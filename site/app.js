@@ -113,6 +113,10 @@
     return `data/${asset}_round_proximity.json`;
   }
 
+  function rangeLabUrl() {
+    return "data/btc_range_lab.json";
+  }
+
   // The chart (candles) is always fetched live, straight from Kraken -
   // only the levels come from the once-a-day static snapshot. Shared by
   // the initial render and the live poll below.
@@ -292,6 +296,9 @@
   let previousLivePrice = null; // gives the on-chart ticker a quiet up/down cue without implying a signal
   let lastLiveTickAt = null; // latest WebSocket trade-event time, used to expose freshness instead of just saying "Live"
   let activeRangeDecision = null; // sourced BTC macro range (or rolling fallback for other assets) drawn behind the candles
+  let activeRangeLabData = null;
+  let activeRangeLabCandidateKey = null;
+  const rangeLabPriceLines = [];
   let closingTradeId = null; // trade mid-close (exit-price input showing in its row), survives live derived-panel refreshes
   let deletingTradeId = null; // trade awaiting delete confirmation (same survive-the-re-render need as closingTradeId) - deleting is permanent, localStorage-only, no undo
   let snappedMarkerKey = null; // key of whichever marker (table row, dropdown pick, or on-chart label) the price scale is currently locked to, if any
@@ -1809,6 +1816,116 @@
     renderOverlays();
   }
 
+  function clearRangeLabLines() {
+    if (!candleSeries) return;
+    for (const line of rangeLabPriceLines.splice(0)) {
+      candleSeries.removePriceLine(line);
+    }
+  }
+
+  function drawRangeLabCandidate(candidate) {
+    clearRangeLabLines();
+    if (!candleSeries || !candidate || !candidate.latest_range) return;
+    const current = candidate.latest_range;
+    const label = candidate.spec.label.toUpperCase();
+    rangeLabPriceLines.push(
+      candleSeries.createPriceLine({
+        price: current.low,
+        color: cssVar("--support"),
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: `${label} LOW`,
+      }),
+      candleSeries.createPriceLine({
+        price: current.midpoint,
+        color: cssVar("--text-muted"),
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dotted,
+        axisLabelVisible: false,
+        title: `${label} MID`,
+      }),
+      candleSeries.createPriceLine({
+        price: current.high,
+        color: cssVar("--resistance"),
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: `${label} HIGH`,
+      })
+    );
+  }
+
+  function selectRangeLabCandidate(key) {
+    if (!activeRangeLabData) return;
+    const view = RangeLab.viewModel(activeRangeLabData, key);
+    const candidate = RangeLab.candidateByKey(activeRangeLabData, key);
+    if (!view || !candidate) return;
+    activeRangeLabCandidateKey = key;
+    document.querySelectorAll(".range-lab-option").forEach((button) => {
+      const active = button.dataset.rangeKey === key;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    document.getElementById("range-lab-detail").hidden = false;
+    document.getElementById("range-lab-current").textContent =
+      `${formatPriceRange(view.range.low, view.range.high)} · ${formatPriceRange(view.range.width, view.range.width)} wide`;
+    document.getElementById("range-lab-current-status").textContent = view.range.status;
+    document.getElementById("range-lab-trades").textContent = String(view.holdout.trades);
+    document.getElementById("range-lab-expectancy").textContent = view.expectancy;
+    document.getElementById("range-lab-profit-factor").textContent = view.profitFactor;
+    document.getElementById("range-lab-drawdown").textContent =
+      Number.isFinite(view.holdout.max_drawdown_pct) ? `${view.holdout.max_drawdown_pct}%` : "—";
+    drawRangeLabCandidate(candidate);
+  }
+
+  function renderRangeLab(data) {
+    const panel = document.getElementById("range-lab");
+    if (!panel) return;
+    if (!data) {
+      activeRangeLabData = null;
+      activeRangeLabCandidateKey = null;
+      clearRangeLabLines();
+      panel.hidden = state.asset !== "btc";
+      if (state.asset === "btc") {
+        const verdict = document.getElementById("range-lab-verdict");
+        verdict.className = "range-lab-verdict is-failed";
+        verdict.textContent = "RESEARCH DATA UNAVAILABLE";
+        document.getElementById("range-lab-options").innerHTML = "";
+        document.getElementById("range-lab-detail").hidden = true;
+      }
+      return;
+    }
+    activeRangeLabData = data;
+    panel.hidden = state.asset !== "btc";
+    const freshness = RangeLab.freshness(data);
+    const verdict = document.getElementById("range-lab-verdict");
+    verdict.className = `range-lab-verdict ${freshness.stale ? "is-stale" : data.holdout_passed ? "is-passed" : "is-failed"}`;
+    verdict.textContent = freshness.stale
+      ? "RESEARCH DATA STALE"
+      : data.holdout_passed ? "HOLDOUT PASSED" : "NO VALIDATED EDGE YET";
+    document.getElementById("range-lab-current-label").textContent = freshness.stale
+      ? "STALE COMPUTED RANGE"
+      : "LAST COMPUTED RANGE";
+    document.getElementById("range-lab-warning").textContent =
+      `${data.verdict} · Current ranges ${freshness.label}; historical metrics end ${RangeLab.researchCutoff(data)}.`;
+    const options = document.getElementById("range-lab-options");
+    options.innerHTML = "";
+    for (const candidate of data.candidates) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "range-lab-option";
+      button.dataset.rangeKey = candidate.spec.key;
+      button.setAttribute("aria-pressed", "false");
+      const holdout = candidate.metrics.holdout;
+      const status = candidate.latest_range.active_now ? "active range now" : "not qualified now";
+      button.innerHTML = `<strong>${candidate.spec.label}</strong><small>${holdout.trades} holdout trades · ${status}</small>`;
+      button.addEventListener("click", () => selectRangeLabCandidate(candidate.spec.key));
+      options.appendChild(button);
+    }
+    selectRangeLabCandidate(activeRangeLabCandidateKey || RangeLab.defaultKey(data));
+  }
+
   function renderSpyDecision(chartData, trades, backtest) {
     setDecisionClass("wait");
     document.getElementById("decision-badge").textContent = "NO VALIDATED EDGE";
@@ -2853,6 +2970,8 @@
     document.getElementById("range-method-sources").hidden = asset !== "btc";
     document.getElementById("spy-explainer").hidden = !isSpy;
     document.getElementById("chart-live-ticker").hidden = isSpy;
+    document.getElementById("range-lab").hidden = asset !== "btc";
+    if (asset !== "btc") clearRangeLabLines();
     if (isSpy) document.getElementById("live-badge").hidden = true;
   }
 
@@ -3224,6 +3343,19 @@
         renderRangeDecision(activeLevels, null, initialLivePrice);
         renderTradeMarkers(asset, range, candles);
         renderTradesTable(asset, lastLivePrice);
+
+        if (asset === "btc") {
+          try {
+            const rangeLabData = await fetchJson(rangeLabUrl());
+            if (state.asset === asset && state.range === range) renderRangeLab(rangeLabData);
+          } catch (err) {
+            if (state.asset !== asset || state.range !== range) return;
+            console.error("range lab unavailable", err);
+            renderRangeLab(null);
+          }
+        } else {
+          renderRangeLab(null);
+        }
 
         // Deliberately not awaited: Coinbase's ~13-page pagination takes a
         // few real seconds, and blocking the chart on it meant Daily sat
