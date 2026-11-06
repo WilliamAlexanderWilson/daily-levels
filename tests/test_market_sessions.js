@@ -60,6 +60,8 @@ test("skips weekends and identifies the chronologically next cash open", () => {
   const saturday = new Date("2026-11-07T12:00:00Z");
   const newYork = MarketSessions.sessionStatus(MarketSessions.SESSIONS[0], saturday);
   assert.equal(newYork.nextOpen.toISOString(), "2026-11-09T14:30:00.000Z");
+  assert.equal(MarketSessions.countdown(newYork.nextOpen, saturday), "2d 2h 30m 00s");
+  assert.equal(MarketSessions.countdown(newYork.nextOpen, new Date("2026-11-07T12:00:01Z")), "2d 2h 29m 59s");
   const fridayAfterNewYork = MarketSessions.marketSnapshot(new Date("2026-11-06T21:30:00Z"));
   assert.equal(fridayAfterNewYork.next.name, "Sydney");
 });
