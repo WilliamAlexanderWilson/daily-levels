@@ -27,6 +27,17 @@
     const candidate = candidateByKey(data, key || defaultKey(data));
     if (!candidate) return null;
     const holdout = candidate.metrics.holdout;
+    const paper = candidate.forward_paper || {
+      metrics: { trades: 0, expectancy_pct: null, profit_factor: null, profit_factor_infinite: false },
+      open_trade: null,
+      pending_entry: null,
+    };
+    let paperStatus = "Waiting for a completed 4H rejection";
+    if (paper.pending_entry) {
+      paperStatus = `Pending ${paper.pending_entry.direction} entry · next 4H open`;
+    } else if (paper.open_trade) {
+      paperStatus = `Open ${paper.open_trade.direction} observation · ${paper.open_trade.bars_observed}/${paper.open_trade.max_hold_bars} bars`;
+    }
     return {
       key: candidate.spec.key,
       label: candidate.spec.label,
@@ -38,6 +49,12 @@
       profitFactor: holdout.profit_factor_infinite
         ? "∞"
         : Number.isFinite(holdout.profit_factor) ? holdout.profit_factor.toFixed(2) : "—",
+      paper,
+      paperExpectancy: metric(paper.metrics.expectancy_pct, "% / trade"),
+      paperProfitFactor: paper.metrics.profit_factor_infinite
+        ? "∞"
+        : Number.isFinite(paper.metrics.profit_factor) ? paper.metrics.profit_factor.toFixed(2) : "—",
+      paperStatus,
       passed: Boolean(data.holdout_passed && data.selected_key === candidate.spec.key),
     };
   }
@@ -58,5 +75,10 @@
     return typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : "unknown";
   }
 
-  return { candidateByKey, defaultKey, freshness, metric, researchCutoff, viewModel };
+  function forwardStart(data) {
+    const value = data && data.forward_tracking && data.forward_tracking.frozen_at;
+    return typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : "not started";
+  }
+
+  return { candidateByKey, defaultKey, forwardStart, freshness, metric, researchCutoff, viewModel };
 });

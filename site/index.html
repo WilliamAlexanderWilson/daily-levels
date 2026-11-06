@@ -151,8 +151,15 @@
           <div><dt>Expectancy</dt><dd id="range-lab-expectancy">—</dd></div>
           <div><dt>Profit factor</dt><dd id="range-lab-profit-factor">—</dd></div>
           <div><dt>Max drawdown</dt><dd id="range-lab-drawdown">—</dd></div>
+          <div class="range-lab-paper-metric"><dt>Forward paper trades</dt><dd id="range-lab-paper-trades">—</dd></div>
+          <div class="range-lab-paper-metric"><dt>Forward expectancy</dt><dd id="range-lab-paper-expectancy">—</dd></div>
+          <div class="range-lab-paper-metric"><dt>Forward profit factor</dt><dd id="range-lab-paper-profit-factor">—</dd></div>
+          <div class="range-lab-paper-metric"><dt>Paper status</dt><dd id="range-lab-paper-status">—</dd></div>
         </dl>
       </div>
+      <p class="range-lab-paper-note" id="range-lab-paper-note">
+        Forward paper tracking uses only candles completed after the frozen research cutoff. It places no orders and does not turn an unvalidated candidate into a recommendation.
+      </p>
       <p class="range-lab-warning" id="range-lab-warning">
         No candidate is called “proven” unless it first wins validation and then survives untouched holdout data after costs.
       </p>

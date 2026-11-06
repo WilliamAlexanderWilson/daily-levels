@@ -1876,6 +1876,14 @@
     document.getElementById("range-lab-profit-factor").textContent = view.profitFactor;
     document.getElementById("range-lab-drawdown").textContent =
       Number.isFinite(view.holdout.max_drawdown_pct) ? `${view.holdout.max_drawdown_pct}%` : "—";
+    document.getElementById("range-lab-paper-trades").textContent = String(view.paper.metrics.trades);
+    document.getElementById("range-lab-paper-expectancy").textContent = view.paperExpectancy;
+    document.getElementById("range-lab-paper-profit-factor").textContent = view.paperProfitFactor;
+    document.getElementById("range-lab-paper-status").textContent = view.paperStatus;
+    const forwardStart = RangeLab.forwardStart(activeRangeLabData);
+    document.getElementById("range-lab-paper-note").textContent = forwardStart === "not started"
+      ? "Forward paper tracking will begin with the next Range Lab data refresh. It places no orders and does not create a recommendation."
+      : `Forward paper record frozen from ${forwardStart}. Each definition is measured separately using only later completed candles; no real orders and no combined portfolio.`;
     drawRangeLabCandidate(candidate);
   }
 
@@ -1918,8 +1926,11 @@
       button.dataset.rangeKey = candidate.spec.key;
       button.setAttribute("aria-pressed", "false");
       const holdout = candidate.metrics.holdout;
+      const paperTrades = candidate.forward_paper && candidate.forward_paper.metrics
+        ? candidate.forward_paper.metrics.trades
+        : 0;
       const status = candidate.latest_range.active_now ? "active range now" : "not qualified now";
-      button.innerHTML = `<strong>${candidate.spec.label}</strong><small>${holdout.trades} holdout trades · ${status}</small>`;
+      button.innerHTML = `<strong>${candidate.spec.label}</strong><small>${holdout.trades} holdout · ${paperTrades} forward paper · ${status}</small>`;
       button.addEventListener("click", () => selectRangeLabCandidate(candidate.spec.key));
       options.appendChild(button);
     }

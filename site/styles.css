@@ -397,6 +397,21 @@ main {
   font-weight: 750;
 }
 
+.range-lab-detail .range-lab-paper-metric {
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg));
+}
+
+.range-lab-paper-note {
+  margin: 0.65rem 0 0;
+  padding: 0.55rem 0.65rem;
+  border-left: 2px solid var(--accent);
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
 @media (max-width: 900px) {
   .range-lab-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .range-lab-detail { grid-template-columns: 1fr; }
