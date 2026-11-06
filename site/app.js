@@ -1880,6 +1880,19 @@
     document.getElementById("range-lab-paper-expectancy").textContent = view.paperExpectancy;
     document.getElementById("range-lab-paper-profit-factor").textContent = view.paperProfitFactor;
     document.getElementById("range-lab-paper-status").textContent = view.paperStatus;
+    const exitTest = document.getElementById("range-lab-exit-test");
+    exitTest.hidden = !view.exitComparison;
+    if (view.exitComparison) {
+      document.getElementById("range-lab-exit-base-validation").textContent = view.exitComparison.baselineValidation;
+      document.getElementById("range-lab-exit-runner-validation").textContent = view.exitComparison.runnerValidation;
+      document.getElementById("range-lab-exit-base-holdout").textContent = view.exitComparison.baselineHoldout;
+      document.getElementById("range-lab-exit-runner-holdout").textContent = view.exitComparison.runnerHoldout;
+      document.getElementById("range-lab-exit-runner-sample").textContent = `${view.exitComparison.runnerHoldoutTrades} trades`;
+      document.getElementById("range-lab-exit-runner-pf").textContent = view.exitComparison.runnerHoldoutProfitFactor;
+      document.getElementById("range-lab-exit-verdict").textContent = view.exitComparison.validationEligible
+        ? "Runner cleared the historical validation gate, but this second-round holdout was already visible and is not prospective proof."
+        : "Runner did not clear the historical validation gate. A favorable old holdout result is not actionable evidence.";
+    }
     const forwardStart = RangeLab.forwardStart(activeRangeLabData);
     document.getElementById("range-lab-paper-note").textContent = forwardStart === "not started"
       ? "Forward paper tracking will begin with the next Range Lab data refresh. It places no orders and does not create a recommendation."
@@ -1903,6 +1916,7 @@
           "Spot-versus-futures comparison unavailable with the research artifact.";
         document.getElementById("range-lab-options").innerHTML = "";
         document.getElementById("range-lab-detail").hidden = true;
+        document.getElementById("range-lab-exit-test").hidden = true;
       }
       return;
     }

@@ -435,9 +435,53 @@ main {
   line-height: 1.45;
 }
 
+.range-lab-exit-test {
+  margin-top: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
+}
+
+.range-lab-exit-test > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.62rem 0.68rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.range-lab-exit-test > summary::-webkit-details-marker { display: none; }
+.range-lab-exit-test > summary span:first-child { display: grid; gap: 0.15rem; }
+.range-lab-exit-test > summary strong { font-size: 0.76rem; }
+.range-lab-exit-test > summary small { color: var(--text-muted); font-size: 0.66rem; }
+.range-lab-exit-test > summary span:last-child { color: var(--accent); font-size: 0.68rem; }
+.range-lab-exit-test[open] > summary span:last-child { font-size: 0; }
+.range-lab-exit-test[open] > summary span:last-child::before { content: "Hide"; font-size: 0.68rem; }
+
+.range-lab-exit-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.45rem;
+  padding: 0 0.68rem 0.58rem;
+}
+
+.range-lab-exit-grid > div {
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+}
+
+.range-lab-exit-grid small,
+.range-lab-exit-grid strong { display: block; }
+.range-lab-exit-grid small { color: var(--text-muted); font-size: 0.6rem; }
+.range-lab-exit-grid strong { margin-top: 0.16rem; font-size: 0.75rem; }
+.range-lab-exit-test > p { margin: 0; padding: 0 0.68rem 0.68rem; color: var(--text-muted); font-size: 0.68rem; }
+
 @media (max-width: 900px) {
   .range-lab-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .range-lab-detail { grid-template-columns: 1fr; }
+  .range-lab-exit-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 560px) {
@@ -445,6 +489,7 @@ main {
   .range-lab-verdict { display: inline-block; margin-top: 0.55rem; }
   .range-lab-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .range-lab-detail dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .range-lab-exit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .live-badge {

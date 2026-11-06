@@ -126,14 +126,70 @@ and <https://docs.kraken.com/api/docs/futures-api/charts/candles>.
 - Zakamulin shows why transaction costs materially alter mean-reversion
   strategy design: <https://arxiv.org/abs/1103.4934>
 
+## Pre-registered exit comparison
+
+Frozen 2026-11-06 before the runner results were computed. Version:
+`range-exit-runner-v1`.
+
+The baseline remains unchanged: close 100% of the position at the range
+midpoint, the original stop, or the existing maximum holding window.
+
+The single comparison variant is:
+
+1. Enter from the same completed-candle rejection at the same next-bar open.
+2. Close 50% at the range midpoint.
+3. Close the remaining 50% at the opposite range boundary.
+4. Keep the original stop 0.35 ATR beyond the entry boundary for all remaining
+   size; do not move it to breakeven after the midpoint fills.
+5. Keep the same maximum holding window. Any unclosed size exits at that final
+   bar's close.
+6. Charge the same 0.20% fee and 0.05% slippage per side, weighted by the size
+   of each leg.
+7. If a stop and an unfilled target occur in the same candle, resolve the stop
+   first for all size still open. If both favorable targets occur without the
+   stop, both may fill because price necessarily crossed the midpoint on the
+   way to the opposite edge.
+8. Apply this one frozen variant to all six existing range definitions and the
+   same train, validation, and historical holdout partitions. Do not add a
+   breakeven rule, trailing stop, alternate split, or new holding period after
+   seeing the results.
+
+This is an exploratory historical sensitivity test, not a new untouched
+holdout: the existing 2025-2026 holdout prices were already inspected while
+building the first Range Lab. Even a favorable runner result cannot earn a
+validated or proven label without genuinely later forward evidence.
+
+### Frozen runner result
+
+Computed only after commit `6a23e60` recorded the rules above.
+
+| Definition | Runner validation expectancy | Runner holdout expectancy | Runner holdout PF | Runner holdout trades |
+|---|---:|---:|---:|---:|
+| $2k–$4k | — | +1.0201% | 6.596 | 2 |
+| $5k–$10k | -2.4117% | -0.3222% | 0.811 | 25 |
+| 5%–10% | -2.1872% | -1.0193% | 0.311 | 35 |
+| 10%–20% | -2.4976% | +0.2383% | 1.125 | 34 |
+| 4–8 ATR | -1.7990% | -0.2906% | 0.794 | 29 |
+| Structure | -0.8362% | -0.1925% | 0.894 | 54 |
+
+Both exits were evaluated on each definition's exact baseline signal,
+direction, and next-bar entry cohort; runner observations were allowed to
+overlap so a longer runner could not suppress later paired entries. The runner
+improved the old holdout for several definitions, but only the 10%–20% row was
+positive with a nontrivial sample, and **every definition remained negative in
+validation** (or had no validation trades). It therefore did not clear the
+pre-existing validation gate and no runner candidate is eligible for
+promotion. Positive old holdout cells are hypotheses for genuinely forward
+evidence, not trade calls.
+
 ## Tomorrow's plan
 
 1. ~~Reconcile the futures candles against Kraken spot over their overlapping
    recent window and report missing bars and price differences.~~ Completed
    2026-11-06; results are recorded above and emitted in the live artifact.
-2. Freeze a small, pre-registered second-round test: midpoint exit versus a
+2. ~~Freeze a small, pre-registered second-round test: midpoint exit versus a
    half-at-midpoint/half-at-opposite-edge runner, without adding parameters
-   after seeing results.
+   after seeing results.~~ Completed 2026-11-06; no runner cleared validation.
 3. Add walk-forward windows so the dashboard shows whether an edge is stable
    across regimes instead of relying on one split.
 4. Add long/short breakdowns, cost sensitivity, drawdown duration, and a
