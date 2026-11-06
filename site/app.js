@@ -2850,6 +2850,7 @@
     document.getElementById("spy-backtest-section").hidden = !isSpy;
     document.getElementById("spy-signals-section").hidden = !isSpy;
     document.getElementById("crypto-explainer").hidden = isSpy;
+    document.getElementById("range-method-sources").hidden = asset !== "btc";
     document.getElementById("spy-explainer").hidden = !isSpy;
     document.getElementById("chart-live-ticker").hidden = isSpy;
     if (isSpy) document.getElementById("live-badge").hidden = true;

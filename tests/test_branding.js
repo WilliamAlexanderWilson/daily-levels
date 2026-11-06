@@ -21,4 +21,6 @@ test("product branding stays separate from the range method provenance", () => {
   for (const sourceId of ["cOxjsDvGRTA", "HBKEvXjDbS0", "v3fXVye-TVg"]) {
     assert.match(html, new RegExp(`https:\\/\\/youtu\\.be\\/${sourceId}`));
   }
+  const app = fs.readFileSync(path.join(siteRoot, "app.js"), "utf8");
+  assert.match(app, /range-method-sources["']\)\.hidden = asset !== ["']btc["']/);
 });
