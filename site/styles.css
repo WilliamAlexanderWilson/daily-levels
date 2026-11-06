@@ -944,6 +944,24 @@ summary:focus-visible {
   animation: none;
 }
 
+.chart-cursor-price {
+  position: absolute;
+  z-index: 14;
+  padding: 5px 8px;
+  border: 1px solid color-mix(in srgb, var(--text) 18%, var(--border));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface-strong) 94%, transparent);
+  color: var(--text);
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--bg) 58%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  backdrop-filter: blur(7px);
+}
+
 @keyframes live-price-pulse {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--support) 38%, transparent); }
   75%, 100% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--support) 0%, transparent); }

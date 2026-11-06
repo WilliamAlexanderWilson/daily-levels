@@ -378,10 +378,40 @@
 
     tradeMarkersPlugin = LightweightCharts.createSeriesMarkers(candleSeries, []);
     chart.subscribeClick(handleChartClick);
-    // hover feedback for "click the line itself" - the cursor becomes a
-    // pointer only when it's actually close enough to a drawn line to do
-    // something, so you can tell before you click rather than guessing.
+    // Keep the exact price beside the cursor as well as on the right axis,
+    // so reading a candle does not require moving your eyes across the
+    // entire chart. Clamp it inside the candle pane and flip it to the
+    // cursor's left near the price scale.
     chart.subscribeCrosshairMove((param) => {
+      const cursorPrice = document.getElementById("chart-cursor-price");
+      const point = param.point;
+      const price = point ? candleSeries.coordinateToPrice(point.y) : null;
+      if (!cursorPrice || !point || !Number.isFinite(price)) {
+        if (cursorPrice) cursorPrice.hidden = true;
+        if (!markingMode) container.style.cursor = "default";
+        return;
+      }
+
+      cursorPrice.textContent = `$${price.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+      cursorPrice.hidden = false;
+
+      const paneRight = container.clientWidth - candleSeries.priceScale().width();
+      const tooltipWidth = cursorPrice.offsetWidth;
+      const tooltipHeight = cursorPrice.offsetHeight;
+      let left = point.x + 14;
+      if (left + tooltipWidth > paneRight - 8) left = point.x - tooltipWidth - 14;
+      left = Math.max(8, Math.min(left, paneRight - tooltipWidth - 8));
+      let top = point.y - tooltipHeight - 12;
+      if (top < 8) top = point.y + 14;
+      top = Math.max(8, Math.min(top, container.clientHeight - tooltipHeight - 8));
+      cursorPrice.style.left = `${left}px`;
+      cursorPrice.style.top = `${top}px`;
+
+      // Hover feedback for "click the line itself" - the cursor becomes a
+      // pointer only when it is close enough to a drawn level to select.
       if (markingMode) return; // marking-mode already has its own cursor/hint via mark-trade-hint
       const near = param.point ? findMarkerNearPoint(param.point.y) : null;
       container.style.cursor = near ? "pointer" : "default";
