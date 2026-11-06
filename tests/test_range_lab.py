@@ -5,14 +5,17 @@ import pandas as pd
 from src.range_lab.engine import (
     RangeSpec,
     _metrics,
+    _drawdown_duration,
     _paper_trade,
     _run_runner_trade,
     _run_trade,
     _walk_forward_regime,
     backtest_runner_cohort,
+    backtest_cost_cohort,
     backtest_spec,
     build_range_lab,
     forward_paper_track,
+    robustness_analysis,
     walk_forward_stability,
 )
 from src.range_lab.fetch import _parse_candles, _validate_history
@@ -308,6 +311,102 @@ def test_runner_comparison_preserves_overlapping_baseline_entry_cohort(monkeypat
         trade["entry_time"] for trade in baseline
     ]
     assert runner[0]["exit_time"] > runner[1]["entry_time"]
+
+
+def test_cost_stress_preserves_trade_path_and_only_worsens_return(monkeypatch):
+    index = pd.date_range(datetime(2026, 1, 1, tzinfo=timezone.utc), periods=50, freq="4h")
+    candles = pd.DataFrame(
+        {
+            "open": [100.0] * 50,
+            "high": [101.0] * 50,
+            "low": [99.0] * 50,
+            "close": [100.0] * 50,
+            "volume": [1.0] * 50,
+        },
+        index=index,
+    )
+    spec = RangeSpec("structure", "Structure", "structure", 20)
+    state = {"low": 90.0, "high": 150.0, "midpoint": 120.0, "edge": 6.0, "atr": 1.0}
+    baseline, _ = _run_trade(candles, 25, "long", state, spec.lookback_bars)
+
+    monkeypatch.setattr("src.range_lab.engine._range_at", lambda *_args: state)
+    monkeypatch.setattr("src.range_lab.engine._signal", lambda *_args: "long")
+    stressed = backtest_cost_cohort(candles, spec, [baseline], 0.0040, 0.0015)
+    identity = ("signal_time", "entry_time", "exit_time", "direction", "reason")
+    assert tuple(stressed[0][field] for field in identity) == tuple(
+        baseline[field] for field in identity
+    )
+    assert stressed[0]["return_pct"] < baseline["return_pct"]
+
+
+def test_drawdown_duration_counts_underwater_trades_through_recovery():
+    trades = [
+        {
+            "entry_time": "2026-01-01T00:00:00+00:00",
+            "exit_time": "2026-01-01T12:00:00+00:00",
+            "return_pct": 10.0,
+        },
+        {
+            "entry_time": "2026-01-02T00:00:00+00:00",
+            "exit_time": "2026-01-02T12:00:00+00:00",
+            "return_pct": -5.0,
+        },
+        {
+            "entry_time": "2026-01-03T00:00:00+00:00",
+            "exit_time": "2026-01-03T12:00:00+00:00",
+            "return_pct": -5.0,
+        },
+        {
+            "entry_time": "2026-01-04T00:00:00+00:00",
+            "exit_time": "2026-01-04T12:00:00+00:00",
+            "return_pct": 25.0,
+        },
+    ]
+    duration = _drawdown_duration(trades)
+    assert duration["max_underwater_trades"] == 2
+    assert duration["max_underwater_days"] == 3.0
+    assert duration["recovered"] is True
+
+
+def test_robustness_requires_sixty_total_and_thirty_per_direction(monkeypatch):
+    candles = pd.DataFrame(
+        {"close": [100.0, 101.0]},
+        index=pd.date_range(datetime(2026, 1, 1, tzinfo=timezone.utc), periods=2, freq="4h"),
+    )
+    spec = RangeSpec("structure", "Structure", "structure", 20)
+    trades = []
+    for offset in range(60):
+        timestamp = pd.Timestamp("2025-01-01T00:00:00Z") + pd.Timedelta(days=offset)
+        trades.append({
+            "signal_time": (timestamp - pd.Timedelta(hours=4)).isoformat(),
+            "entry_time": timestamp.isoformat(),
+            "exit_time": (timestamp + pd.Timedelta(hours=4)).isoformat(),
+            "direction": "long" if offset < 30 else "short",
+            "reason": "target",
+            "return_pct": 1.0,
+        })
+    walk_forward = {"stable": True, "aggregate": _metrics(trades)}
+    monkeypatch.setattr(
+        "src.range_lab.engine._walk_forward_baseline_trades",
+        lambda *_args: trades,
+    )
+    monkeypatch.setattr(
+        "src.range_lab.engine.backtest_cost_cohort",
+        lambda _candles, _spec, baseline, _fee, _slippage: baseline,
+    )
+    result = robustness_analysis(candles, spec, walk_forward)
+    assert result["sample_adequate"] is True
+    assert result["direction_balanced"] is True
+    assert result["cost_resilient"] is True
+    assert result["robust"] is True
+
+    short_trade = trades.pop()
+    walk_forward = {"stable": True, "aggregate": _metrics(trades)}
+    result = robustness_analysis(candles, spec, walk_forward)
+    assert result["sample_adequate"] is False
+    assert result["directions"]["short"]["sample_adequate"] is False
+    assert result["robust"] is False
+    trades.append(short_trade)
 
 
 def test_forward_paper_trade_stays_open_until_full_holding_window():

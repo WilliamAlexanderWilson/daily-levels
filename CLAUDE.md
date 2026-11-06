@@ -172,6 +172,18 @@ stable label requires at least four eligible windows, at least 75% positive,
 positive aggregate expectancy, and PF above 1. No definition passed. This
 screen never changes validation, selection, holdout, or forward-paper labels.
 
+The frozen fragility diagnostic is `range-robustness-v1`, preregistered at
+commit `ff7b722` before its results were computed. It reuses the exact
+walk-forward baseline cohort. `backtest_cost_cohort` must preserve signal,
+direction, entry timestamp, exit reason, and exit timestamp while repricing
+base (0.20% fee + 0.05% slippage per side), stressed (0.30% + 0.10%), and
+severe (0.40% + 0.15%) execution. Overall samples below 60 and direction
+samples below 30 remain explicitly low-confidence. `robust` requires the
+walk-forward screen, both direction subgroups, and all cost scenarios to pass;
+no definition did. Drawdown duration counts consecutive completed trades below
+the prior compounded-equity peak and days to recovery or the final observed
+exit. This diagnostic cannot promote a strategy or alter forward tracking.
+
 ---
 
 ## Where we are

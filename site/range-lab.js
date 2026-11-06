@@ -34,6 +34,7 @@
     };
     const exitComparison = candidate.exit_comparison || null;
     const walkForward = candidate.walk_forward || null;
+    const robustness = candidate.robustness || null;
     let paperStatus = "Waiting for a completed 4H rejection";
     if (paper.pending_entry) {
       paperStatus = `Pending ${paper.pending_entry.direction} entry · next 4H open`;
@@ -104,6 +105,55 @@
           sampleEligible: Boolean(window.sample_eligible),
           positive: Boolean(window.positive),
         })),
+      } : null,
+      robustness: robustness ? {
+        robust: Boolean(robustness.robust),
+        status: robustness.status,
+        sampleAdequate: Boolean(robustness.sample_adequate),
+        sampleWarning: robustness.sample_warning,
+        directionBalanced: Boolean(robustness.direction_balanced),
+        costResilient: Boolean(robustness.cost_resilient),
+        directions: ["long", "short"].map((direction) => {
+          const result = robustness.directions[direction];
+          return {
+            direction,
+            trades: result.metrics.trades,
+            expectancy: metric(result.metrics.expectancy_pct, "% / trade"),
+            profitFactor: result.metrics.profit_factor_infinite
+              ? "∞"
+              : Number.isFinite(result.metrics.profit_factor)
+                ? result.metrics.profit_factor.toFixed(2)
+                : "—",
+            sampleAdequate: Boolean(result.sample_adequate),
+            positive: Boolean(result.positive),
+          };
+        }),
+        costScenarios: robustness.cost_scenarios.map((scenario) => ({
+          key: scenario.key,
+          label: scenario.label,
+          fee: `${scenario.fee_per_side_pct}% fee`,
+          slippage: `${scenario.slippage_per_side_pct}% slip`,
+          trades: scenario.metrics.trades,
+          expectancy: metric(scenario.metrics.expectancy_pct, "% / trade"),
+          profitFactor: scenario.metrics.profit_factor_infinite
+            ? "∞"
+            : Number.isFinite(scenario.metrics.profit_factor)
+              ? scenario.metrics.profit_factor.toFixed(2)
+              : "—",
+          drawdown: Number.isFinite(scenario.metrics.max_drawdown_pct)
+            ? `${scenario.metrics.max_drawdown_pct}%`
+            : "—",
+          positive: Number.isFinite(scenario.metrics.expectancy_pct)
+            && scenario.metrics.expectancy_pct > 0
+            && (scenario.metrics.profit_factor_infinite || scenario.metrics.profit_factor > 1),
+        })),
+        drawdown: {
+          trades: robustness.drawdown_duration.max_underwater_trades,
+          days: Number.isFinite(robustness.drawdown_duration.max_underwater_days)
+            ? robustness.drawdown_duration.max_underwater_days.toFixed(2)
+            : "—",
+          recovered: robustness.drawdown_duration.recovered,
+        },
       } : null,
       passed: Boolean(data.holdout_passed && data.selected_key === candidate.spec.key),
     };

@@ -54,6 +54,37 @@
     "minimum_positive_share_pct": 75.0,
     "promotion_effect": "none; does not change validation, selection, holdout, or forward-paper labels"
   },
+  "robustness_screen": {
+    "version": "range-robustness-v1",
+    "frozen_at": "2026-11-06",
+    "status": "exploratory historical fragility diagnostic; not an untouched holdout or selection rule",
+    "cohort": "exact range-walk-forward-v1 baseline signals, directions, entries, exit reasons, and exit timestamps",
+    "minimum_total_trades": 60,
+    "minimum_trades_per_direction": 30,
+    "cost_scenarios": [
+      {
+        "key": "base",
+        "label": "Base",
+        "fee_per_side_pct": 0.2,
+        "slippage_per_side_pct": 0.05
+      },
+      {
+        "key": "stressed",
+        "label": "Stressed",
+        "fee_per_side_pct": 0.3,
+        "slippage_per_side_pct": 0.1
+      },
+      {
+        "key": "severe",
+        "label": "Severe",
+        "fee_per_side_pct": 0.4,
+        "slippage_per_side_pct": 0.15
+      }
+    ],
+    "drawdown_duration": "maximum consecutive completed trades below the prior compounded-equity peak; days run from that peak to recovery or the final observed exit",
+    "robust_rule": "walk-forward stable, both directions sample-adequate and positive, and every cost scenario positive",
+    "promotion_effect": "none; does not change validation, selection, holdout, or forward-paper labels"
+  },
   "forward_tracking": {
     "version": "range-rejection-v1",
     "frozen_at": "2026-11-06T04:00:00+00:00",
@@ -527,6 +558,97 @@
             }
           }
         ]
+      },
+      "robustness": {
+        "version": "range-robustness-v1",
+        "status": "did not pass the frozen historical robustness screen",
+        "robust": false,
+        "sample_adequate": false,
+        "sample_warning": "Only 15 trades; 60 required",
+        "direction_balanced": false,
+        "cost_resilient": false,
+        "directions": {
+          "long": {
+            "sample_adequate": false,
+            "positive": false,
+            "metrics": {
+              "trades": 10,
+              "win_rate_pct": 20.0,
+              "expectancy_pct": -1.1645,
+              "profit_factor": 0.352,
+              "profit_factor_infinite": false,
+              "total_return_pct": -11.28,
+              "max_drawdown_pct": 13.23
+            }
+          },
+          "short": {
+            "sample_adequate": false,
+            "positive": false,
+            "metrics": {
+              "trades": 5,
+              "win_rate_pct": 40.0,
+              "expectancy_pct": -0.6743,
+              "profit_factor": 0.547,
+              "profit_factor_infinite": false,
+              "total_return_pct": -3.45,
+              "max_drawdown_pct": 5.13
+            }
+          }
+        },
+        "cost_scenarios": [
+          {
+            "key": "base",
+            "label": "Base",
+            "fee_per_side_pct": 0.2,
+            "slippage_per_side_pct": 0.05,
+            "metrics": {
+              "trades": 15,
+              "win_rate_pct": 26.67,
+              "expectancy_pct": -1.0011,
+              "profit_factor": 0.409,
+              "profit_factor_infinite": false,
+              "total_return_pct": -14.34,
+              "max_drawdown_pct": 14.34
+            }
+          },
+          {
+            "key": "stressed",
+            "label": "Stressed",
+            "fee_per_side_pct": 0.3,
+            "slippage_per_side_pct": 0.1,
+            "metrics": {
+              "trades": 15,
+              "win_rate_pct": 26.67,
+              "expectancy_pct": -1.3001,
+              "profit_factor": 0.321,
+              "profit_factor_infinite": false,
+              "total_return_pct": -18.14,
+              "max_drawdown_pct": 18.14
+            }
+          },
+          {
+            "key": "severe",
+            "label": "Severe",
+            "fee_per_side_pct": 0.4,
+            "slippage_per_side_pct": 0.15,
+            "metrics": {
+              "trades": 15,
+              "win_rate_pct": 26.67,
+              "expectancy_pct": -1.5991,
+              "profit_factor": 0.25,
+              "profit_factor_infinite": false,
+              "total_return_pct": -21.79,
+              "max_drawdown_pct": 21.79
+            }
+          }
+        ],
+        "drawdown_duration": {
+          "max_underwater_trades": 15,
+          "max_underwater_days": 233.83,
+          "recovered": false,
+          "peak_time": "2023-04-11T12:00:00+00:00",
+          "end_time": "2023-12-01T08:00:00+00:00"
+        }
       },
       "forward_paper": {
         "metrics": {
@@ -1003,6 +1125,97 @@
             }
           }
         ]
+      },
+      "robustness": {
+        "version": "range-robustness-v1",
+        "status": "did not pass the frozen historical robustness screen",
+        "robust": false,
+        "sample_adequate": false,
+        "sample_warning": "Only 31 trades; 60 required",
+        "direction_balanced": false,
+        "cost_resilient": false,
+        "directions": {
+          "long": {
+            "sample_adequate": false,
+            "positive": false,
+            "metrics": {
+              "trades": 17,
+              "win_rate_pct": 23.53,
+              "expectancy_pct": -1.2034,
+              "profit_factor": 0.389,
+              "profit_factor_infinite": false,
+              "total_return_pct": -19.09,
+              "max_drawdown_pct": 25.56
+            }
+          },
+          "short": {
+            "sample_adequate": false,
+            "positive": false,
+            "metrics": {
+              "trades": 14,
+              "win_rate_pct": 21.43,
+              "expectancy_pct": -1.5502,
+              "profit_factor": 0.309,
+              "profit_factor_infinite": false,
+              "total_return_pct": -20.03,
+              "max_drawdown_pct": 22.28
+            }
+          }
+        },
+        "cost_scenarios": [
+          {
+            "key": "base",
+            "label": "Base",
+            "fee_per_side_pct": 0.2,
+            "slippage_per_side_pct": 0.05,
+            "metrics": {
+              "trades": 31,
+              "win_rate_pct": 22.58,
+              "expectancy_pct": -1.36,
+              "profit_factor": 0.351,
+              "profit_factor_infinite": false,
+              "total_return_pct": -35.3,
+              "max_drawdown_pct": 38.52
+            }
+          },
+          {
+            "key": "stressed",
+            "label": "Stressed",
+            "fee_per_side_pct": 0.3,
+            "slippage_per_side_pct": 0.1,
+            "metrics": {
+              "trades": 31,
+              "win_rate_pct": 22.58,
+              "expectancy_pct": -1.6601,
+              "profit_factor": 0.286,
+              "profit_factor_infinite": false,
+              "total_return_pct": -41.13,
+              "max_drawdown_pct": 43.05
+            }
+          },
+          {
+            "key": "severe",
+            "label": "Severe",
+            "fee_per_side_pct": 0.4,
+            "slippage_per_side_pct": 0.15,
+            "metrics": {
+              "trades": 31,
+              "win_rate_pct": 22.58,
+              "expectancy_pct": -1.9602,
+              "profit_factor": 0.234,
+              "profit_factor_infinite": false,
+              "total_return_pct": -46.46,
+              "max_drawdown_pct": 47.79
+            }
+          }
+        ],
+        "drawdown_duration": {
+          "max_underwater_trades": 31,
+          "max_underwater_days": 1203.33,
+          "recovered": false,
+          "peak_time": "2023-03-17T04:00:00+00:00",
+          "end_time": "2026-07-02T12:00:00+00:00"
+        }
       },
       "forward_paper": {
         "metrics": {
@@ -1492,6 +1705,97 @@
           }
         ]
       },
+      "robustness": {
+        "version": "range-robustness-v1",
+        "status": "did not pass the frozen historical robustness screen",
+        "robust": false,
+        "sample_adequate": false,
+        "sample_warning": "Only 39 trades; 60 required",
+        "direction_balanced": false,
+        "cost_resilient": false,
+        "directions": {
+          "long": {
+            "sample_adequate": false,
+            "positive": false,
+            "metrics": {
+              "trades": 22,
+              "win_rate_pct": 22.73,
+              "expectancy_pct": -1.229,
+              "profit_factor": 0.248,
+              "profit_factor_infinite": false,
+              "total_return_pct": -24.05,
+              "max_drawdown_pct": 24.05
+            }
+          },
+          "short": {
+            "sample_adequate": false,
+            "positive": false,
+            "metrics": {
+              "trades": 17,
+              "win_rate_pct": 29.41,
+              "expectancy_pct": -0.734,
+              "profit_factor": 0.451,
+              "profit_factor_infinite": false,
+              "total_return_pct": -12.03,
+              "max_drawdown_pct": 14.62
+            }
+          }
+        },
+        "cost_scenarios": [
+          {
+            "key": "base",
+            "label": "Base",
+            "fee_per_side_pct": 0.2,
+            "slippage_per_side_pct": 0.05,
+            "metrics": {
+              "trades": 39,
+              "win_rate_pct": 25.64,
+              "expectancy_pct": -1.0132,
+              "profit_factor": 0.327,
+              "profit_factor_infinite": false,
+              "total_return_pct": -33.19,
+              "max_drawdown_pct": 33.19
+            }
+          },
+          {
+            "key": "stressed",
+            "label": "Stressed",
+            "fee_per_side_pct": 0.3,
+            "slippage_per_side_pct": 0.1,
+            "metrics": {
+              "trades": 39,
+              "win_rate_pct": 25.64,
+              "expectancy_pct": -1.3125,
+              "profit_factor": 0.24,
+              "profit_factor_infinite": false,
+              "total_return_pct": -40.64,
+              "max_drawdown_pct": 40.64
+            }
+          },
+          {
+            "key": "severe",
+            "label": "Severe",
+            "fee_per_side_pct": 0.4,
+            "slippage_per_side_pct": 0.15,
+            "metrics": {
+              "trades": 39,
+              "win_rate_pct": 25.64,
+              "expectancy_pct": -1.6118,
+              "profit_factor": 0.173,
+              "profit_factor_infinite": false,
+              "total_return_pct": -47.27,
+              "max_drawdown_pct": 47.27
+            }
+          }
+        ],
+        "drawdown_duration": {
+          "max_underwater_trades": 39,
+          "max_underwater_days": 1194.0,
+          "recovered": false,
+          "peak_time": "2023-02-08T20:00:00+00:00",
+          "end_time": "2026-05-17T20:00:00+00:00"
+        }
+      },
       "forward_paper": {
         "metrics": {
           "trades": 0,
@@ -1967,6 +2271,97 @@
             }
           }
         ]
+      },
+      "robustness": {
+        "version": "range-robustness-v1",
+        "status": "did not pass the frozen historical robustness screen",
+        "robust": false,
+        "sample_adequate": true,
+        "sample_warning": null,
+        "direction_balanced": false,
+        "cost_resilient": false,
+        "directions": {
+          "long": {
+            "sample_adequate": true,
+            "positive": false,
+            "metrics": {
+              "trades": 38,
+              "win_rate_pct": 39.47,
+              "expectancy_pct": -0.3737,
+              "profit_factor": 0.799,
+              "profit_factor_infinite": false,
+              "total_return_pct": -15.22,
+              "max_drawdown_pct": 25.82
+            }
+          },
+          "short": {
+            "sample_adequate": false,
+            "positive": false,
+            "metrics": {
+              "trades": 28,
+              "win_rate_pct": 32.14,
+              "expectancy_pct": -0.7741,
+              "profit_factor": 0.621,
+              "profit_factor_infinite": false,
+              "total_return_pct": -20.8,
+              "max_drawdown_pct": 29.97
+            }
+          }
+        },
+        "cost_scenarios": [
+          {
+            "key": "base",
+            "label": "Base",
+            "fee_per_side_pct": 0.2,
+            "slippage_per_side_pct": 0.05,
+            "metrics": {
+              "trades": 66,
+              "win_rate_pct": 36.36,
+              "expectancy_pct": -0.5435,
+              "profit_factor": 0.719,
+              "profit_factor_infinite": false,
+              "total_return_pct": -32.85,
+              "max_drawdown_pct": 44.71
+            }
+          },
+          {
+            "key": "stressed",
+            "label": "Stressed",
+            "fee_per_side_pct": 0.3,
+            "slippage_per_side_pct": 0.1,
+            "metrics": {
+              "trades": 66,
+              "win_rate_pct": 36.36,
+              "expectancy_pct": -0.8438,
+              "profit_factor": 0.603,
+              "profit_factor_infinite": false,
+              "total_return_pct": -45.01,
+              "max_drawdown_pct": 52.27
+            }
+          },
+          {
+            "key": "severe",
+            "label": "Severe",
+            "fee_per_side_pct": 0.4,
+            "slippage_per_side_pct": 0.15,
+            "metrics": {
+              "trades": 66,
+              "win_rate_pct": 36.36,
+              "expectancy_pct": -1.1441,
+              "profit_factor": 0.506,
+              "profit_factor_infinite": false,
+              "total_return_pct": -55.0,
+              "max_drawdown_pct": 60.11
+            }
+          }
+        ],
+        "drawdown_duration": {
+          "max_underwater_trades": 53,
+          "max_underwater_days": 911.0,
+          "recovered": false,
+          "peak_time": "2024-01-03T12:00:00+00:00",
+          "end_time": "2026-07-02T12:00:00+00:00"
+        }
       },
       "forward_paper": {
         "metrics": {
@@ -2456,6 +2851,97 @@
           }
         ]
       },
+      "robustness": {
+        "version": "range-robustness-v1",
+        "status": "did not pass the frozen historical robustness screen",
+        "robust": false,
+        "sample_adequate": false,
+        "sample_warning": "Only 52 trades; 60 required",
+        "direction_balanced": false,
+        "cost_resilient": false,
+        "directions": {
+          "long": {
+            "sample_adequate": true,
+            "positive": false,
+            "metrics": {
+              "trades": 30,
+              "win_rate_pct": 33.33,
+              "expectancy_pct": -0.8485,
+              "profit_factor": 0.54,
+              "profit_factor_infinite": false,
+              "total_return_pct": -23.59,
+              "max_drawdown_pct": 30.7
+            }
+          },
+          "short": {
+            "sample_adequate": false,
+            "positive": false,
+            "metrics": {
+              "trades": 22,
+              "win_rate_pct": 36.36,
+              "expectancy_pct": -0.0644,
+              "profit_factor": 0.951,
+              "profit_factor_infinite": false,
+              "total_return_pct": -2.27,
+              "max_drawdown_pct": 16.83
+            }
+          }
+        },
+        "cost_scenarios": [
+          {
+            "key": "base",
+            "label": "Base",
+            "fee_per_side_pct": 0.2,
+            "slippage_per_side_pct": 0.05,
+            "metrics": {
+              "trades": 52,
+              "win_rate_pct": 34.62,
+              "expectancy_pct": -0.5168,
+              "profit_factor": 0.681,
+              "profit_factor_infinite": false,
+              "total_return_pct": -25.32,
+              "max_drawdown_pct": 39.19
+            }
+          },
+          {
+            "key": "stressed",
+            "label": "Stressed",
+            "fee_per_side_pct": 0.3,
+            "slippage_per_side_pct": 0.1,
+            "metrics": {
+              "trades": 52,
+              "win_rate_pct": 34.62,
+              "expectancy_pct": -0.8159,
+              "profit_factor": 0.55,
+              "profit_factor_infinite": false,
+              "total_return_pct": -36.16,
+              "max_drawdown_pct": 46.31
+            }
+          },
+          {
+            "key": "severe",
+            "label": "Severe",
+            "fee_per_side_pct": 0.4,
+            "slippage_per_side_pct": 0.15,
+            "metrics": {
+              "trades": 52,
+              "win_rate_pct": 34.62,
+              "expectancy_pct": -1.115,
+              "profit_factor": 0.445,
+              "profit_factor_infinite": false,
+              "total_return_pct": -45.44,
+              "max_drawdown_pct": 52.6
+            }
+          }
+        ],
+        "drawdown_duration": {
+          "max_underwater_trades": 50,
+          "max_underwater_days": 1178.33,
+          "recovered": false,
+          "peak_time": "2023-02-24T12:00:00+00:00",
+          "end_time": "2026-05-17T20:00:00+00:00"
+        }
+      },
       "forward_paper": {
         "metrics": {
           "trades": 0,
@@ -2931,6 +3417,97 @@
             }
           }
         ]
+      },
+      "robustness": {
+        "version": "range-robustness-v1",
+        "status": "did not pass the frozen historical robustness screen",
+        "robust": false,
+        "sample_adequate": true,
+        "sample_warning": null,
+        "direction_balanced": false,
+        "cost_resilient": false,
+        "directions": {
+          "long": {
+            "sample_adequate": true,
+            "positive": false,
+            "metrics": {
+              "trades": 53,
+              "win_rate_pct": 37.74,
+              "expectancy_pct": -0.0832,
+              "profit_factor": 0.952,
+              "profit_factor_infinite": false,
+              "total_return_pct": -7.74,
+              "max_drawdown_pct": 24.65
+            }
+          },
+          "short": {
+            "sample_adequate": true,
+            "positive": false,
+            "metrics": {
+              "trades": 39,
+              "win_rate_pct": 28.21,
+              "expectancy_pct": -1.0226,
+              "profit_factor": 0.503,
+              "profit_factor_infinite": false,
+              "total_return_pct": -34.24,
+              "max_drawdown_pct": 39.67
+            }
+          }
+        },
+        "cost_scenarios": [
+          {
+            "key": "base",
+            "label": "Base",
+            "fee_per_side_pct": 0.2,
+            "slippage_per_side_pct": 0.05,
+            "metrics": {
+              "trades": 92,
+              "win_rate_pct": 33.7,
+              "expectancy_pct": -0.4814,
+              "profit_factor": 0.742,
+              "profit_factor_infinite": false,
+              "total_return_pct": -39.33,
+              "max_drawdown_pct": 46.83
+            }
+          },
+          {
+            "key": "stressed",
+            "label": "Stressed",
+            "fee_per_side_pct": 0.3,
+            "slippage_per_side_pct": 0.1,
+            "metrics": {
+              "trades": 92,
+              "win_rate_pct": 33.7,
+              "expectancy_pct": -0.7822,
+              "profit_factor": 0.621,
+              "profit_factor_infinite": false,
+              "total_return_pct": -54.09,
+              "max_drawdown_pct": 58.04
+            }
+          },
+          {
+            "key": "severe",
+            "label": "Severe",
+            "fee_per_side_pct": 0.4,
+            "slippage_per_side_pct": 0.15,
+            "metrics": {
+              "trades": 92,
+              "win_rate_pct": 33.7,
+              "expectancy_pct": -1.083,
+              "profit_factor": 0.521,
+              "profit_factor_infinite": false,
+              "total_return_pct": -65.29,
+              "max_drawdown_pct": 67.89
+            }
+          }
+        ],
+        "drawdown_duration": {
+          "max_underwater_trades": 75,
+          "max_underwater_days": 1011.67,
+          "recovered": false,
+          "peak_time": "2023-09-24T20:00:00+00:00",
+          "end_time": "2026-07-02T12:00:00+00:00"
+        }
       },
       "forward_paper": {
         "metrics": {
