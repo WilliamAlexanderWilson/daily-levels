@@ -102,6 +102,50 @@ def _range_at(candles: pd.DataFrame, index: int, spec: RangeSpec, atr: pd.Series
     }
 
 
+def _latest_range_snapshot(candles: pd.DataFrame, spec: RangeSpec) -> dict:
+    """Describe today's rolling range even when it does not qualify.
+
+    This lets the UI explain why a popular definition is inactive instead of
+    hiding it or drawing its boundaries as though it were a valid setup.
+    """
+    atr = _true_range(candles).rolling(14).mean()
+    index = len(candles)
+    window = candles.iloc[index - spec.lookback_bars : index]
+    low = float(window["low"].min())
+    high = float(window["high"].max())
+    width = high - low
+    midpoint = (high + low) / 2
+    atr_value = float(atr.iloc[-1])
+    edge = width * EDGE_FRACTION
+    low_touches = int((window["low"] <= low + edge).sum())
+    high_touches = int((window["high"] >= high - edge).sum())
+    sample = max(3, spec.lookback_bars // 10)
+    drift = abs(float(window["close"].tail(sample).mean() - window["close"].head(sample).mean()))
+    width_matches = _qualifies(spec, low, high, atr_value)
+    touches_match = low_touches >= MIN_EDGE_TOUCHES and high_touches >= MIN_EDGE_TOUCHES
+    slope_matches = drift / width <= MAX_NORMALIZED_SLOPE if width else False
+    active = width_matches and touches_match and slope_matches
+    reasons = []
+    if not width_matches:
+        reasons.append("current width is outside this definition")
+    if not touches_match:
+        reasons.append("both edges do not have enough tests")
+    if not slope_matches:
+        reasons.append("price drift is too directional")
+    return {
+        "low": round(low, 2),
+        "high": round(high, 2),
+        "midpoint": round(midpoint, 2),
+        "width": round(width, 2),
+        "width_pct": round(width / midpoint * 100, 2),
+        "width_atr": round(width / atr_value, 2),
+        "low_touches": low_touches,
+        "high_touches": high_touches,
+        "active_now": active,
+        "status": "Qualified range now" if active else "; ".join(reasons),
+    }
+
+
 def _signal(candle: pd.Series, range_state: dict) -> str | None:
     low_edge = range_state["low"] + range_state["edge"]
     high_edge = range_state["high"] - range_state["edge"]
@@ -249,6 +293,7 @@ def build_range_lab(candles: pd.DataFrame, specs: tuple[RangeSpec, ...] = SPECS)
         trades = backtest_spec(candles, spec)
         result = {
             "spec": asdict(spec),
+            "latest_range": _latest_range_snapshot(candles, spec),
             "metrics": {
                 name: _metrics(_split_trades(trades, start, end))
                 for name, (start, end) in periods.items()
@@ -263,10 +308,19 @@ def build_range_lab(candles: pd.DataFrame, specs: tuple[RangeSpec, ...] = SPECS)
         profit_factor = metrics["profit_factor"] if metrics["profit_factor"] is not None else -inf
         return expectancy, profit_factor, metrics["trades"]
 
-    selected = max(candidates, key=validation_score)
-    holdout = selected["metrics"]["holdout"]
+    validation_leader = max(candidates, key=validation_score)
+    validation = validation_leader["metrics"]["validation"]
+    selected = validation_leader if bool(
+        validation["trades"] >= 20
+        and validation["expectancy_pct"] is not None
+        and validation["expectancy_pct"] > 0
+        and validation["profit_factor"] is not None
+        and validation["profit_factor"] > 1
+    ) else None
+    holdout = selected["metrics"]["holdout"] if selected else None
     passed = bool(
-        holdout["trades"] >= 30
+        holdout
+        and holdout["trades"] >= 30
         and holdout["expectancy_pct"] is not None
         and holdout["expectancy_pct"] > 0
         and holdout["profit_factor"] is not None
@@ -296,7 +350,8 @@ def build_range_lab(candles: pd.DataFrame, specs: tuple[RangeSpec, ...] = SPECS)
             "intrabar": "stop wins if stop and target occur in the same candle",
             "minimum_edge_touches": MIN_EDGE_TOUCHES,
         },
-        "selected_key": selected["spec"]["key"],
+        "validation_leader_key": validation_leader["spec"]["key"],
+        "selected_key": selected["spec"]["key"] if selected else None,
         "holdout_passed": passed,
         "verdict": (
             "Positive holdout expectancy after modeled costs. This is evidence worth monitoring, not a promise of profit."

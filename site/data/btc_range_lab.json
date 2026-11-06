@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-06T06:53:05.777189+00:00",
+  "generated_at": "2026-11-06T06:54:36.394040+00:00",
   "instrument": "Kraken PF_XBTUSD perpetual futures",
   "timeframe": "4h",
   "history": {
@@ -22,7 +22,8 @@
     "intrabar": "stop wins if stop and target occur in the same candle",
     "minimum_edge_touches": 2
   },
-  "selected_key": "percent_10_20",
+  "validation_leader_key": "percent_10_20",
+  "selected_key": null,
   "holdout_passed": false,
   "verdict": "No strategy earned a validated-edge label. Keep this in research mode; do not treat it as a signal service.",
   "candidates": [
@@ -34,6 +35,18 @@
         "lookback_bars": 80,
         "minimum": 2000,
         "maximum": 4000
+      },
+      "latest_range": {
+        "low": 74986.0,
+        "high": 81900.0,
+        "midpoint": 78443.0,
+        "width": 6914.0,
+        "width_pct": 8.81,
+        "width_atr": 4.88,
+        "low_touches": 5,
+        "high_touches": 9,
+        "active_now": false,
+        "status": "current width is outside this definition"
       },
       "metrics": {
         "train": {
@@ -253,6 +266,18 @@
         "minimum": 5000,
         "maximum": 10000
       },
+      "latest_range": {
+        "low": 74986.0,
+        "high": 84846.0,
+        "midpoint": 79916.0,
+        "width": 9860.0,
+        "width_pct": 12.34,
+        "width_atr": 6.95,
+        "low_touches": 5,
+        "high_touches": 4,
+        "active_now": true,
+        "status": "Qualified range now"
+      },
       "metrics": {
         "train": {
           "trades": 23,
@@ -470,6 +495,18 @@
         "lookback_bars": 80,
         "minimum": 0.05,
         "maximum": 0.1
+      },
+      "latest_range": {
+        "low": 74986.0,
+        "high": 81900.0,
+        "midpoint": 78443.0,
+        "width": 6914.0,
+        "width_pct": 8.81,
+        "width_atr": 4.88,
+        "low_touches": 5,
+        "high_touches": 9,
+        "active_now": true,
+        "status": "Qualified range now"
       },
       "metrics": {
         "train": {
@@ -689,6 +726,18 @@
         "minimum": 0.1,
         "maximum": 0.2
       },
+      "latest_range": {
+        "low": 74986.0,
+        "high": 84846.0,
+        "midpoint": 79916.0,
+        "width": 9860.0,
+        "width_pct": 12.34,
+        "width_atr": 6.95,
+        "low_touches": 5,
+        "high_touches": 4,
+        "active_now": true,
+        "status": "Qualified range now"
+      },
       "metrics": {
         "train": {
           "trades": 45,
@@ -907,6 +956,18 @@
         "minimum": 4.0,
         "maximum": 8.0
       },
+      "latest_range": {
+        "low": 74986.0,
+        "high": 81900.0,
+        "midpoint": 78443.0,
+        "width": 6914.0,
+        "width_pct": 8.81,
+        "width_atr": 4.88,
+        "low_touches": 5,
+        "high_touches": 9,
+        "active_now": true,
+        "status": "Qualified range now"
+      },
       "metrics": {
         "train": {
           "trades": 40,
@@ -1124,6 +1185,18 @@
         "lookback_bars": 120,
         "minimum": null,
         "maximum": null
+      },
+      "latest_range": {
+        "low": 74986.0,
+        "high": 84846.0,
+        "midpoint": 79916.0,
+        "width": 9860.0,
+        "width_pct": 12.34,
+        "width_atr": 6.95,
+        "low_touches": 5,
+        "high_touches": 4,
+        "active_now": true,
+        "status": "Qualified range now"
       },
       "metrics": {
         "train": {

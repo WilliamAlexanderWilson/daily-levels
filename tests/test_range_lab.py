@@ -66,6 +66,7 @@ def test_build_range_lab_preserves_untouched_selection_boundary(monkeypatch):
 
     monkeypatch.setattr("src.range_lab.engine.backtest_spec", fake_backtest)
     result = build_range_lab(candles, (spec_a, spec_b))
-    assert result["selected_key"] == "a"
+    assert result["validation_leader_key"] == "a"
+    assert result["selected_key"] is None
     assert result["holdout_passed"] is False
 

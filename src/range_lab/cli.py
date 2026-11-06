@@ -11,8 +11,11 @@ def main() -> int:
     print(f"  {len(candles)} completed candles")
     result = build_range_lab(candles)
     atomic_write_json("site/data/btc_range_lab.json", result)
-    selected = next(item for item in result["candidates"] if item["spec"]["key"] == result["selected_key"])
-    print(f"  selected by validation: {selected['spec']['label']}")
+    selected = next(
+        (item for item in result["candidates"] if item["spec"]["key"] == result["selected_key"]),
+        None,
+    )
+    print(f"  selected by validation: {selected['spec']['label'] if selected else 'none'}")
     print(f"  holdout passed: {result['holdout_passed']}")
     return 0
 
