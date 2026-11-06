@@ -131,6 +131,33 @@ repo — there's nothing server-side to list here for it.
 
 ## Where we are
 
+### Range Desk UI decision (2026-11-05)
+
+Source and scope: user request plus the auto-generated English transcript
+for `https://youtu.be/sj4rNQ2ytZw`, retrieved from YouTube on 2026-11-05.
+The linked video is mostly a BloFin leverage tutorial and affiliate pitch;
+it does not contain a complete, objective range strategy. Its useful rules
+are limited to trading from range edges, predefining target and stop,
+preferring isolated margin for bounded risk, and keeping portfolio risk in
+the 1-5% range while explicitly calling 5% aggressive.
+
+The UI was redesigned around one default decision brief plus the chart.
+The existing nearest-level cards, futures context, liquidity overlays,
+scorecards, explainers, and trade journal remain available under **Full
+analysis**, not deleted. `site/range-decision.js` owns the pure range
+geometry. Because the transcript never defines an entry threshold, the UI
+labels its added assumption: outer 35% of the nearest support/resistance
+bracket = `LONG WATCH` or `SHORT WATCH`; middle 30% = `WAIT`. “Watch” never
+means entry confirmation. The brief shows the exact bracket, boundary
+reward/risk, and existing historical hold-rate evidence. It refuses to
+create a setup outside a complete bracket.
+
+SPY stays separate. The 2026-10-11 holdout result remains controlling:
+every one of 24 parameter combinations was profitable in the first half
+and unprofitable in the untouched second half. The default SPY brief says
+`NO VALIDATED EDGE`; it does not convert the retrospective markers into a
+current buy/short call.
+
 **Phase 1 (core engine + site): fully built and live.**
 Volume profile, range high/low, golden pocket, reference levels, flip
 levels, confluence merging, the static site, the live chart, the daily

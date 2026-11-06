@@ -936,6 +936,7 @@
         });
         lastLivePrice = lastClose;
         renderNearestLevels(activeLevels, activeScorecard, lastClose);
+        renderRangeDecision(activeLevels, activeScorecard, lastClose);
         renderRoundProximityBands(lastClose, activeProximity);
         renderLevelJumpSelect(activeLevels, lastClose);
         renderTradesTable(asset, lastClose);
@@ -1063,6 +1064,153 @@
       }
     }
     return { nearestAbove, nearestBelow };
+  }
+
+  // --- range decision brief ---
+  //
+  // The linked video gives a useful risk frame (trade the edge of a range,
+  // define a stop, use isolated margin) but no objective entry algorithm.
+  // RangeDecision makes the one missing UI assumption explicit: the outer
+  // 35% of the nearest support/resistance bracket is a WATCH area and the
+  // middle 30% is WAIT. It does not detect confirmation or claim an edge.
+
+  function compactPrice(value) {
+    return value.toLocaleString(undefined, { maximumFractionDigits: value >= 1000 ? 0 : 2 });
+  }
+
+  function levelLabelWithPrice(level) {
+    if (!level) return "—";
+    const price = level.price_high > level.price_low
+      ? `${compactPrice(level.price_low)}–${compactPrice(level.price_high)}`
+      : compactPrice(level.price_low);
+    return `${level.name} · ${price}`;
+  }
+
+  function fillDecisionScore(prefix, score) {
+    const value = document.getElementById(`decision-${prefix}-odds`);
+    const note = document.getElementById(`decision-${prefix}-note`);
+    if (!score) {
+      value.textContent = "No read";
+      note.textContent = "historical score unavailable";
+      return;
+    }
+    value.textContent = score.low === score.high
+      ? `${score.low.toFixed(0)}% held`
+      : `${score.low.toFixed(0)}–${score.high.toFixed(0)}% held`;
+    note.textContent = `n=${score.resolved}${score.lowConfidence ? " · low confidence" : ""}`;
+  }
+
+  function setDecisionClass(status) {
+    const brief = document.getElementById("decision-brief");
+    brief.className = `decision-brief is-${status}`;
+  }
+
+  function renderDecisionLoading() {
+    setDecisionClass("loading");
+    document.getElementById("decision-badge").textContent = "CALCULATING";
+    document.getElementById("decision-method").textContent = "Nearest-level range";
+    document.getElementById("decision-title").textContent = "Building the current range read…";
+    document.getElementById("decision-summary").textContent = "Waiting for price, levels, and historical context.";
+    document.getElementById("decision-range").hidden = true;
+    document.getElementById("decision-metrics").hidden = true;
+  }
+
+  function renderDecisionUnavailable(message) {
+    setDecisionClass("wait");
+    document.getElementById("decision-badge").textContent = "DATA UNAVAILABLE";
+    document.getElementById("decision-method").textContent = "No decision from partial data";
+    document.getElementById("decision-title").textContent = "The range read could not be built";
+    document.getElementById("decision-summary").textContent = message;
+    document.getElementById("decision-range").hidden = true;
+    document.getElementById("decision-metrics").hidden = true;
+    document.getElementById("decision-caveat").textContent =
+      "A fetch failure is not a trading signal. Retry later rather than filling the gap with an assumption.";
+  }
+
+  function renderRangeDecision(levels, scorecard, currentPrice) {
+    const decision = RangeDecision.build(levels, scorecard, currentPrice);
+    setDecisionClass(decision.status);
+    document.getElementById("decision-badge").textContent = decision.label;
+    document.getElementById("decision-title").textContent = decision.title;
+    document.getElementById("decision-summary").textContent = decision.summary;
+    document.getElementById("decision-range").hidden = !decision.support || !decision.resistance;
+    document.getElementById("decision-metrics").hidden = false;
+    document.getElementById("decision-rr-label").textContent = "Range geometry";
+    document.getElementById("decision-support-label").textContent = "Support history";
+    document.getElementById("decision-resistance-label").textContent = "Resistance history";
+
+    if (!decision.support || !decision.resistance) {
+      document.getElementById("decision-method").textContent = "Insufficient bracket";
+      document.getElementById("decision-rr").textContent = "No setup";
+      document.getElementById("decision-rr-note").textContent = "wait for a complete range";
+      fillDecisionScore("support", null);
+      fillDecisionScore("resistance", null);
+      document.getElementById("decision-caveat").textContent =
+        "Do not manufacture an entry outside the known map. Refresh the data or wait for price to return inside a bracket.";
+      return;
+    }
+
+    const bracketPct = decision.bracketPosition * 100;
+    const macroText = decision.macroPosition === null
+      ? "Immediate support/resistance bracket"
+      : `Immediate bracket · ${Math.round(decision.macroPosition * 100)}% through the 60-day range`;
+    document.getElementById("decision-method").textContent = macroText;
+    document.getElementById("decision-support").textContent = levelLabelWithPrice(decision.support);
+    document.getElementById("decision-resistance").textContent = levelLabelWithPrice(decision.resistance);
+    document.getElementById("decision-position").textContent = `${Math.round(bracketPct)}% through bracket`;
+    document.getElementById("decision-marker").style.left = `${bracketPct}%`;
+
+    if (decision.status === "long-watch") {
+      document.getElementById("decision-rr").textContent = `${decision.longRewardRisk.toFixed(2)}R long`;
+      document.getElementById("decision-rr-note").textContent = "to resistance vs. support risk";
+      document.getElementById("decision-caveat").textContent =
+        `Invalidation: sustained trade below ${decision.support.name}. First range target: ${decision.resistance.name}. Transcript risk frame: isolated margin, a real stop, and 1–5% risk (5% called aggressive).`;
+    } else if (decision.status === "short-watch") {
+      document.getElementById("decision-rr").textContent = `${decision.shortRewardRisk.toFixed(2)}R short`;
+      document.getElementById("decision-rr-note").textContent = "to support vs. resistance risk";
+      document.getElementById("decision-caveat").textContent =
+        `Invalidation: sustained trade above ${decision.resistance.name}. First range target: ${decision.support.name}. Transcript risk frame: isolated margin, a real stop, and 1–5% risk (5% called aggressive).`;
+    } else {
+      document.getElementById("decision-rr").textContent =
+        `${decision.longRewardRisk.toFixed(2)}R L · ${decision.shortRewardRisk.toFixed(2)}R S`;
+      document.getElementById("decision-rr-note").textContent = "neither side is at the range edge";
+      document.getElementById("decision-caveat").textContent =
+        "The middle 30% is intentionally a no-trade area in this UI. This threshold is a transparent geometry filter, not a backtested signal.";
+    }
+
+    fillDecisionScore("support", decision.supportScore);
+    fillDecisionScore("resistance", decision.resistanceScore);
+  }
+
+  function renderSpyDecision(chartData, trades, backtest) {
+    setDecisionClass("wait");
+    document.getElementById("decision-badge").textContent = "NO VALIDATED EDGE";
+    document.getElementById("decision-method").textContent = "Out-of-sample result · Oct 11, 2026";
+    document.getElementById("decision-title").textContent = "SPY setup failed its holdout test";
+    document.getElementById("decision-summary").textContent =
+      "Every tested trend/doji parameter was profitable on the first half and unprofitable on the untouched second half. The honest current read is observe, not buy or short.";
+    document.getElementById("decision-range").hidden = true;
+    document.getElementById("decision-metrics").hidden = false;
+    document.getElementById("decision-rr-label").textContent = "Latest pattern";
+    document.getElementById("decision-support-label").textContent = "Full sample";
+    document.getElementById("decision-resistance-label").textContent = "Holdout";
+
+    const latest = [...(trades || [])].sort((a, b) => b.signal_time - a.signal_time)[0];
+    const onePlus = backtest && backtest.by_min_confirmed && backtest.by_min_confirmed["1"];
+    document.getElementById("decision-rr").textContent = latest
+      ? `${latest.direction === "call" ? "Call" : "Put"} · historical`
+      : "No recent pattern";
+    document.getElementById("decision-rr-note").textContent = latest
+      ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "America/New_York" }).format(new Date(latest.signal_time * 1000))
+      : "nothing to review";
+    document.getElementById("decision-support-odds").textContent = onePlus && onePlus.avg_pct_return !== null
+      ? `${onePlus.avg_pct_return >= 0 ? "+" : ""}${onePlus.avg_pct_return.toFixed(2)}%`
+      : "—";
+    document.getElementById("decision-support-note").textContent = "full-sample modeled avg return";
+    document.getElementById("decision-resistance-odds").textContent = "Negative";
+    document.getElementById("decision-resistance-note").textContent = "all 24 holdout combinations";
+    document.getElementById("decision-caveat").textContent =
+      "SPY remains available for chart and backtest review under Full analysis. It is not presented as a current entry signal.";
   }
 
   function renderNearestLevels(levels, scorecard, currentPrice) {
@@ -2032,6 +2180,34 @@
     if (isSpy) document.getElementById("live-badge").hidden = true;
   }
 
+  function organizeAdvancedAnalysis() {
+    const destination = document.getElementById("advanced-analysis-content");
+    if (!destination) return;
+    const advancedIds = [
+      "futures-context",
+      "exhaustion-banner",
+      "nearest-levels",
+      "level-jump-wrap",
+      "trade-controls",
+      "trade-form",
+      "chart-legend",
+      "spy-legend",
+      "liquidation-note",
+      "spy-chart-note",
+      "trades-section",
+      "level-table-section",
+      "scorecard-section",
+      "spy-backtest-section",
+      "spy-signals-section",
+      "crypto-explainer",
+      "spy-explainer",
+    ];
+    for (const id of advancedIds) {
+      const element = document.getElementById(id);
+      if (element) destination.appendChild(element);
+    }
+  }
+
   function renderSpyChart(bars) {
     ensureChart();
     clearPriceSnapState();
@@ -2173,9 +2349,11 @@
       renderSpySignalMarkers(bars, activeSpyTrades);
       renderSpyBacktestTable(backtestData);
       renderSpySignalsTable(activeSpyTrades);
+      renderSpyDecision(chartData, activeSpyTrades, backtestData);
     } catch (err) {
       if (state.asset !== "spy") return;
       console.error(err);
+      renderDecisionUnavailable("SPY chart or backtest data is currently unavailable.");
       const banner = document.getElementById("stale-banner");
       banner.hidden = false;
       banner.textContent = "Could not load SPY data — either the daily workflow hasn't run yet, or Yahoo's API is unreachable right now.";
@@ -2279,6 +2457,7 @@
   // --- main load ---
 
   async function loadAndRender() {
+    renderDecisionLoading();
     setChartLoading(true);
     try {
       if (state.asset === "spy") {
@@ -2350,12 +2529,14 @@
         activeScorecard = scorecard;
         activeProximity = proximity;
         renderNearestLevels(activeLevels, activeScorecard, levelsData.price);
+        renderRangeDecision(activeLevels, activeScorecard, levelsData.price);
         renderRoundProximityBands(levelsData.price, activeProximity);
         renderLevelJumpSelect(activeLevels, levelsData.price);
         renderExhaustionBanner(levelsData.exhaustion_pattern, scorecard && scorecard["Exhaustion pattern"]);
       } catch (err) {
         if (state.asset !== asset || state.range !== range) return;
         console.error(err);
+        renderDecisionUnavailable("Price or level data is currently unavailable.");
         const banner = document.getElementById("stale-banner");
         banner.hidden = false;
         banner.textContent = "Could not load level or price data — either the daily workflow hasn't run yet, or Kraken's API is unreachable right now.";
@@ -2365,6 +2546,7 @@
     }
   }
 
+  organizeAdvancedAnalysis();
   readHash();
   setActiveButtons();
   wireToggles();

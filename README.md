@@ -1,13 +1,34 @@
-# Daily Levels — BTC & ETH key-level dashboard
+# Range Desk — BTC, ETH & SPY decision dashboard
 
-A small site that shows a live candlestick chart for BTC and ETH with
-automatically calculated key price levels drawn and labeled on it. Levels
-are recalculated once a day at 5:00 AM US Central and held fixed until the
-next run; the chart itself ticks live, independent of that daily
-calculation. **This is a map of levels, not a signal service — no
-buy/sell calls.**
+A focused range-trading workspace. The default screen reduces the product
+to one evidence-labeled decision brief plus the chart: where price sits
+between the nearest support and resistance, whether location favors a
+long watch, short watch, or waiting, the boundary-to-boundary reward/risk
+geometry, and the historical behavior of each boundary. Levels are
+recalculated daily; BTC/ETH candles tick live. The full level map,
+liquidity model, scorecards, explanations, and local trade journal remain
+available under **Full analysis**.
+
+**A watch area is not an entry signal.** The UI never claims to detect the
+confirmation step that the source material leaves discretionary.
 
 Live: https://williamalexanderwilson.github.io/daily-levels/
+
+## Range method and source boundary
+
+The range brief was added from the user's November 5, 2026 request and the
+transcript of https://youtu.be/sj4rNQ2ytZw. Most of that video is a BloFin
+leverage-platform tutorial and affiliate promotion, not a mechanical range
+strategy. The usable rules are narrow: trade from a range edge rather than
+the middle, define take-profit and stop-loss before entry, prefer isolated
+margin for bounded risk, and treat 5% portfolio risk as aggressive.
+
+The video does **not** specify how to select a range, what confirms a hold
+or rejection, or an empirically validated entry threshold. The site makes
+its additional UI assumption visible and testable: the outer 35% of the
+nearest support/resistance bracket is a watch area; the middle 30% is
+`WAIT`. That is a geometry filter, not a backtested claim of edge. See
+`site/range-decision.js` and `tests/test_range_decision.js`.
 
 ## How it works
 
@@ -47,6 +68,7 @@ python -m src.backtest.cli
 
 # run the tests
 python -m pytest
+node --test tests/test_range_decision.js
 
 # view the site locally
 cd site && python3 -m http.server 8000
