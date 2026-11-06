@@ -70,7 +70,9 @@ test("the shared dashboard clock is present on every asset and discloses holiday
   const app = fs.readFileSync(path.join(siteRoot, "app.js"), "utf8");
   assert.match(html, /GLOBAL MARKET CLOCK · DALLAS TIME/);
   assert.match(html, /All seven major market opens/);
+  assert.match(html, /Regular sessions only/);
   assert.match(html, /Exchange holidays, half-days, severe weather, or emergency closures can override/);
+  assert.match(html, /role="timer" aria-live="off"/);
   assert.match(html, /market-sessions\.js/);
   assert.match(app, /MarketSessions\.setAsset\(state\.asset\)/);
   assert.match(app, /MarketSessions\.mount\(document, state\.asset\)/);
