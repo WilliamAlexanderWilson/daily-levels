@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-11-06T16:00:00+00:00",
-  "current_range_data_through": "2026-11-06T16:00:00+00:00",
+  "generated_at": "2026-11-06T20:00:00+00:00",
+  "current_range_data_through": "2026-11-06T20:00:00+00:00",
   "research_metrics_through": "2026-11-06T04:00:00+00:00",
   "instrument": "Kraken PF_XBTUSD perpetual futures",
   "timeframe": "4h",
   "history": {
     "start": "2022-03-23T08:00:00+00:00",
-    "end": "2026-11-06T12:00:00+00:00",
-    "candles": 10136
+    "end": "2026-11-06T16:00:00+00:00",
+    "candles": 10137
   },
   "split": {
     "train_end": "2024-01-01T00:00:00+00:00",
@@ -88,10 +88,25 @@
   "forward_tracking": {
     "version": "range-rejection-v1",
     "frozen_at": "2026-11-06T04:00:00+00:00",
-    "data_through": "2026-11-06T16:00:00+00:00",
+    "data_through": "2026-11-06T20:00:00+00:00",
     "mode": "candidate-level observation only; no real orders and no combined portfolio",
     "candidate_count": 6,
     "validated_candidate_key": null
+  },
+  "forward_gate": {
+    "version": "range-forward-gate-v1",
+    "frozen_at": "2026-11-06",
+    "status": "prospective qualification screen; research label only and no real orders",
+    "minimum_closed_trades": 50,
+    "minimum_half_trades": 25,
+    "minimum_direction_trades": 20,
+    "minimum_base_and_stressed_profit_factor": 1.2,
+    "maximum_drawdown_pct": 20.0,
+    "stressed_fee_per_side_pct": 0.3,
+    "stressed_slippage_per_side_pct": 0.1,
+    "qualification_is_revocable": true,
+    "qualified_candidate_keys": [],
+    "promotion_effect": "none; qualification permits further research only and does not authorize orders or ETH replication"
   },
   "validation_leader_key": "structure",
   "selected_key": null,
@@ -113,8 +128,8 @@
         "midpoint": 78300.0,
         "width": 7200.0,
         "width_pct": 9.2,
-        "width_atr": 5.47,
-        "low_touches": 4,
+        "width_atr": 5.43,
+        "low_touches": 5,
         "high_touches": 8,
         "active_now": false,
         "status": "current width is outside this definition; price drift is too directional"
@@ -663,6 +678,98 @@
         "closed_trades": [],
         "open_trade": null,
         "pending_entry": null
+      },
+      "forward_gate": {
+        "version": "range-forward-gate-v1",
+        "status": "WAIT \u2014 NOT ENOUGH EVIDENCE (0/50 CLOSED)",
+        "qualified": false,
+        "passed_checks": 0,
+        "total_checks": 6,
+        "progress_pct": 0.0,
+        "checks": {
+          "sample": {
+            "passed": false,
+            "closed_trades": 0,
+            "required_trades": 50
+          },
+          "base_edge": {
+            "passed": false,
+            "minimum_profit_factor": 1.2,
+            "metrics": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "stressed_edge": {
+            "passed": false,
+            "minimum_profit_factor": 1.2,
+            "fee_per_side_pct": 0.3,
+            "slippage_per_side_pct": 0.1,
+            "metrics": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "drawdown": {
+            "passed": false,
+            "maximum_pct": 20.0,
+            "observed_pct": null
+          },
+          "halves": {
+            "passed": false,
+            "minimum_trades_each": 25,
+            "earlier": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            },
+            "later": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "directions": {
+            "passed": false,
+            "minimum_trades_each": 20,
+            "long": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            },
+            "short": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          }
+        }
       }
     },
     {
@@ -680,8 +787,8 @@
         "midpoint": 79773.0,
         "width": 10146.0,
         "width_pct": 12.72,
-        "width_atr": 7.71,
-        "low_touches": 8,
+        "width_atr": 7.65,
+        "low_touches": 9,
         "high_touches": 4,
         "active_now": false,
         "status": "current width is outside this definition; price drift is too directional"
@@ -1238,10 +1345,102 @@
           "target": 79916.0,
           "range_low": 74986.0,
           "range_high": 84846.0,
-          "bars_observed": 1,
+          "bars_observed": 2,
           "max_hold_bars": 120
         },
         "pending_entry": null
+      },
+      "forward_gate": {
+        "version": "range-forward-gate-v1",
+        "status": "WAIT \u2014 NOT ENOUGH EVIDENCE (0/50 CLOSED)",
+        "qualified": false,
+        "passed_checks": 0,
+        "total_checks": 6,
+        "progress_pct": 0.0,
+        "checks": {
+          "sample": {
+            "passed": false,
+            "closed_trades": 0,
+            "required_trades": 50
+          },
+          "base_edge": {
+            "passed": false,
+            "minimum_profit_factor": 1.2,
+            "metrics": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "stressed_edge": {
+            "passed": false,
+            "minimum_profit_factor": 1.2,
+            "fee_per_side_pct": 0.3,
+            "slippage_per_side_pct": 0.1,
+            "metrics": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "drawdown": {
+            "passed": false,
+            "maximum_pct": 20.0,
+            "observed_pct": null
+          },
+          "halves": {
+            "passed": false,
+            "minimum_trades_each": 25,
+            "earlier": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            },
+            "later": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "directions": {
+            "passed": false,
+            "minimum_trades_each": 20,
+            "long": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            },
+            "short": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          }
+        }
       }
     },
     {
@@ -1259,8 +1458,8 @@
         "midpoint": 78300.0,
         "width": 7200.0,
         "width_pct": 9.2,
-        "width_atr": 5.47,
-        "low_touches": 4,
+        "width_atr": 5.43,
+        "low_touches": 5,
         "high_touches": 8,
         "active_now": false,
         "status": "price drift is too directional"
@@ -1809,6 +2008,98 @@
         "closed_trades": [],
         "open_trade": null,
         "pending_entry": null
+      },
+      "forward_gate": {
+        "version": "range-forward-gate-v1",
+        "status": "WAIT \u2014 NOT ENOUGH EVIDENCE (0/50 CLOSED)",
+        "qualified": false,
+        "passed_checks": 0,
+        "total_checks": 6,
+        "progress_pct": 0.0,
+        "checks": {
+          "sample": {
+            "passed": false,
+            "closed_trades": 0,
+            "required_trades": 50
+          },
+          "base_edge": {
+            "passed": false,
+            "minimum_profit_factor": 1.2,
+            "metrics": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "stressed_edge": {
+            "passed": false,
+            "minimum_profit_factor": 1.2,
+            "fee_per_side_pct": 0.3,
+            "slippage_per_side_pct": 0.1,
+            "metrics": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "drawdown": {
+            "passed": false,
+            "maximum_pct": 20.0,
+            "observed_pct": null
+          },
+          "halves": {
+            "passed": false,
+            "minimum_trades_each": 25,
+            "earlier": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            },
+            "later": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "directions": {
+            "passed": false,
+            "minimum_trades_each": 20,
+            "long": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            },
+            "short": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          }
+        }
       }
     },
     {
@@ -1826,8 +2117,8 @@
         "midpoint": 79773.0,
         "width": 10146.0,
         "width_pct": 12.72,
-        "width_atr": 7.71,
-        "low_touches": 8,
+        "width_atr": 7.65,
+        "low_touches": 9,
         "high_touches": 4,
         "active_now": false,
         "status": "price drift is too directional"
@@ -2384,10 +2675,102 @@
           "target": 79916.0,
           "range_low": 74986.0,
           "range_high": 84846.0,
-          "bars_observed": 1,
+          "bars_observed": 2,
           "max_hold_bars": 120
         },
         "pending_entry": null
+      },
+      "forward_gate": {
+        "version": "range-forward-gate-v1",
+        "status": "WAIT \u2014 NOT ENOUGH EVIDENCE (0/50 CLOSED)",
+        "qualified": false,
+        "passed_checks": 0,
+        "total_checks": 6,
+        "progress_pct": 0.0,
+        "checks": {
+          "sample": {
+            "passed": false,
+            "closed_trades": 0,
+            "required_trades": 50
+          },
+          "base_edge": {
+            "passed": false,
+            "minimum_profit_factor": 1.2,
+            "metrics": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "stressed_edge": {
+            "passed": false,
+            "minimum_profit_factor": 1.2,
+            "fee_per_side_pct": 0.3,
+            "slippage_per_side_pct": 0.1,
+            "metrics": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "drawdown": {
+            "passed": false,
+            "maximum_pct": 20.0,
+            "observed_pct": null
+          },
+          "halves": {
+            "passed": false,
+            "minimum_trades_each": 25,
+            "earlier": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            },
+            "later": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "directions": {
+            "passed": false,
+            "minimum_trades_each": 20,
+            "long": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            },
+            "short": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          }
+        }
       }
     },
     {
@@ -2405,8 +2788,8 @@
         "midpoint": 78300.0,
         "width": 7200.0,
         "width_pct": 9.2,
-        "width_atr": 5.47,
-        "low_touches": 4,
+        "width_atr": 5.43,
+        "low_touches": 5,
         "high_touches": 8,
         "active_now": false,
         "status": "price drift is too directional"
@@ -2955,6 +3338,98 @@
         "closed_trades": [],
         "open_trade": null,
         "pending_entry": null
+      },
+      "forward_gate": {
+        "version": "range-forward-gate-v1",
+        "status": "WAIT \u2014 NOT ENOUGH EVIDENCE (0/50 CLOSED)",
+        "qualified": false,
+        "passed_checks": 0,
+        "total_checks": 6,
+        "progress_pct": 0.0,
+        "checks": {
+          "sample": {
+            "passed": false,
+            "closed_trades": 0,
+            "required_trades": 50
+          },
+          "base_edge": {
+            "passed": false,
+            "minimum_profit_factor": 1.2,
+            "metrics": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "stressed_edge": {
+            "passed": false,
+            "minimum_profit_factor": 1.2,
+            "fee_per_side_pct": 0.3,
+            "slippage_per_side_pct": 0.1,
+            "metrics": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "drawdown": {
+            "passed": false,
+            "maximum_pct": 20.0,
+            "observed_pct": null
+          },
+          "halves": {
+            "passed": false,
+            "minimum_trades_each": 25,
+            "earlier": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            },
+            "later": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "directions": {
+            "passed": false,
+            "minimum_trades_each": 20,
+            "long": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            },
+            "short": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          }
+        }
       }
     },
     {
@@ -2972,8 +3447,8 @@
         "midpoint": 79773.0,
         "width": 10146.0,
         "width_pct": 12.72,
-        "width_atr": 7.71,
-        "low_touches": 8,
+        "width_atr": 7.65,
+        "low_touches": 9,
         "high_touches": 4,
         "active_now": false,
         "status": "price drift is too directional"
@@ -3530,10 +4005,102 @@
           "target": 79916.0,
           "range_low": 74986.0,
           "range_high": 84846.0,
-          "bars_observed": 1,
+          "bars_observed": 2,
           "max_hold_bars": 120
         },
         "pending_entry": null
+      },
+      "forward_gate": {
+        "version": "range-forward-gate-v1",
+        "status": "WAIT \u2014 NOT ENOUGH EVIDENCE (0/50 CLOSED)",
+        "qualified": false,
+        "passed_checks": 0,
+        "total_checks": 6,
+        "progress_pct": 0.0,
+        "checks": {
+          "sample": {
+            "passed": false,
+            "closed_trades": 0,
+            "required_trades": 50
+          },
+          "base_edge": {
+            "passed": false,
+            "minimum_profit_factor": 1.2,
+            "metrics": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "stressed_edge": {
+            "passed": false,
+            "minimum_profit_factor": 1.2,
+            "fee_per_side_pct": 0.3,
+            "slippage_per_side_pct": 0.1,
+            "metrics": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "drawdown": {
+            "passed": false,
+            "maximum_pct": 20.0,
+            "observed_pct": null
+          },
+          "halves": {
+            "passed": false,
+            "minimum_trades_each": 25,
+            "earlier": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            },
+            "later": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          },
+          "directions": {
+            "passed": false,
+            "minimum_trades_each": 20,
+            "long": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            },
+            "short": {
+              "trades": 0,
+              "win_rate_pct": null,
+              "expectancy_pct": null,
+              "profit_factor": null,
+              "profit_factor_infinite": false,
+              "total_return_pct": null,
+              "max_drawdown_pct": null
+            }
+          }
+        }
       }
     }
   ],
@@ -3541,10 +4108,10 @@
     "scope": "latest completed Kraken 4h BTC/USD spot bars available from the bounded recent-only endpoint",
     "futures_market": "PF_XBTUSD perpetual futures trade candles",
     "spot_market": "BTC/USD spot candles",
-    "comparison_start": "2026-07-09T16:00:00+00:00",
-    "comparison_end": "2026-11-06T12:00:00+00:00",
-    "aligned_start": "2026-07-09T16:00:00+00:00",
-    "aligned_end": "2026-11-06T12:00:00+00:00",
+    "comparison_start": "2026-07-09T20:00:00+00:00",
+    "comparison_end": "2026-11-06T16:00:00+00:00",
+    "aligned_start": "2026-07-09T20:00:00+00:00",
+    "aligned_end": "2026-11-06T16:00:00+00:00",
     "overlap_candles": 720,
     "futures_candles_in_window": 720,
     "spot_candles_in_window": 720,
@@ -3555,22 +4122,22 @@
     "field_basis": {
       "open": {
         "mean_signed_pct": 0.0069,
-        "median_signed_pct": 0.0072,
+        "median_signed_pct": 0.0073,
         "median_abs_pct": 0.0101,
         "p95_abs_pct": 0.032,
         "max_abs_pct": 0.0641
       },
       "high": {
-        "mean_signed_pct": 0.0442,
+        "mean_signed_pct": 0.0434,
         "median_signed_pct": 0.0222,
         "median_abs_pct": 0.0226,
-        "p95_abs_pct": 0.1328,
+        "p95_abs_pct": 0.1239,
         "max_abs_pct": 1.0072
       },
       "low": {
         "mean_signed_pct": -0.0264,
-        "median_signed_pct": -0.0056,
-        "median_abs_pct": 0.0116,
+        "median_signed_pct": -0.0055,
+        "median_abs_pct": 0.0115,
         "p95_abs_pct": 0.1518,
         "max_abs_pct": 0.687
       },

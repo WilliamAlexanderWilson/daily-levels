@@ -30,8 +30,24 @@ const data = {
       metrics: { holdout: { trades: 12, expectancy_pct: -0.2, total_return_pct: -2.4, profit_factor: 0.8 } },
       forward_paper: {
         metrics: { trades: 1, expectancy_pct: 0.5, profit_factor: null, profit_factor_infinite: true },
+        closed_trades: [],
         open_trade: { direction: "long", bars_observed: 3, max_hold_bars: 80 },
         pending_entry: null,
+      },
+      forward_gate: {
+        status: "WAIT — NOT ENOUGH EVIDENCE (1/50 CLOSED)",
+        qualified: false,
+        passed_checks: 0,
+        total_checks: 6,
+        progress_pct: 2,
+        checks: {
+          sample: { passed: false, closed_trades: 1, required_trades: 50 },
+          base_edge: { passed: false, metrics: { expectancy_pct: 0.5, profit_factor: null, profit_factor_infinite: true } },
+          stressed_edge: { passed: false, metrics: { expectancy_pct: 0.1, profit_factor: 1.1, profit_factor_infinite: false } },
+          drawdown: { passed: false, observed_pct: 2.5, maximum_pct: 20 },
+          halves: { passed: false, earlier: { trades: 0 }, later: { trades: 1 } },
+          directions: { passed: false, long: { trades: 1 }, short: { trades: 0 } },
+        },
       },
       exit_comparison: {
         baseline: {
@@ -128,6 +144,23 @@ assert.equal(view.paper.metrics.trades, 1);
 assert.equal(view.paperExpectancy, "+0.5% / trade");
 assert.equal(view.paperProfitFactor, "∞");
 assert.equal(view.paperStatus, "Open long observation · 3/80 bars");
+assert.deepEqual(view.forwardGate, {
+  status: "WAIT — NOT ENOUGH EVIDENCE (1/50 CLOSED)",
+  qualified: false,
+  progress: 2,
+  passedChecks: 0,
+  totalChecks: 6,
+  closed: 1,
+  required: 50,
+  checks: [
+    { key: "sample", label: "Sample", passed: false, detail: "1/50 closed" },
+    { key: "base", label: "Base edge", passed: false, detail: "+0.5% / observation · PF ∞" },
+    { key: "stress", label: "Cost stress", passed: false, detail: "+0.1% / observation · PF 1.10" },
+    { key: "drawdown", label: "Drawdown", passed: false, detail: "2.5% / max 20%" },
+    { key: "halves", label: "Time halves", passed: false, detail: "0 earlier · 1 later" },
+    { key: "directions", label: "Both directions", passed: false, detail: "1 long · 0 short" },
+  ],
+});
 assert.deepEqual(view.exitComparison, {
   baselineValidation: "-0.8% / trade",
   runnerValidation: "-0.2% / trade",
@@ -223,4 +256,38 @@ assert.deepEqual(RangeLab.reconciliationView(data), {
 });
 data.candidates[0].metrics.holdout.profit_factor_infinite = true;
 assert.equal(RangeLab.viewModel(data, "fixed").profitFactor, "∞");
+
+const eventData = {
+  candidates: [{
+    spec: { key: "structure", label: "Structure range" },
+    forward_paper: { closed_trades: [], open_trade: null },
+  }],
+};
+const firstSnapshot = RangeLab.paperEventSnapshot(eventData);
+assert.deepEqual(RangeLab.paperEvents(null, firstSnapshot), []);
+eventData.candidates[0].forward_paper.open_trade = {
+  direction: "long",
+  entry_time: "2026-11-07T00:00:00Z",
+};
+const openSnapshot = RangeLab.paperEventSnapshot(eventData);
+const opened = RangeLab.paperEvents(firstSnapshot, openSnapshot);
+assert.equal(opened.length, 1);
+assert.equal(opened[0].kind, "opened");
+assert.equal(opened[0].fingerprint, "open:structure:2026-11-07T00:00:00Z");
+assert.deepEqual(RangeLab.paperEvents(openSnapshot, openSnapshot), []);
+eventData.candidates[0].forward_paper.open_trade = null;
+eventData.candidates[0].forward_paper.closed_trades = [{
+  direction: "long",
+  exit_time: "2026-11-08T00:00:00Z",
+  reason: "target",
+}];
+const closedSnapshot = RangeLab.paperEventSnapshot(eventData);
+const closed = RangeLab.paperEvents(openSnapshot, closedSnapshot);
+assert.equal(closed.length, 1);
+assert.equal(closed[0].kind, "closed");
+assert.equal(closed[0].fingerprint, "closed:structure:2026-11-08T00:00:00Z:target");
+for (const event of [...opened, ...closed]) {
+  assert.equal(/\b(buy|sell|signal|call)\b/i.test(event.copy), false);
+  assert.match(event.copy, /paper observation/i);
+}
 console.log("range-lab tests passed");

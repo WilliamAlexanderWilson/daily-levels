@@ -37,6 +37,14 @@ ROBUSTNESS_COST_SCENARIOS = (
     ("stressed", "Stressed", 0.0030, 0.0010),
     ("severe", "Severe", 0.0040, 0.0015),
 )
+FORWARD_GATE_VERSION = "range-forward-gate-v1"
+FORWARD_GATE_MIN_TRADES = 50
+FORWARD_GATE_MIN_HALF_TRADES = 25
+FORWARD_GATE_MIN_DIRECTION_TRADES = 20
+FORWARD_GATE_MIN_PROFIT_FACTOR = 1.20
+FORWARD_GATE_MAX_DRAWDOWN_PCT = 20.0
+FORWARD_GATE_STRESSED_FEE_PER_SIDE = 0.0030
+FORWARD_GATE_STRESSED_SLIPPAGE_PER_SIDE = 0.0010
 WALK_FORWARD_WINDOWS = (
     ("2023_h1", "2023 H1", pd.Timestamp("2023-01-01T00:00:00Z"), pd.Timestamp("2023-07-01T00:00:00Z")),
     ("2023_h2", "2023 H2", pd.Timestamp("2023-07-01T00:00:00Z"), pd.Timestamp("2024-01-01T00:00:00Z")),
@@ -744,6 +752,123 @@ def _drawdown_duration(trades: list[dict]) -> dict:
     }
 
 
+def _gate_positive(metrics: dict, minimum_profit_factor: float) -> bool:
+    return bool(
+        metrics["expectancy_pct"] is not None
+        and metrics["expectancy_pct"] > 0
+        and (
+            metrics["profit_factor_infinite"]
+            or (
+                metrics["profit_factor"] is not None
+                and metrics["profit_factor"] >= minimum_profit_factor
+            )
+        )
+    )
+
+
+def forward_qualification_gate(
+    candles: pd.DataFrame,
+    spec: RangeSpec,
+    forward_paper: dict,
+) -> dict:
+    """Evaluate the frozen prospective gate without promoting the strategy."""
+    closed = sorted(
+        forward_paper["closed_trades"],
+        key=lambda trade: pd.Timestamp(trade["entry_time"]),
+    )
+    base_metrics = _metrics(closed)
+    if base_metrics != forward_paper["metrics"]:
+        raise RuntimeError("Forward gate diverged from the paper record")
+    stressed = backtest_cost_cohort(
+        candles,
+        spec,
+        closed,
+        FORWARD_GATE_STRESSED_FEE_PER_SIDE,
+        FORWARD_GATE_STRESSED_SLIPPAGE_PER_SIDE,
+    )
+    identity_fields = ("signal_time", "entry_time", "exit_time", "direction", "reason")
+    if [tuple(trade[field] for field in identity_fields) for trade in stressed] != [
+        tuple(trade[field] for field in identity_fields) for trade in closed
+    ]:
+        raise RuntimeError("Stressed forward costs changed the closed paper cohort")
+    stressed_metrics = _metrics(stressed)
+
+    split_index = len(closed) // 2
+    halves = {
+        "earlier": _metrics(closed[:split_index]),
+        "later": _metrics(closed[split_index:]),
+    }
+    directions = {
+        direction: _metrics([trade for trade in closed if trade["direction"] == direction])
+        for direction in ("long", "short")
+    }
+
+    checks = {
+        "sample": {
+            "passed": len(closed) >= FORWARD_GATE_MIN_TRADES,
+            "closed_trades": len(closed),
+            "required_trades": FORWARD_GATE_MIN_TRADES,
+        },
+        "base_edge": {
+            "passed": _gate_positive(base_metrics, FORWARD_GATE_MIN_PROFIT_FACTOR),
+            "minimum_profit_factor": FORWARD_GATE_MIN_PROFIT_FACTOR,
+            "metrics": base_metrics,
+        },
+        "stressed_edge": {
+            "passed": _gate_positive(stressed_metrics, FORWARD_GATE_MIN_PROFIT_FACTOR),
+            "minimum_profit_factor": FORWARD_GATE_MIN_PROFIT_FACTOR,
+            "fee_per_side_pct": FORWARD_GATE_STRESSED_FEE_PER_SIDE * 100,
+            "slippage_per_side_pct": FORWARD_GATE_STRESSED_SLIPPAGE_PER_SIDE * 100,
+            "metrics": stressed_metrics,
+        },
+        "drawdown": {
+            "passed": bool(
+                base_metrics["max_drawdown_pct"] is not None
+                and base_metrics["max_drawdown_pct"] <= FORWARD_GATE_MAX_DRAWDOWN_PCT
+            ),
+            "maximum_pct": FORWARD_GATE_MAX_DRAWDOWN_PCT,
+            "observed_pct": base_metrics["max_drawdown_pct"],
+        },
+        "halves": {
+            "passed": all(
+                metrics["trades"] >= FORWARD_GATE_MIN_HALF_TRADES
+                and _gate_positive(metrics, 1.0)
+                for metrics in halves.values()
+            ),
+            "minimum_trades_each": FORWARD_GATE_MIN_HALF_TRADES,
+            "earlier": halves["earlier"],
+            "later": halves["later"],
+        },
+        "directions": {
+            "passed": all(
+                metrics["trades"] >= FORWARD_GATE_MIN_DIRECTION_TRADES
+                and _gate_positive(metrics, 1.0)
+                for metrics in directions.values()
+            ),
+            "minimum_trades_each": FORWARD_GATE_MIN_DIRECTION_TRADES,
+            "long": directions["long"],
+            "short": directions["short"],
+        },
+    }
+    passed_checks = sum(check["passed"] for check in checks.values())
+    qualified = passed_checks == len(checks)
+    if qualified:
+        status = "FORWARD-QUALIFIED RESEARCH CANDIDATE"
+    elif len(closed) < FORWARD_GATE_MIN_TRADES:
+        status = f"WAIT — NOT ENOUGH EVIDENCE ({len(closed)}/{FORWARD_GATE_MIN_TRADES} CLOSED)"
+    else:
+        status = "NOT FORWARD-QUALIFIED"
+    return {
+        "version": FORWARD_GATE_VERSION,
+        "status": status,
+        "qualified": qualified,
+        "passed_checks": passed_checks,
+        "total_checks": len(checks),
+        "progress_pct": round(min(len(closed) / FORWARD_GATE_MIN_TRADES, 1.0) * 100, 2),
+        "checks": checks,
+    }
+
+
 def _walk_forward_regime(
     candles: pd.DataFrame, start: pd.Timestamp, end: pd.Timestamp
 ) -> tuple[str, float]:
@@ -987,6 +1112,8 @@ def build_range_lab(
             }
         walk_forward = walk_forward_stability(candles, spec)
         robustness = robustness_analysis(candles, spec, walk_forward)
+        forward_paper = forward_paper_track(candles, spec, holdout_end)
+        forward_gate = forward_qualification_gate(candles, spec, forward_paper)
         result = {
             "spec": asdict(spec),
             "latest_range": _latest_range_snapshot(candles, spec),
@@ -999,7 +1126,8 @@ def build_range_lab(
             },
             "walk_forward": walk_forward,
             "robustness": robustness,
-            "forward_paper": forward_paper_track(candles, spec, holdout_end),
+            "forward_paper": forward_paper,
+            "forward_gate": forward_gate,
         }
         candidates.append(result)
 
@@ -1039,6 +1167,11 @@ def build_range_lab(
             or (holdout["profit_factor"] is not None and holdout["profit_factor"] > 1)
         )
     )
+    forward_qualified_keys = [
+        candidate["spec"]["key"]
+        for candidate in candidates
+        if candidate["forward_gate"]["qualified"]
+    ]
     data_through = candles.index[-1] + pd.Timedelta(hours=4)
     return {
         # Candle-derived rather than wall-clock-derived so a refresh with no
@@ -1125,6 +1258,21 @@ def build_range_lab(
             "mode": "candidate-level observation only; no real orders and no combined portfolio",
             "candidate_count": len(candidates),
             "validated_candidate_key": selected["spec"]["key"] if passed else None,
+        },
+        "forward_gate": {
+            "version": FORWARD_GATE_VERSION,
+            "frozen_at": "2026-11-06",
+            "status": "prospective qualification screen; research label only and no real orders",
+            "minimum_closed_trades": FORWARD_GATE_MIN_TRADES,
+            "minimum_half_trades": FORWARD_GATE_MIN_HALF_TRADES,
+            "minimum_direction_trades": FORWARD_GATE_MIN_DIRECTION_TRADES,
+            "minimum_base_and_stressed_profit_factor": FORWARD_GATE_MIN_PROFIT_FACTOR,
+            "maximum_drawdown_pct": FORWARD_GATE_MAX_DRAWDOWN_PCT,
+            "stressed_fee_per_side_pct": FORWARD_GATE_STRESSED_FEE_PER_SIDE * 100,
+            "stressed_slippage_per_side_pct": FORWARD_GATE_STRESSED_SLIPPAGE_PER_SIDE * 100,
+            "qualification_is_revocable": True,
+            "qualified_candidate_keys": forward_qualified_keys,
+            "promotion_effect": "none; qualification permits further research only and does not authorize orders or ETH replication",
         },
         "validation_leader_key": validation_leader["spec"]["key"],
         "selected_key": selected["spec"]["key"] if selected else None,

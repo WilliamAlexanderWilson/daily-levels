@@ -323,8 +323,10 @@ definition remained unrecovered at the end of its observed cohort.
 4. ~~Add long/short breakdowns, cost sensitivity, drawdown duration, and a
    minimum-sample warning.~~ Completed 2026-11-06; no definition passed the
    frozen robustness screen.
-5. Forward-paper-track any candidate that passes, with no real orders, before
-   considering it a live setup aid.
+5. ~~Forward-paper-track every frozen candidate and apply a preregistered
+   prospective qualification gate, with no real orders, before considering any
+   candidate a live setup aid.~~ Completed 2026-11-06; the tracking and gate
+   are live, but no candidate has qualified.
 6. Only after BTC survives that process, apply the same frozen methodology to
    ETH. SPY requires a separate market-hours and gap-aware design.
 
@@ -393,3 +395,19 @@ closes, but only after an initial state snapshot, only when the existing alert
 preference is enabled, and only once per event fingerprint. Such notices must
 say `paper observation`, not buy, sell, call, or signal. They are not a
 background monitoring service and place no order.
+
+### First implementation result
+
+The qualification logic and dashboard were implemented without changing the
+thresholds frozen at commit `64d8e58`. At the first generated artifact, all
+six candidates remained at 0/50 closed forward observations and 0/6 passed
+checks. `$5k–$10k`, `10%–20%`, and `Structure` each had one still-open paper
+observation. No candidate was forward-qualified, no real order was authorized,
+and the BTC result did not authorize ETH replication.
+
+The visible dashboard now keeps the selected candidate's 0/50 progress and all
+six checks above the collapsed historical diagnostics. While the page is open,
+it polls the artifact every five minutes. If the existing local alert setting
+is enabled, it can report a newly opened or closed paper observation once per
+fingerprint after a silent initial snapshot. Turning alerts off still advances
+the snapshot, so later reenabling does not replay old events.
