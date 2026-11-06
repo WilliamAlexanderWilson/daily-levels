@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-11-06T21:25:53.233721+00:00",
+  "generated_at_utc": "2026-11-06T23:42:02.762910+00:00",
   "trades": [
     {
       "signal_time": 1731513600,
@@ -168,9 +168,9 @@
       "entry_premium": 4.854101292523239,
       "exit_time": 1734710400,
       "exit_underlying": 590.33,
-      "exit_premium": 6.036066078387819,
+      "exit_premium": 6.036066078387876,
       "exit_reason": "target",
-      "pct_return": 0.24349817085299744
+      "pct_return": 0.24349817085300915
     },
     {
       "signal_time": 1734967200,
@@ -219,9 +219,9 @@
       "entry_premium": 3.416485834593459,
       "exit_time": 1736781000,
       "exit_underlying": 577.05,
-      "exit_premium": 3.0714141766202374,
+      "exit_premium": 3.0714141766202943,
       "exit_reason": "stop",
-      "pct_return": -0.10100192849600473
+      "pct_return": -0.10100192849598809
     },
     {
       "signal_time": 1737731700,
@@ -766,9 +766,9 @@
       "entry_premium": 3.226430885847094,
       "exit_time": 1752678900,
       "exit_underlying": 620.27,
-      "exit_premium": 2.1666779744426776,
+      "exit_premium": 2.166677974442706,
       "exit_reason": "stop",
-      "pct_return": -0.3284598210527544
+      "pct_return": -0.3284598210527456
     },
     {
       "signal_time": 1752681600,
@@ -1535,12 +1535,12 @@
       "entry_underlying": 680.38,
       "strike": 680.0,
       "expiry_date": "2025-12-22",
-      "entry_premium": 4.593536984096261,
+      "entry_premium": 4.593536984096204,
       "exit_time": 1766077500,
       "exit_underlying": 676.87,
       "exit_premium": 6.427242170066393,
       "exit_reason": "target",
-      "pct_return": 0.3991924289101806
+      "pct_return": 0.3991924289101979
     },
     {
       "signal_time": 1766588400,
@@ -1675,9 +1675,9 @@
       "entry_premium": 4.159283983413104,
       "exit_time": 1770223200,
       "exit_underlying": 685.45,
-      "exit_premium": 3.283779131658946,
+      "exit_premium": 3.283779131658889,
       "exit_reason": "stop",
-      "pct_return": -0.21049412717323518
+      "pct_return": -0.21049412717324886
     },
     {
       "signal_time": 1770736200,
