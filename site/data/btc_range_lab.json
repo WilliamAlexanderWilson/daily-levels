@@ -288,11 +288,11 @@
         "train": {
           "trades": 8,
           "win_rate_pct": 12.5,
-          "expectancy_pct": -2.8874,
-          "profit_factor": 0.14,
+          "expectancy_pct": -2.8773,
+          "profit_factor": 0.143,
           "profit_factor_infinite": false,
-          "total_return_pct": -21.11,
-          "max_drawdown_pct": 21.11
+          "total_return_pct": -21.05,
+          "max_drawdown_pct": 21.05
         },
         "validation": {
           "trades": 15,
@@ -1220,11 +1220,11 @@
         "train": {
           "trades": 37,
           "win_rate_pct": 37.84,
-          "expectancy_pct": -0.5037,
-          "profit_factor": 0.735,
+          "expectancy_pct": -0.5114,
+          "profit_factor": 0.731,
           "profit_factor_infinite": false,
-          "total_return_pct": -18.91,
-          "max_drawdown_pct": 20.6
+          "total_return_pct": -19.13,
+          "max_drawdown_pct": 20.81
         },
         "validation": {
           "trades": 29,

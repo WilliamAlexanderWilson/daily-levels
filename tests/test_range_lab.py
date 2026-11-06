@@ -75,6 +75,7 @@ def test_time_exit_charges_slippage_on_both_sides():
         max_hold_bars=1,
     )
     assert trade["reason"] == "time"
+    assert trade["exit_time"] == index[1].isoformat()
     assert trade["return_pct"] < -0.49
 
 

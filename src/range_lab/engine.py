@@ -187,7 +187,9 @@ def _run_trade(
     # A gap that opens beyond the invalidation is filled at that worse open.
     if (direction == "long" and entry >= target) or (direction == "short" and entry <= target):
         return {}, entry_index
-    end_index = min(len(candles) - 1, entry_index + max_hold_bars)
+    # The entry candle is holding bar one. A one-bar maximum therefore exits
+    # at that candle's close, not the following candle's close.
+    end_index = min(len(candles) - 1, entry_index + max_hold_bars - 1)
     exit_price = float(candles.iloc[end_index]["close"])
     reason = "time"
     exit_index = end_index
