@@ -24,7 +24,7 @@
     failureLevel: 74000,
     longWatchHigh: 62000,
     sourceDate: "2026-11-04",
-    sourceLabel: "Mathieu higher-timeframe framework",
+    sourceLabel: "William Wilson Range Desk · sourced macro range",
   });
 
   function midpoint(level) {

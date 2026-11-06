@@ -1,4 +1,4 @@
-# Range Desk — BTC, ETH & SPY decision dashboard
+# William Wilson's Range Desk — BTC, ETH & SPY decision dashboard
 
 A focused range-trading workspace. BTC's default screen is organized around
 Mathieu's November 4, 2026 higher-timeframe framework: a $60k floor, $80k
