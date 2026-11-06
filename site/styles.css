@@ -541,6 +541,8 @@ main {
   border-radius: 0 999px 999px 0;
 }
 
+.range-track.is-macro .range-zone { display: none; }
+
 .range-marker {
   position: absolute;
   left: 50%;

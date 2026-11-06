@@ -4,10 +4,12 @@ const {
   BTC_MACRO_RANGE,
   build,
   buildStrategyRange,
+  completedCloseAbove,
   patienceAlertFingerprint,
   patienceState,
   rangeZonePrices,
   recentBoundaryTest,
+  strategyTrackPosition,
 } = require("../site/range-decision.js");
 
 const levels = [
@@ -176,4 +178,31 @@ test("keeps a just-confirmed upper rejection eligible for the 3-of-3 gate", () =
   const decision = buildStrategyRange(79500, BTC_MACRO_RANGE, candles);
   assert.equal(decision.status, "short-watch");
   assert.equal(patienceState(decision, candles).isReady, true);
+});
+
+test("a candle confirming both macro boundaries produces WAIT", () => {
+  const candles = [
+    { time: 1, low: 71000, high: 83000, close: 79000 },
+    { time: 2, low: 78800, high: 79200, close: 79000 }, // forming: ignored
+  ];
+  const decision = buildStrategyRange(79000, BTC_MACRO_RANGE, candles);
+  assert.equal(decision.status, "wait");
+  assert.match(decision.title, /Conflicting boundary/);
+});
+
+test("macro summary track spans the floor through the reclaim", () => {
+  const decision = buildStrategyRange(75900);
+  assert.ok(Math.abs(strategyTrackPosition(decision, 75900) - ((75900 - 60000) / (82800 - 60000))) < 0.0001);
+  assert.equal(strategyTrackPosition(decision, 90000), 1);
+});
+
+test("reclaim acceptance requires a completed candle close", () => {
+  assert.equal(completedCloseAbove([
+    { time: 1, close: 82700 },
+    { time: 2, close: 84000 }, // forming: ignored
+  ], 82800), false);
+  assert.equal(completedCloseAbove([
+    { time: 1, close: 83000 },
+    { time: 2, close: 83100 }, // forming: ignored
+  ], 82800), true);
 });

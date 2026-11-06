@@ -87,6 +87,22 @@
     return { touched: false, confirmed: false, time: null, barsAgo: null, close: null };
   }
 
+  function latestCompletedCandle(candles) {
+    if (!Array.isArray(candles) || candles.length < 2) return null;
+    return candles[candles.length - 2] || null;
+  }
+
+  function completedCloseAbove(candles, price) {
+    const candle = latestCompletedCandle(candles);
+    return Boolean(candle && Number.isFinite(candle.close) && candle.close > price);
+  }
+
+  function strategyTrackPosition(decision, price) {
+    const range = decision && decision.strategyRange;
+    if (!range || !Number.isFinite(price) || !(range.reclaim > range.low)) return null;
+    return Math.max(0, Math.min(1, (price - range.low) / (range.reclaim - range.low)));
+  }
+
   function patienceState(decision, candles) {
     const hasLocation = decision && (decision.status === "long-watch" || decision.status === "short-watch");
     const boundary = hasLocation
@@ -207,7 +223,12 @@
     const recentSupportConfirmation = Boolean(supportTest && supportTest.confirmed && supportTest.barsAgo === 0);
     const recentResistanceConfirmation = Boolean(resistanceTest && resistanceTest.confirmed && resistanceTest.barsAgo === 0);
 
-    if (recentSupportConfirmation && price > range.supportHigh && price < range.high) {
+    if (recentSupportConfirmation && recentResistanceConfirmation) {
+      status = "wait";
+      label = "WAIT";
+      title = "Conflicting boundary candle — no directional edge";
+      summary = "The most recent completed candle crossed both decision support and the upper deviation. Do not let one unusually wide candle manufacture both a long and a short setup.";
+    } else if (recentSupportConfirmation && price > range.supportHigh && price < range.high) {
       status = "long-watch";
       label = "LONG WATCH";
       title = "Support reclaim confirmed — assess, do not chase";
@@ -339,6 +360,9 @@
     nearestBracket,
     scoreForLevel,
     recentBoundaryTest,
+    latestCompletedCandle,
+    completedCloseAbove,
+    strategyTrackPosition,
     patienceState,
     patienceAlertFingerprint,
     rangeZonePrices,

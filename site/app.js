@@ -1517,7 +1517,8 @@
       return;
     }
 
-    const bracketPct = decision.bracketPosition * 100;
+    const strategyTrackPosition = RangeDecision.strategyTrackPosition(decision, currentPrice);
+    const bracketPct = (strategyTrackPosition === null ? decision.bracketPosition : strategyTrackPosition) * 100;
     const macroText = decision.strategyRange
       ? `${decision.strategyRange.sourceLabel} · ${decision.strategyRange.sourceDate} · ${state.range.toUpperCase()} close gate`
       : decision.macroPosition === null
@@ -1535,6 +1536,11 @@
     document.getElementById("decision-position").textContent = decision.strategyRange
       ? `${Math.round(decision.macroPosition * 100)}% through $60k–$80k`
       : `${Math.round(bracketPct)}% through bracket`;
+    const decisionTrack = document.querySelector("#decision-range .range-track");
+    decisionTrack.classList.toggle("is-macro", Boolean(decision.strategyRange));
+    decisionTrack.style.background = decision.strategyRange
+      ? "linear-gradient(to right, color-mix(in srgb, var(--support) 48%, transparent) 0 8.77%, color-mix(in srgb, var(--flip) 20%, transparent) 8.77% 52.63%, color-mix(in srgb, var(--support) 48%, transparent) 52.63% 74.56%, color-mix(in srgb, var(--flip) 20%, transparent) 74.56% 87.72%, color-mix(in srgb, var(--resistance) 48%, transparent) 87.72% 100%)"
+      : "";
     document.getElementById("decision-marker").style.left = `${bracketPct}%`;
 
     if (decision.strategyRange) {
@@ -1542,17 +1548,32 @@
       if (state.range === "4h" && macroRangeFramedKey !== frameKey && candleSeries && activeCandles.length) {
         const recentBars = activeCandles.slice(-Math.max(1, (activeLevelsWindowDays || 60) * 6));
         const recentHigh = Math.max(...recentBars.map((candle) => candle.high));
+        const recentLow = Math.min(...recentBars.map((candle) => candle.low));
         const top = Math.max(decision.strategyRange.reclaim * 1.03, recentHigh * 1.02);
-        const bottom = decision.strategyRange.low * 0.98;
+        const bottom = Math.min(decision.strategyRange.low * 0.98, recentLow * 0.98);
         candleSeries.priceScale().setAutoScale(false);
         candleSeries.priceScale().setVisibleRange({ from: bottom, to: top });
         macroRangeFramedKey = frameKey;
       }
+      const visiblePriceRange = candleSeries && candleSeries.priceScale().getVisibleRange();
+      if (visiblePriceRange && currentPrice < decision.strategyRange.low * 0.98 && currentPrice < visiblePriceRange.from) {
+        candleSeries.priceScale().setVisibleRange({
+          from: currentPrice * 0.98,
+          to: visiblePriceRange.to,
+        });
+      }
       document.getElementById("decision-rr-label").textContent = "Higher-timeframe bias";
       document.getElementById("decision-support-label").textContent = "Decision support";
       document.getElementById("decision-resistance-label").textContent = "Bias-changing reclaim";
-      document.getElementById("decision-rr").textContent = currentPrice < decision.strategyRange.reclaim ? "LOWER < 82.8k" : "RECLAIMED > 82.8k";
-      document.getElementById("decision-rr-note").textContent = "framework bias; not a trade instruction";
+      const reclaimAccepted = RangeDecision.completedCloseAbove(activeCandles, decision.strategyRange.reclaim);
+      document.getElementById("decision-rr").textContent = currentPrice < decision.strategyRange.reclaim
+        ? "LOWER < 82.8k"
+        : reclaimAccepted
+          ? "ACCEPTED > 82.8k"
+          : "TESTING 82.8k";
+      document.getElementById("decision-rr-note").textContent = currentPrice >= decision.strategyRange.reclaim && !reclaimAccepted
+        ? `wait for a completed ${state.range.toUpperCase()} close`
+        : "framework bias; not a trade instruction";
       document.getElementById("decision-support-odds").textContent = "$72k–$77k";
       document.getElementById("decision-support-note").textContent = `loss of ~$${compactPrice(decision.strategyRange.failureLevel)} raises sub-$70k risk`;
       document.getElementById("decision-resistance-odds").textContent = "$82.8k";
