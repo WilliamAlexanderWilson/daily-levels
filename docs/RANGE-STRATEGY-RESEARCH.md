@@ -351,3 +351,45 @@ evidence threshold; it must not be inferred from one favorable result.
 
 The next objective is not to force a profitable-looking answer. It is to find
 whether a repeatable edge survives realistic costs and genuinely unseen data.
+
+## Frozen prospective qualification gate
+
+Frozen 2026-11-06 while every candidate still had zero closed forward-paper
+trades. Three definitions had open observations, but none had a known outcome.
+Version: `range-forward-gate-v1`.
+
+The gate evaluates each candidate separately using only its closed
+`range-rejection-v1` observations after the permanent `2026-11-06 04:00 UTC`
+boundary. Candidates are never pooled. Open and pending observations never
+enter metrics or sample counts.
+
+A candidate becomes a `forward-qualified research candidate` only while every
+one of these frozen requirements is true:
+
+1. At least 50 closed forward-paper trades.
+2. Base-cost expectancy is above zero and base-cost profit factor is at least
+   1.20.
+3. The exact same closed cohort, repriced at the already-frozen stressed costs
+   of 0.30% fee plus 0.10% slippage per side, retains expectancy above zero
+   and profit factor of at least 1.20. Signal, direction, entry time, exit
+   reason, and exit time may not change.
+4. Base-cost maximum compounded-equity drawdown is no greater than 20%.
+5. Split the full closed sample chronologically into an earlier half and a
+   later half; when the count is odd, the later half receives the extra trade.
+   Each half must contain at least 25 trades, have expectancy above zero, and
+   have profit factor above 1.
+6. At least 20 long and 20 short trades. Each direction must have expectancy
+   above zero and profit factor above 1 at base costs.
+
+The full sample is re-evaluated on every refresh. Qualification is revocable
+if later evidence makes any requirement fail. Passing does not mean proven,
+guaranteed profitable, or approved for real orders; it only permits further
+research and a separately authorized decision about ETH replication. No gate
+failure may be repaired by changing the frozen thresholds or discarding an
+unfavorable completed observation.
+
+The dashboard may notify the local browser when a paper observation opens or
+closes, but only after an initial state snapshot, only when the existing alert
+preference is enabled, and only once per event fingerprint. Such notices must
+say `paper observation`, not buy, sell, call, or signal. They are not a
+background monitoring service and place no order.
