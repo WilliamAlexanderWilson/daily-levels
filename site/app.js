@@ -926,6 +926,9 @@
           value: candle.volume,
           color: candle.close >= candle.open ? cssVar("--support") : cssVar("--resistance"),
         });
+        const activeIndex = activeCandles.findIndex((item) => item.time === candle.time);
+        if (activeIndex >= 0) activeCandles[activeIndex] = candle;
+        else activeCandles.push(candle);
         lastLiveUnixTime = candle.time;
         lastClose = candle.close;
       }
@@ -1112,6 +1115,7 @@
     document.getElementById("decision-title").textContent = "Building the current range read…";
     document.getElementById("decision-summary").textContent = "Waiting for price, levels, and historical context.";
     document.getElementById("decision-range").hidden = true;
+    document.getElementById("patience-gate").hidden = true;
     document.getElementById("decision-metrics").hidden = true;
   }
 
@@ -1122,9 +1126,54 @@
     document.getElementById("decision-title").textContent = "The range read could not be built";
     document.getElementById("decision-summary").textContent = message;
     document.getElementById("decision-range").hidden = true;
+    document.getElementById("patience-gate").hidden = true;
     document.getElementById("decision-metrics").hidden = true;
     document.getElementById("decision-caveat").textContent =
       "A fetch failure is not a trading signal. Retry later rather than filling the gap with an assumption.";
+  }
+
+  function setPatienceCondition(id, ready, detail) {
+    const element = document.getElementById(id);
+    element.classList.toggle("is-ready", ready);
+    element.querySelector("b").textContent = detail;
+  }
+
+  function renderPatienceGate(decision) {
+    const gate = document.getElementById("patience-gate");
+    gate.hidden = false;
+    const hasLocation = decision.status === "long-watch" || decision.status === "short-watch";
+    const boundary = decision.status === "long-watch" ? decision.support : decision.resistance;
+    const side = decision.status === "long-watch" ? "support" : "resistance";
+    const boundaryTest = hasLocation
+      ? RangeDecision.recentBoundaryTest(activeCandles, boundary, side)
+      : null;
+    const hasTouch = Boolean(boundaryTest && boundaryTest.touched);
+    const hasConfirmation = Boolean(boundaryTest && boundaryTest.confirmed);
+    const readyCount = [hasLocation, hasTouch, hasConfirmation].filter(Boolean).length;
+    const timeframeLabel = state.range === "1d" ? "Daily" : state.range.toUpperCase();
+
+    setPatienceCondition(
+      "patience-location",
+      hasLocation,
+      hasLocation ? `${decision.label.toLowerCase()} area` : "Middle of range"
+    );
+    setPatienceCondition(
+      "patience-touch",
+      hasTouch,
+      hasTouch ? `${boundary.name} hit ${boundaryTest.barsAgo === 0 ? `last ${timeframeLabel} close` : `${boundaryTest.barsAgo} ${timeframeLabel} bars ago`}` : hasLocation ? `Waiting for ${boundary.name}` : "No edge selected"
+    );
+    setPatienceCondition(
+      "patience-confirmation",
+      hasConfirmation,
+      hasConfirmation ? "Closed back inside" : hasTouch ? "No confirming close" : "Boundary not tested"
+    );
+
+    document.getElementById("patience-count").textContent = `${readyCount} / 3 ready`;
+    let instruction = "Price is in the middle. Patience is the trade—wait for an edge.";
+    if (hasLocation && !hasTouch) instruction = `Do nothing until price actually tests ${boundary.name}.`;
+    if (hasTouch && !hasConfirmation) instruction = "The boundary was hit, but the candle did not close back inside. Do not front-run confirmation.";
+    if (hasConfirmation) instruction = "Location, test, and close are visible. Review the stop and size; this is a setup to assess, not an automatic order.";
+    document.getElementById("patience-instruction").textContent = instruction;
   }
 
   function renderRangeDecision(levels, scorecard, currentPrice) {
@@ -1134,6 +1183,7 @@
     document.getElementById("decision-title").textContent = decision.title;
     document.getElementById("decision-summary").textContent = decision.summary;
     document.getElementById("decision-range").hidden = !decision.support || !decision.resistance;
+    renderPatienceGate(decision);
     document.getElementById("decision-metrics").hidden = false;
     document.getElementById("decision-rr-label").textContent = "Range geometry";
     document.getElementById("decision-support-label").textContent = "Support history";
@@ -1152,8 +1202,8 @@
 
     const bracketPct = decision.bracketPosition * 100;
     const macroText = decision.macroPosition === null
-      ? "Immediate support/resistance bracket"
-      : `Immediate bracket · ${Math.round(decision.macroPosition * 100)}% through the 60-day range`;
+      ? `Immediate support/resistance bracket · ${state.range.toUpperCase()} close gate`
+      : `Immediate bracket · ${Math.round(decision.macroPosition * 100)}% through 60-day range · ${state.range.toUpperCase()} close gate`;
     document.getElementById("decision-method").textContent = macroText;
     document.getElementById("decision-support").textContent = levelLabelWithPrice(decision.support);
     document.getElementById("decision-resistance").textContent = levelLabelWithPrice(decision.resistance);
@@ -1190,6 +1240,7 @@
     document.getElementById("decision-summary").textContent =
       "Every tested trend/doji parameter was profitable on the first half and unprofitable on the untouched second half. The honest current read is observe, not buy or short.";
     document.getElementById("decision-range").hidden = true;
+    document.getElementById("patience-gate").hidden = true;
     document.getElementById("decision-metrics").hidden = false;
     document.getElementById("decision-rr-label").textContent = "Latest pattern";
     document.getElementById("decision-support-label").textContent = "Full sample";

@@ -555,6 +555,100 @@ main {
   transition: left 220ms ease, background 220ms ease;
 }
 
+.patience-gate {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.55fr) minmax(0, 1.45fr);
+  gap: 1rem;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--decision-color) 7%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--decision-color) 22%, var(--border));
+  border-radius: 12px;
+}
+
+.patience-gate-copy strong {
+  display: block;
+  margin-top: 0.18rem;
+  color: var(--decision-color);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.patience-gate-copy p {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.patience-conditions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.patience-conditions li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.patience-conditions li > i {
+  display: grid;
+  width: 1.35rem;
+  height: 1.35rem;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.patience-conditions li > span,
+.patience-conditions li > span strong,
+.patience-conditions li > span small,
+.patience-conditions li > b {
+  display: block;
+  min-width: 0;
+}
+
+.patience-conditions li > span strong { font-size: 0.78rem; }
+.patience-conditions li > span small {
+  color: var(--text-muted);
+  font-size: 0.67rem;
+  line-height: 1.3;
+}
+
+.patience-conditions li > b {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  font-size: 0.67rem;
+  font-weight: 700;
+}
+
+.patience-conditions li.is-ready {
+  border-color: color-mix(in srgb, var(--decision-color) 48%, var(--border));
+  background: color-mix(in srgb, var(--decision-color) 8%, var(--surface));
+}
+
+.patience-conditions li.is-ready > i {
+  color: #fff;
+  border-color: var(--decision-color);
+  background: var(--decision-color);
+}
+
+.patience-conditions li.is-ready > b { color: var(--decision-color); }
+
 .decision-metrics {
   grid-column: 1 / -1;
   display: grid;
@@ -1234,6 +1328,12 @@ tr.low-confidence-row {
     border-radius: 14px;
   }
   .decision-metrics {
+    grid-template-columns: 1fr;
+  }
+  .patience-gate {
+    grid-template-columns: 1fr;
+  }
+  .patience-conditions {
     grid-template-columns: 1fr;
   }
   .range-label-row {

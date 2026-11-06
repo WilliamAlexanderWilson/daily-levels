@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { build } = require("../site/range-decision.js");
+const { build, recentBoundaryTest } = require("../site/range-decision.js");
 
 const levels = [
   { name: "Range low (60d)", price_low: 80, price_high: 80 },
@@ -41,4 +41,26 @@ test("does not manufacture a setup outside the known level map", () => {
   assert.equal(decision.status, "wait");
   assert.equal(decision.support, null);
   assert.match(decision.summary, /outside the known level map/);
+});
+
+test("requires a completed support touch to close back above the zone", () => {
+  const candles = [
+    { time: 1, low: 91, high: 95, close: 93 },
+    { time: 2, low: 89, high: 94, close: 91 },
+    { time: 3, low: 88, high: 93, close: 89 }, // forming: ignored
+  ];
+  const testResult = recentBoundaryTest(candles, levels[1], "support");
+  assert.equal(testResult.touched, true);
+  assert.equal(testResult.confirmed, true);
+  assert.equal(testResult.time, 2);
+});
+
+test("reports a resistance touch without confirmation when it closes above", () => {
+  const candles = [
+    { time: 1, low: 96, high: 101, close: 101 },
+    { time: 2, low: 99, high: 102, close: 101 },
+  ];
+  const testResult = recentBoundaryTest(candles, levels[2], "resistance");
+  assert.equal(testResult.touched, true);
+  assert.equal(testResult.confirmed, false);
 });

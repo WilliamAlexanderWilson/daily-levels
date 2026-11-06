@@ -46,6 +46,31 @@
     return (levels || []).find((level) => level.name.split(" + ").some((name) => name.startsWith(token))) || null;
   }
 
+  function recentBoundaryTest(candles, level, side, lookbackBars = 20) {
+    if (!Array.isArray(candles) || candles.length < 2 || !level) return null;
+    // Kraken's last row is the still-forming candle. Exclude it so the UI
+    // never calls an unfinished wick/close a confirmed rejection.
+    const completed = candles.slice(0, -1);
+    const start = Math.max(0, completed.length - lookbackBars);
+    for (let index = completed.length - 1; index >= start; index -= 1) {
+      const candle = completed[index];
+      if (![candle.low, candle.high, candle.close].every(Number.isFinite)) continue;
+      const touched = candle.low <= level.price_high && candle.high >= level.price_low;
+      if (!touched) continue;
+      const confirmed = side === "support"
+        ? candle.close > level.price_high
+        : candle.close < level.price_low;
+      return {
+        touched: true,
+        confirmed,
+        time: candle.time,
+        barsAgo: completed.length - 1 - index,
+        close: candle.close,
+      };
+    }
+    return { touched: false, confirmed: false, time: null, barsAgo: null, close: null };
+  }
+
   function emptyDecision(reason) {
     return {
       status: "wait",
@@ -131,5 +156,5 @@
     };
   }
 
-  return { EDGE_FRACTION, build, midpoint, nearestBracket, scoreForLevel };
+  return { EDGE_FRACTION, build, midpoint, nearestBracket, scoreForLevel, recentBoundaryTest };
 });

@@ -152,6 +152,16 @@ means entry confirmation. The brief shows the exact bracket, boundary
 reward/risk, and existing historical hold-rate evidence. It refuses to
 create a setup outside a complete bracket.
 
+Follow-up the same day: the user specifically wanted the page to reinforce
+patience and show what happened at the exact range boundary. Added a
+three-condition **Patience gate**. It remains incomplete until (1) price is
+in the outer 35% watch area, (2) a completed candle intersects the selected
+support/resistance zone, and (3) that same candle closes back inside the
+bracket. `recentBoundaryTest()` deliberately drops the final still-forming
+candle before checking, so an intrabar wick cannot flash a false completed
+confirmation. This is a transparent confirmation proxy, not a backtested
+edge; 3/3 says “setup to assess,” never “place the trade.”
+
 SPY stays separate. The 2026-10-11 holdout result remains controlling:
 every one of 24 parameter combinations was profitable in the first half
 and unprofitable in the untouched second half. The default SPY brief says

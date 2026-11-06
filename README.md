@@ -30,6 +30,19 @@ nearest support/resistance bracket is a watch area; the middle 30% is
 `WAIT`. That is a geometry filter, not a backtested claim of edge. See
 `site/range-decision.js` and `tests/test_range_decision.js`.
 
+The **Patience gate** then requires three visible facts before calling the
+chart a setup worth reviewing:
+
+1. Price is in the outer watch area, not the middle.
+2. A completed candle actually traded through the selected support or
+   resistance boundary.
+3. That completed candle closed back inside the bracket (above support for
+   a long watch, below resistance for a short watch).
+
+The still-forming candle is always excluded. All three conditions produce
+“setup to assess,” never an automatic order; stop placement, size, and the
+trader's own confirmation remain separate decisions.
+
 ## How it works
 
 1. A GitHub Action runs `src/run.py` twice a day (10:00 and 11:00 UTC); the
