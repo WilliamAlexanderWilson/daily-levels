@@ -6,6 +6,7 @@ from src.range_lab.engine import (
     RangeSpec,
     _metrics,
     _paper_trade,
+    _run_runner_trade,
     _run_trade,
     backtest_spec,
     build_range_lab,
@@ -163,6 +164,108 @@ def test_trade_fees_scale_exit_fee_with_exit_notional():
     result = _trade_return("long", 100.0, 110.0)
     expected = 0.10 - FEE_PER_SIDE - (FEE_PER_SIDE * 1.10)
     assert result == expected
+
+
+def test_runner_trade_fills_midpoint_and_opposite_edge_for_long():
+    index = pd.date_range(datetime(2026, 1, 1, tzinfo=timezone.utc), periods=3, freq="4h")
+    candles = pd.DataFrame(
+        {
+            "open": [95.0, 95.0, 100.0],
+            "high": [96.0, 111.0, 101.0],
+            "low": [94.0, 94.0, 99.0],
+            "close": [95.0, 110.0, 100.0],
+            "volume": [1.0, 1.0, 1.0],
+        },
+        index=index,
+    )
+    trade, exit_index = _run_runner_trade(
+        candles,
+        entry_index=1,
+        direction="long",
+        range_state={"low": 90.0, "high": 110.0, "midpoint": 100.0, "atr": 1.0},
+        max_hold_bars=2,
+    )
+    assert exit_index == 1
+    assert trade["reason"] == "runner"
+    assert [leg["reason"] for leg in trade["legs"]] == ["midpoint", "runner"]
+    assert [leg["size_pct"] for leg in trade["legs"]] == [50.0, 50.0]
+    assert trade["return_pct"] > 0
+    expected_weighted_return = sum(leg["return_pct"] * 0.5 for leg in trade["legs"])
+    assert abs(trade["return_pct"] - expected_weighted_return) < 0.0001
+
+
+def test_runner_trade_fills_midpoint_and_opposite_edge_for_short():
+    index = pd.date_range(datetime(2026, 1, 1, tzinfo=timezone.utc), periods=3, freq="4h")
+    candles = pd.DataFrame(
+        {
+            "open": [105.0, 105.0, 100.0],
+            "high": [106.0, 106.0, 101.0],
+            "low": [104.0, 89.0, 99.0],
+            "close": [105.0, 90.0, 100.0],
+            "volume": [1.0, 1.0, 1.0],
+        },
+        index=index,
+    )
+    trade, _ = _run_runner_trade(
+        candles,
+        entry_index=1,
+        direction="short",
+        range_state={"low": 90.0, "high": 110.0, "midpoint": 100.0, "atr": 1.0},
+        max_hold_bars=2,
+    )
+    assert trade["reason"] == "runner"
+    assert [leg["reason"] for leg in trade["legs"]] == ["midpoint", "runner"]
+    assert trade["return_pct"] > 0
+
+
+def test_runner_trade_resolves_same_bar_stop_before_targets():
+    index = pd.date_range(datetime(2026, 1, 1, tzinfo=timezone.utc), periods=3, freq="4h")
+    candles = pd.DataFrame(
+        {
+            "open": [95.0, 95.0, 100.0],
+            "high": [96.0, 111.0, 101.0],
+            "low": [94.0, 89.0, 99.0],
+            "close": [95.0, 100.0, 100.0],
+            "volume": [1.0, 1.0, 1.0],
+        },
+        index=index,
+    )
+    trade, _ = _run_runner_trade(
+        candles,
+        entry_index=1,
+        direction="long",
+        range_state={"low": 90.0, "high": 110.0, "midpoint": 100.0, "atr": 1.0},
+        max_hold_bars=2,
+    )
+    assert trade["reason"] == "stop"
+    assert len(trade["legs"]) == 1
+    assert trade["legs"][0]["reason"] == "stop"
+    assert trade["legs"][0]["size_pct"] == 100.0
+
+
+def test_runner_trade_keeps_original_stop_after_midpoint():
+    index = pd.date_range(datetime(2026, 1, 1, tzinfo=timezone.utc), periods=4, freq="4h")
+    candles = pd.DataFrame(
+        {
+            "open": [95.0, 95.0, 99.0, 100.0],
+            "high": [96.0, 101.0, 100.0, 101.0],
+            "low": [94.0, 94.0, 89.0, 99.0],
+            "close": [95.0, 100.0, 90.0, 100.0],
+            "volume": [1.0] * 4,
+        },
+        index=index,
+    )
+    trade, exit_index = _run_runner_trade(
+        candles,
+        entry_index=1,
+        direction="long",
+        range_state={"low": 90.0, "high": 110.0, "midpoint": 100.0, "atr": 1.0},
+        max_hold_bars=3,
+    )
+    assert exit_index == 2
+    assert trade["reason"] == "midpoint_then_stop"
+    assert [leg["reason"] for leg in trade["legs"]] == ["midpoint", "stop"]
+    assert trade["legs"][1]["exit"] < trade["entry"]
 
 
 def test_forward_paper_trade_stays_open_until_full_holding_window():

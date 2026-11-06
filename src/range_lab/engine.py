@@ -22,6 +22,7 @@ TRAIN_END = pd.Timestamp("2024-01-01T00:00:00Z")
 VALIDATION_END = pd.Timestamp("2025-01-01T00:00:00Z")
 HOLDOUT_END = pd.Timestamp("2026-11-06T04:00:00Z")
 PAPER_TRACKING_VERSION = "range-rejection-v1"
+EXIT_EXPERIMENT_VERSION = "range-exit-runner-v1"
 
 
 @dataclass(frozen=True)
@@ -232,6 +233,111 @@ def _run_trade(
     }, exit_index
 
 
+def _run_runner_trade(
+    candles: pd.DataFrame,
+    entry_index: int,
+    direction: str,
+    range_state: dict,
+    max_hold_bars: int,
+) -> tuple[dict, int]:
+    """Run the frozen 50%-midpoint / 50%-opposite-edge comparison."""
+    raw_entry = float(candles.iloc[entry_index]["open"])
+    entry = raw_entry * (1 + SLIPPAGE_PER_SIDE if direction == "long" else 1 - SLIPPAGE_PER_SIDE)
+    midpoint = range_state["midpoint"]
+    runner_target = range_state["high"] if direction == "long" else range_state["low"]
+    stop = (
+        range_state["low"] - STOP_ATR_MULTIPLE * range_state["atr"]
+        if direction == "long"
+        else range_state["high"] + STOP_ATR_MULTIPLE * range_state["atr"]
+    )
+    if (direction == "long" and entry >= midpoint) or (direction == "short" and entry <= midpoint):
+        return {}, entry_index
+
+    end_index = min(len(candles) - 1, entry_index + max_hold_bars - 1)
+    midpoint_filled = False
+    remaining = 1.0
+    legs: list[dict] = []
+    weighted_return_parts: list[float] = []
+    weighted_exit_parts: list[float] = []
+    exit_index = end_index
+
+    def add_leg(size: float, raw_exit: float, reason: str, cursor: int) -> None:
+        exit_price = raw_exit * (
+            1 - SLIPPAGE_PER_SIDE if direction == "long" else 1 + SLIPPAGE_PER_SIDE
+        )
+        leg_return = _trade_return(direction, entry, exit_price)
+        weighted_return_parts.append(size * leg_return)
+        weighted_exit_parts.append(size * exit_price)
+        legs.append({
+            "size_pct": round(size * 100, 2),
+            "reason": reason,
+            "exit_time": candles.index[cursor].isoformat(),
+            "exit": round(exit_price, 2),
+            "return_pct": round(leg_return * 100, 4),
+        })
+
+    for cursor in range(entry_index, end_index + 1):
+        bar = candles.iloc[cursor]
+        stop_hit = bar["low"] <= stop if direction == "long" else bar["high"] >= stop
+        midpoint_hit = bar["high"] >= midpoint if direction == "long" else bar["low"] <= midpoint
+        runner_hit = (
+            bar["high"] >= runner_target if direction == "long" else bar["low"] <= runner_target
+        )
+
+        # Pessimistic ordering: any stop/target collision closes all remaining
+        # size at the stop before crediting either favorable target.
+        if stop_hit:
+            raw_stop = min(stop, float(bar["open"])) if direction == "long" else max(stop, float(bar["open"]))
+            add_leg(remaining, raw_stop, "stop", cursor)
+            remaining = 0.0
+            exit_index = cursor
+            break
+
+        if not midpoint_filled and midpoint_hit:
+            add_leg(0.5, midpoint, "midpoint", cursor)
+            midpoint_filled = True
+            remaining = 0.5
+        if midpoint_filled and runner_hit:
+            add_leg(remaining, runner_target, "runner", cursor)
+            remaining = 0.0
+            exit_index = cursor
+            break
+
+    if remaining:
+        add_leg(remaining, float(candles.iloc[end_index]["close"]), "time", end_index)
+        exit_index = end_index
+
+    net_return = sum(weighted_return_parts)
+    weighted_exit = sum(weighted_exit_parts)
+    leg_reasons = [leg["reason"] for leg in legs]
+    if "runner" in leg_reasons:
+        reason = "runner"
+    elif midpoint_filled and "stop" in leg_reasons:
+        reason = "midpoint_then_stop"
+    elif midpoint_filled and "time" in leg_reasons:
+        reason = "midpoint_then_time"
+    else:
+        reason = leg_reasons[-1]
+    risk_fraction = abs(entry - stop) / entry + (2 * FEE_PER_SIDE)
+    return {
+        "direction": direction,
+        "signal_time": candles.index[entry_index - 1].isoformat(),
+        "entry_time": candles.index[entry_index].isoformat(),
+        "exit_time": candles.index[exit_index].isoformat(),
+        "entry": round(entry, 2),
+        "exit": round(weighted_exit, 2),
+        "stop": round(stop, 2),
+        "midpoint_target": round(midpoint, 2),
+        "runner_target": round(runner_target, 2),
+        "range_low": round(range_state["low"], 2),
+        "range_high": round(range_state["high"], 2),
+        "reason": reason,
+        "legs": legs,
+        "return_pct": round(net_return * 100, 4),
+        "r_multiple": round(net_return / risk_fraction, 4) if risk_fraction else 0.0,
+    }, exit_index
+
+
 def backtest_spec(
     candles: pd.DataFrame,
     spec: RangeSpec,
@@ -252,6 +358,37 @@ def backtest_spec(
             cursor += 1
             continue
         trade, exit_index = _run_trade(candles, cursor + 1, direction, state, spec.lookback_bars)
+        if trade:
+            trades.append(trade)
+            cursor = exit_index + 1
+        else:
+            cursor += 1
+    return trades
+
+
+def backtest_runner_spec(
+    candles: pd.DataFrame,
+    spec: RangeSpec,
+    start: pd.Timestamp | None = None,
+    end: pd.Timestamp | None = None,
+) -> list[dict]:
+    """Replay the preregistered runner without altering the baseline path."""
+    candles = candles.sort_index()
+    if end is not None:
+        candles = candles[candles.index < end]
+    atr = _true_range(candles).rolling(14).mean()
+    trades: list[dict] = []
+    period_start_index = int(candles.index.searchsorted(start)) if start is not None else 0
+    cursor = max(spec.lookback_bars, 15, period_start_index)
+    while cursor < len(candles) - 1:
+        state = _range_at(candles, cursor, spec, atr)
+        direction = _signal(candles.iloc[cursor], state) if state else None
+        if not direction:
+            cursor += 1
+            continue
+        trade, exit_index = _run_runner_trade(
+            candles, cursor + 1, direction, state, spec.lookback_bars
+        )
         if trade:
             trades.append(trade)
             cursor = exit_index + 1
@@ -460,15 +597,45 @@ def build_range_lab(
             name: backtest_spec(candles, spec, start=start, end=end)
             for name, (start, end) in periods.items()
         }
+        runner_trades_by_period = {
+            name: backtest_runner_spec(candles, spec, start=start, end=end)
+            for name, (start, end) in periods.items()
+        }
         trades = [trade for name in periods for trade in trades_by_period[name]]
+        baseline_metrics = {name: _metrics(trades_by_period[name]) for name in periods}
+        runner_metrics = {name: _metrics(runner_trades_by_period[name]) for name in periods}
+        deltas = {}
+        for name in periods:
+            baseline_expectancy = baseline_metrics[name]["expectancy_pct"]
+            runner_expectancy = runner_metrics[name]["expectancy_pct"]
+            deltas[name] = {
+                "trades": runner_metrics[name]["trades"] - baseline_metrics[name]["trades"],
+                "expectancy_pct": (
+                    round(runner_expectancy - baseline_expectancy, 4)
+                    if runner_expectancy is not None and baseline_expectancy is not None
+                    else None
+                ),
+                "max_drawdown_pct": (
+                    round(
+                        runner_metrics[name]["max_drawdown_pct"]
+                        - baseline_metrics[name]["max_drawdown_pct"],
+                        2,
+                    )
+                    if runner_metrics[name]["max_drawdown_pct"] is not None
+                    and baseline_metrics[name]["max_drawdown_pct"] is not None
+                    else None
+                ),
+            }
         result = {
             "spec": asdict(spec),
             "latest_range": _latest_range_snapshot(candles, spec),
-            "metrics": {
-                name: _metrics(trades_by_period[name])
-                for name in periods
-            },
+            "metrics": baseline_metrics,
             "recent_trades": trades[-12:],
+            "exit_comparison": {
+                "baseline": baseline_metrics,
+                "runner": runner_metrics,
+                "runner_minus_baseline": deltas,
+            },
             "forward_paper": forward_paper_track(candles, spec, holdout_end),
         }
         candidates.append(result)
@@ -538,6 +705,15 @@ def build_range_lab(
             "exit": "range midpoint, stop beyond boundary by 0.35 ATR, or time exit",
             "intrabar": "stop wins if stop and target occur in the same candle",
             "minimum_edge_touches": MIN_EDGE_TOUCHES,
+        },
+        "exit_experiment": {
+            "version": EXIT_EXPERIMENT_VERSION,
+            "frozen_at": "2026-11-06",
+            "status": "exploratory historical sensitivity; not an untouched holdout or selection rule",
+            "baseline": "100% at midpoint",
+            "runner": "50% at midpoint; 50% at opposite boundary; original stop unchanged",
+            "costs": "same fee and slippage per side, weighted by leg size",
+            "intrabar": "stop wins for all remaining size when stop and an unfilled target share a candle",
         },
         "forward_tracking": {
             "version": PAPER_TRACKING_VERSION,

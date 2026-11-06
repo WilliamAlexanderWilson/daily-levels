@@ -25,6 +25,15 @@
     "intrabar": "stop wins if stop and target occur in the same candle",
     "minimum_edge_touches": 2
   },
+  "exit_experiment": {
+    "version": "range-exit-runner-v1",
+    "frozen_at": "2026-11-06",
+    "status": "exploratory historical sensitivity; not an untouched holdout or selection rule",
+    "baseline": "100% at midpoint",
+    "runner": "50% at midpoint; 50% at opposite boundary; original stop unchanged",
+    "costs": "same fee and slippage per side, weighted by leg size",
+    "intrabar": "stop wins for all remaining size when stop and an unfilled target share a candle"
+  },
   "forward_tracking": {
     "version": "range-rejection-v1",
     "frozen_at": "2026-11-06T04:00:00+00:00",
@@ -270,6 +279,83 @@
           "r_multiple": 0.8951
         }
       ],
+      "exit_comparison": {
+        "baseline": {
+          "train": {
+            "trades": 26,
+            "win_rate_pct": 38.46,
+            "expectancy_pct": -0.2184,
+            "profit_factor": 0.852,
+            "profit_factor_infinite": false,
+            "total_return_pct": -6.55,
+            "max_drawdown_pct": 14.34
+          },
+          "validation": {
+            "trades": 0,
+            "win_rate_pct": null,
+            "expectancy_pct": null,
+            "profit_factor": null,
+            "profit_factor_infinite": false,
+            "total_return_pct": null,
+            "max_drawdown_pct": null
+          },
+          "holdout": {
+            "trades": 2,
+            "win_rate_pct": 100.0,
+            "expectancy_pct": 1.1763,
+            "profit_factor": null,
+            "profit_factor_infinite": true,
+            "total_return_pct": 2.37,
+            "max_drawdown_pct": 0.0
+          }
+        },
+        "runner": {
+          "train": {
+            "trades": 21,
+            "win_rate_pct": 28.57,
+            "expectancy_pct": -1.0367,
+            "profit_factor": 0.403,
+            "profit_factor_infinite": false,
+            "total_return_pct": -20.11,
+            "max_drawdown_pct": 20.11
+          },
+          "validation": {
+            "trades": 0,
+            "win_rate_pct": null,
+            "expectancy_pct": null,
+            "profit_factor": null,
+            "profit_factor_infinite": false,
+            "total_return_pct": null,
+            "max_drawdown_pct": null
+          },
+          "holdout": {
+            "trades": 1,
+            "win_rate_pct": 0.0,
+            "expectancy_pct": -0.3646,
+            "profit_factor": 0.0,
+            "profit_factor_infinite": false,
+            "total_return_pct": -0.36,
+            "max_drawdown_pct": 0.36
+          }
+        },
+        "runner_minus_baseline": {
+          "train": {
+            "trades": -5,
+            "expectancy_pct": -0.8183,
+            "max_drawdown_pct": 5.77
+          },
+          "validation": {
+            "trades": 0,
+            "expectancy_pct": null,
+            "max_drawdown_pct": null
+          },
+          "holdout": {
+            "trades": -1,
+            "expectancy_pct": -1.5409,
+            "max_drawdown_pct": 0.36
+          }
+        }
+      },
       "forward_paper": {
         "metrics": {
           "trades": 0,
@@ -517,6 +603,83 @@
           "r_multiple": -1.0174
         }
       ],
+      "exit_comparison": {
+        "baseline": {
+          "train": {
+            "trades": 8,
+            "win_rate_pct": 12.5,
+            "expectancy_pct": -2.8773,
+            "profit_factor": 0.143,
+            "profit_factor_infinite": false,
+            "total_return_pct": -21.05,
+            "max_drawdown_pct": 21.05
+          },
+          "validation": {
+            "trades": 15,
+            "win_rate_pct": 13.33,
+            "expectancy_pct": -2.0297,
+            "profit_factor": 0.161,
+            "profit_factor_infinite": false,
+            "total_return_pct": -26.72,
+            "max_drawdown_pct": 29.54
+          },
+          "holdout": {
+            "trades": 25,
+            "win_rate_pct": 40.0,
+            "expectancy_pct": -0.4916,
+            "profit_factor": 0.677,
+            "profit_factor_infinite": false,
+            "total_return_pct": -12.4,
+            "max_drawdown_pct": 12.69
+          }
+        },
+        "runner": {
+          "train": {
+            "trades": 8,
+            "win_rate_pct": 12.5,
+            "expectancy_pct": -2.8773,
+            "profit_factor": 0.143,
+            "profit_factor_infinite": false,
+            "total_return_pct": -21.05,
+            "max_drawdown_pct": 21.05
+          },
+          "validation": {
+            "trades": 14,
+            "win_rate_pct": 7.14,
+            "expectancy_pct": -2.4321,
+            "profit_factor": 0.021,
+            "profit_factor_infinite": false,
+            "total_return_pct": -29.23,
+            "max_drawdown_pct": 29.74
+          },
+          "holdout": {
+            "trades": 19,
+            "win_rate_pct": 31.58,
+            "expectancy_pct": 0.2926,
+            "profit_factor": 1.192,
+            "profit_factor_infinite": false,
+            "total_return_pct": 4.24,
+            "max_drawdown_pct": 11.19
+          }
+        },
+        "runner_minus_baseline": {
+          "train": {
+            "trades": 0,
+            "expectancy_pct": 0.0,
+            "max_drawdown_pct": 0.0
+          },
+          "validation": {
+            "trades": -1,
+            "expectancy_pct": -0.4024,
+            "max_drawdown_pct": 0.2
+          },
+          "holdout": {
+            "trades": -6,
+            "expectancy_pct": 0.7842,
+            "max_drawdown_pct": -1.5
+          }
+        }
+      },
       "forward_paper": {
         "metrics": {
           "trades": 0,
@@ -776,6 +939,83 @@
           "r_multiple": -1.0216
         }
       ],
+      "exit_comparison": {
+        "baseline": {
+          "train": {
+            "trades": 16,
+            "win_rate_pct": 37.5,
+            "expectancy_pct": -0.7135,
+            "profit_factor": 0.475,
+            "profit_factor_infinite": false,
+            "total_return_pct": -11.09,
+            "max_drawdown_pct": 16.01
+          },
+          "validation": {
+            "trades": 3,
+            "win_rate_pct": 0.0,
+            "expectancy_pct": -2.1872,
+            "profit_factor": 0.0,
+            "profit_factor_infinite": false,
+            "total_return_pct": -6.42,
+            "max_drawdown_pct": 6.42
+          },
+          "holdout": {
+            "trades": 35,
+            "win_rate_pct": 31.43,
+            "expectancy_pct": -0.7624,
+            "profit_factor": 0.44,
+            "profit_factor_infinite": false,
+            "total_return_pct": -23.98,
+            "max_drawdown_pct": 25.19
+          }
+        },
+        "runner": {
+          "train": {
+            "trades": 14,
+            "win_rate_pct": 28.57,
+            "expectancy_pct": -0.7567,
+            "profit_factor": 0.515,
+            "profit_factor_infinite": false,
+            "total_return_pct": -10.42,
+            "max_drawdown_pct": 13.72
+          },
+          "validation": {
+            "trades": 3,
+            "win_rate_pct": 0.0,
+            "expectancy_pct": -2.1872,
+            "profit_factor": 0.0,
+            "profit_factor_infinite": false,
+            "total_return_pct": -6.42,
+            "max_drawdown_pct": 6.42
+          },
+          "holdout": {
+            "trades": 30,
+            "win_rate_pct": 13.33,
+            "expectancy_pct": -0.8932,
+            "profit_factor": 0.375,
+            "profit_factor_infinite": false,
+            "total_return_pct": -24.11,
+            "max_drawdown_pct": 25.33
+          }
+        },
+        "runner_minus_baseline": {
+          "train": {
+            "trades": -2,
+            "expectancy_pct": -0.0432,
+            "max_drawdown_pct": -2.29
+          },
+          "validation": {
+            "trades": 0,
+            "expectancy_pct": 0.0,
+            "max_drawdown_pct": 0.0
+          },
+          "holdout": {
+            "trades": -5,
+            "expectancy_pct": -0.1308,
+            "max_drawdown_pct": 0.14
+          }
+        }
+      },
       "forward_paper": {
         "metrics": {
           "trades": 0,
@@ -1023,6 +1263,83 @@
           "r_multiple": 1.3858
         }
       ],
+      "exit_comparison": {
+        "baseline": {
+          "train": {
+            "trades": 23,
+            "win_rate_pct": 39.13,
+            "expectancy_pct": -0.3659,
+            "profit_factor": 0.802,
+            "profit_factor_infinite": false,
+            "total_return_pct": -9.32,
+            "max_drawdown_pct": 18.81
+          },
+          "validation": {
+            "trades": 23,
+            "win_rate_pct": 13.04,
+            "expectancy_pct": -2.0787,
+            "profit_factor": 0.183,
+            "profit_factor_infinite": false,
+            "total_return_pct": -38.7,
+            "max_drawdown_pct": 41.82
+          },
+          "holdout": {
+            "trades": 34,
+            "win_rate_pct": 41.18,
+            "expectancy_pct": -0.2587,
+            "profit_factor": 0.863,
+            "profit_factor_infinite": false,
+            "total_return_pct": -10.45,
+            "max_drawdown_pct": 21.54
+          }
+        },
+        "runner": {
+          "train": {
+            "trades": 18,
+            "win_rate_pct": 38.89,
+            "expectancy_pct": 0.1218,
+            "profit_factor": 1.062,
+            "profit_factor_infinite": false,
+            "total_return_pct": 0.22,
+            "max_drawdown_pct": 13.01
+          },
+          "validation": {
+            "trades": 20,
+            "win_rate_pct": 5.0,
+            "expectancy_pct": -2.6775,
+            "profit_factor": 0.013,
+            "profit_factor_infinite": false,
+            "total_return_pct": -41.96,
+            "max_drawdown_pct": 42.38
+          },
+          "holdout": {
+            "trades": 27,
+            "win_rate_pct": 44.44,
+            "expectancy_pct": 1.0326,
+            "profit_factor": 1.62,
+            "profit_factor_infinite": false,
+            "total_return_pct": 28.02,
+            "max_drawdown_pct": 17.65
+          }
+        },
+        "runner_minus_baseline": {
+          "train": {
+            "trades": -5,
+            "expectancy_pct": 0.4877,
+            "max_drawdown_pct": -5.8
+          },
+          "validation": {
+            "trades": -3,
+            "expectancy_pct": -0.5988,
+            "max_drawdown_pct": 0.56
+          },
+          "holdout": {
+            "trades": -7,
+            "expectancy_pct": 1.2913,
+            "max_drawdown_pct": -3.89
+          }
+        }
+      },
       "forward_paper": {
         "metrics": {
           "trades": 0,
@@ -1282,6 +1599,83 @@
           "r_multiple": -1.0216
         }
       ],
+      "exit_comparison": {
+        "baseline": {
+          "train": {
+            "trades": 24,
+            "win_rate_pct": 45.83,
+            "expectancy_pct": -0.0087,
+            "profit_factor": 0.994,
+            "profit_factor_infinite": false,
+            "total_return_pct": -1.33,
+            "max_drawdown_pct": 8.45
+          },
+          "validation": {
+            "trades": 16,
+            "win_rate_pct": 18.75,
+            "expectancy_pct": -1.4976,
+            "profit_factor": 0.357,
+            "profit_factor_infinite": false,
+            "total_return_pct": -22.09,
+            "max_drawdown_pct": 22.09
+          },
+          "holdout": {
+            "trades": 29,
+            "win_rate_pct": 37.93,
+            "expectancy_pct": -0.1643,
+            "profit_factor": 0.88,
+            "profit_factor_infinite": false,
+            "total_return_pct": -5.71,
+            "max_drawdown_pct": 21.73
+          }
+        },
+        "runner": {
+          "train": {
+            "trades": 21,
+            "win_rate_pct": 42.86,
+            "expectancy_pct": -0.076,
+            "profit_factor": 0.947,
+            "profit_factor_infinite": false,
+            "total_return_pct": -2.5,
+            "max_drawdown_pct": 12.98
+          },
+          "validation": {
+            "trades": 16,
+            "win_rate_pct": 12.5,
+            "expectancy_pct": -1.799,
+            "profit_factor": 0.304,
+            "profit_factor_infinite": false,
+            "total_return_pct": -25.84,
+            "max_drawdown_pct": 27.99
+          },
+          "holdout": {
+            "trades": 24,
+            "win_rate_pct": 20.83,
+            "expectancy_pct": -0.6286,
+            "profit_factor": 0.587,
+            "profit_factor_infinite": false,
+            "total_return_pct": -14.85,
+            "max_drawdown_pct": 21.87
+          }
+        },
+        "runner_minus_baseline": {
+          "train": {
+            "trades": -3,
+            "expectancy_pct": -0.0673,
+            "max_drawdown_pct": 4.53
+          },
+          "validation": {
+            "trades": 0,
+            "expectancy_pct": -0.3014,
+            "max_drawdown_pct": 5.9
+          },
+          "holdout": {
+            "trades": -5,
+            "expectancy_pct": -0.4643,
+            "max_drawdown_pct": 0.14
+          }
+        }
+      },
       "forward_paper": {
         "metrics": {
           "trades": 0,
@@ -1529,6 +1923,83 @@
           "r_multiple": -1.0174
         }
       ],
+      "exit_comparison": {
+        "baseline": {
+          "train": {
+            "trades": 37,
+            "win_rate_pct": 37.84,
+            "expectancy_pct": -0.5114,
+            "profit_factor": 0.731,
+            "profit_factor_infinite": false,
+            "total_return_pct": -19.13,
+            "max_drawdown_pct": 20.81
+          },
+          "validation": {
+            "trades": 29,
+            "win_rate_pct": 24.14,
+            "expectancy_pct": -0.8868,
+            "profit_factor": 0.598,
+            "profit_factor_infinite": false,
+            "total_return_pct": -24.42,
+            "max_drawdown_pct": 29.74
+          },
+          "holdout": {
+            "trades": 54,
+            "win_rate_pct": 37.04,
+            "expectancy_pct": -0.4967,
+            "profit_factor": 0.714,
+            "profit_factor_infinite": false,
+            "total_return_pct": -25.58,
+            "max_drawdown_pct": 30.1
+          }
+        },
+        "runner": {
+          "train": {
+            "trades": 30,
+            "win_rate_pct": 36.67,
+            "expectancy_pct": -0.4327,
+            "profit_factor": 0.788,
+            "profit_factor_infinite": false,
+            "total_return_pct": -14.26,
+            "max_drawdown_pct": 27.43
+          },
+          "validation": {
+            "trades": 24,
+            "win_rate_pct": 16.67,
+            "expectancy_pct": -0.6204,
+            "profit_factor": 0.729,
+            "profit_factor_infinite": false,
+            "total_return_pct": -16.59,
+            "max_drawdown_pct": 21.88
+          },
+          "holdout": {
+            "trades": 41,
+            "win_rate_pct": 36.59,
+            "expectancy_pct": 0.5305,
+            "profit_factor": 1.328,
+            "profit_factor_infinite": false,
+            "total_return_pct": 19.69,
+            "max_drawdown_pct": 22.56
+          }
+        },
+        "runner_minus_baseline": {
+          "train": {
+            "trades": -7,
+            "expectancy_pct": 0.0787,
+            "max_drawdown_pct": 6.62
+          },
+          "validation": {
+            "trades": -5,
+            "expectancy_pct": 0.2664,
+            "max_drawdown_pct": -7.86
+          },
+          "holdout": {
+            "trades": -13,
+            "expectancy_pct": 1.0272,
+            "max_drawdown_pct": -7.54
+          }
+        }
+      },
       "forward_paper": {
         "metrics": {
           "trades": 0,

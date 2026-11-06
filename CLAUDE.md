@@ -151,6 +151,14 @@ comparison belongs in `btc_range_lab.json` as data-quality context only; it
 must never be interpreted as proof that spot and futures fills are identical
 or that the strategy has an edge.
 
+The frozen exit sensitivity is `range-exit-runner-v1`, preregistered in
+`docs/RANGE-STRATEGY-RESEARCH.md` at commit `6a23e60` before results were run.
+`_run_runner_trade` closes 50% at midpoint and 50% at the opposite boundary,
+keeps the original stop, weights the same costs by leg size, and gives the
+stop priority on ambiguous candles. All six runner variants remained negative
+in validation, so none may be promoted based on their later positive cells in
+the already-viewed historical holdout.
+
 ---
 
 ## Where we are

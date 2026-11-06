@@ -33,6 +33,16 @@ const data = {
         open_trade: { direction: "long", bars_observed: 3, max_hold_bars: 80 },
         pending_entry: null,
       },
+      exit_comparison: {
+        baseline: {
+          validation: { trades: 25, expectancy_pct: -0.8 },
+          holdout: { trades: 30, expectancy_pct: -0.4 },
+        },
+        runner: {
+          validation: { trades: 22, expectancy_pct: -0.2, profit_factor: 0.9, profit_factor_infinite: false },
+          holdout: { trades: 24, expectancy_pct: 0.5, profit_factor: 1.3, profit_factor_infinite: false },
+        },
+      },
     },
     {
       spec: { key: "structure", label: "Structure range", method: "structure" },
@@ -51,6 +61,15 @@ assert.equal(view.paper.metrics.trades, 1);
 assert.equal(view.paperExpectancy, "+0.5% / trade");
 assert.equal(view.paperProfitFactor, "∞");
 assert.equal(view.paperStatus, "Open long observation · 3/80 bars");
+assert.deepEqual(view.exitComparison, {
+  baselineValidation: "-0.8% / trade",
+  runnerValidation: "-0.2% / trade",
+  baselineHoldout: "-0.4% / trade",
+  runnerHoldout: "+0.5% / trade",
+  runnerHoldoutTrades: 24,
+  runnerHoldoutProfitFactor: "1.30",
+  validationEligible: false,
+});
 assert.equal(RangeLab.freshness(data, Date.parse("2026-11-06T10:00:00Z")).stale, false);
 assert.equal(RangeLab.freshness(data, Date.parse("2026-11-07T10:00:00Z")).stale, true);
 assert.equal(RangeLab.researchCutoff(data), "2026-11-06");

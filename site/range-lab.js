@@ -32,6 +32,7 @@
       open_trade: null,
       pending_entry: null,
     };
+    const exitComparison = candidate.exit_comparison || null;
     let paperStatus = "Waiting for a completed 4H rejection";
     if (paper.pending_entry) {
       paperStatus = `Pending ${paper.pending_entry.direction} entry · next 4H open`;
@@ -55,6 +56,23 @@
         ? "∞"
         : Number.isFinite(paper.metrics.profit_factor) ? paper.metrics.profit_factor.toFixed(2) : "—",
       paperStatus,
+      exitComparison: exitComparison ? {
+        baselineValidation: metric(exitComparison.baseline.validation.expectancy_pct, "% / trade"),
+        runnerValidation: metric(exitComparison.runner.validation.expectancy_pct, "% / trade"),
+        baselineHoldout: metric(exitComparison.baseline.holdout.expectancy_pct, "% / trade"),
+        runnerHoldout: metric(exitComparison.runner.holdout.expectancy_pct, "% / trade"),
+        runnerHoldoutTrades: exitComparison.runner.holdout.trades,
+        runnerHoldoutProfitFactor: exitComparison.runner.holdout.profit_factor_infinite
+          ? "∞"
+          : Number.isFinite(exitComparison.runner.holdout.profit_factor)
+            ? exitComparison.runner.holdout.profit_factor.toFixed(2)
+            : "—",
+        validationEligible: Number.isFinite(exitComparison.runner.validation.expectancy_pct)
+          && exitComparison.runner.validation.trades >= 20
+          && exitComparison.runner.validation.expectancy_pct > 0
+          && (exitComparison.runner.validation.profit_factor_infinite
+            || exitComparison.runner.validation.profit_factor > 1),
+      } : null,
       passed: Boolean(data.holdout_passed && data.selected_key === candidate.spec.key),
     };
   }

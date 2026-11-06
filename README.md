@@ -267,6 +267,14 @@ candle-direction agreement. That supports using the spot chart as nearby
 visual context over the measured window; it does **not** make spot and futures
 identical execution markets or validate the strategy.
 
+Range Lab also includes the preregistered `range-exit-runner-v1` sensitivity
+test: the baseline closes 100% at midpoint; the comparison closes 50% there
+and leaves 50% for the opposite boundary without moving the original stop.
+Every runner definition was still negative in validation, even though three
+looked positive on the already-viewed historical holdout. The UI therefore
+shows the comparison inside a collapsed detail instead of promoting it as an
+entry or exit instruction.
+
 ## Futures context (funding rate, open interest)
 
 `src/context/futures.py` fetches Kraken Futures' aggregate perpetual data
