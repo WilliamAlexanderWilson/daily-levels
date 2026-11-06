@@ -128,6 +128,36 @@
       </div>
     </section>
 
+    <section id="range-lab" class="range-lab" aria-labelledby="range-lab-title">
+      <div class="range-lab-heading">
+        <div>
+          <span class="range-lab-kicker">RANGE LAB · BTC 4H</span>
+          <h2 id="range-lab-title">Click a range definition to map it on the chart</h2>
+        </div>
+        <span id="range-lab-verdict" class="range-lab-verdict is-loading">Loading holdout research…</span>
+      </div>
+      <p class="range-lab-intro">
+        These are mechanical historical tests after modeled fees and slippage. A green current range is context—not permission to enter.
+      </p>
+      <div id="range-lab-options" class="range-lab-options" role="group" aria-label="Range definition"></div>
+      <div id="range-lab-detail" class="range-lab-detail" hidden>
+        <div>
+          <small>CURRENT ROLLING RANGE</small>
+          <strong id="range-lab-current">—</strong>
+          <span id="range-lab-current-status">—</span>
+        </div>
+        <dl>
+          <div><dt>Holdout trades</dt><dd id="range-lab-trades">—</dd></div>
+          <div><dt>Expectancy</dt><dd id="range-lab-expectancy">—</dd></div>
+          <div><dt>Profit factor</dt><dd id="range-lab-profit-factor">—</dd></div>
+          <div><dt>Max drawdown</dt><dd id="range-lab-drawdown">—</dd></div>
+        </dl>
+      </div>
+      <p class="range-lab-warning" id="range-lab-warning">
+        No candidate is called “proven” unless it first wins validation and then survives untouched holdout data after costs.
+      </p>
+    </section>
+
     <div id="futures-context" class="futures-context" hidden></div>
 
     <div id="exhaustion-banner" class="exhaustion-banner" hidden></div>
@@ -502,6 +532,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js"></script>
   <script src="range-decision.js"></script>
+  <script src="range-lab.js"></script>
   <script src="liquidation-risk.js"></script>
   <script src="live-stream.js"></script>
   <script src="app.js"></script>
