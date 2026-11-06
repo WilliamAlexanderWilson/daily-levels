@@ -76,9 +76,8 @@ age of the last successful update.
    below).
 5. The static site in `site/` reads the levels/scorecard JSON for its
    lines, labels, and table — that part only updates once a day. The
-   **chart's candles are fetched live, directly from Kraken, from the
-   browser** (polled every 10s) — there is no server and no database
-   anywhere in this.
+   **forming candle and visible price stream directly from Kraken's public
+   WebSocket on every trade** — there is no server, API key, or database.
 
 ## Local setup
 
@@ -148,15 +147,12 @@ These are two independent systems that happen to share one page:
   snapshot in `site/data/{asset}_levels.json` and `_scorecard.json`. Fixed
   until the next 5 AM run — that's deliberate, it's what makes them a
   stable reference instead of a moving target.
-- **The chart** (candles, current price) is fetched directly from Kraken
-  by the browser (`fetchKrakenCandles` in `site/app.js`), for whichever of
-  the seven timeframes (1m/5m/15m/30m/1h/4h/Daily) is selected, polled
-  every 10s. Kraken's public OHLC endpoint sends CORS headers that allow
-  this with no server and no API key — confirmed directly against
-  `api.kraken.com`. It occasionally fails a request with no CORS header at
-  all after a burst of requests in a short window (observed in practice,
-  Cloudflare-fronted); `fetchKrakenCandles` retries 3x with backoff to
-  absorb that.
+- **The chart** loads its history through Kraken REST, then subscribes to
+  Kraken's public WebSocket v2 OHLC channel for the selected market and
+  timeframe (1m/5m/15m/30m/1h/4h/Daily). Kraken publishes an updated
+  forming candle on every trade, so both the ticker and candle move without
+  waiting for a timer. The REST fetch remains a 10-second reconnect fallback
+  only, with retry/backoff for Kraken's occasional missing CORS response.
 - The 4H view's default zoom frames exactly the `RANGE_DAYS`-day window
   the volume-profile levels are computed from (read from the levels JSON's
   own `config` block, not duplicated as a constant), so those lines land
@@ -178,8 +174,8 @@ These are two independent systems that happen to share one page:
   of magnitude over that stretch, and a linear scale would squash anything
   before ~2020 into a flat line at the bottom.
 - **Order book liquidity walls** are also live-only: `fetchOrderBookWalls`
-  polls Kraken's public spot order book (`/0/public/Depth`) on the same
-  10s cadence, and shows the top 3 bid/ask price levels per side that are
+  polls Kraken's public spot order book (`/0/public/Depth`) every 10 seconds,
+  independently of the per-trade price stream, and shows the top 3 bid/ask price levels per side that are
   at least 2x the book's median resting size — real orders sitting on the
   book right now, not a modeled estimate. (A true liquidation heatmap
   would need every trader's entry price and leverage across every
@@ -265,8 +261,8 @@ exact shape has reversed historically (with sample size, and a
 low-confidence flag below 30 resolved occurrences) — never "buy" or "sell."
 
 Computed once a day in the same engine run as every other level on this
-site (`src/levels/exhaustion_pattern.py`), not polled live — same cadence
-as POC/VAH/VAL/golden pocket, not the 10-second live price/order-book path.
+site (`src/levels/exhaustion_pattern.py`), not streamed live — same cadence
+as POC/VAH/VAL/golden pocket, not the real-time price path.
 Most days nothing is detected at all; this is a specific, fairly rare
 candle shape, not a "there's always something nearby" kind of level.
 
@@ -335,8 +331,8 @@ number field sits right next to "+ Mark trade" for exact fills.
 
 **Size and leverage are optional, and turn on live P&L tracking.** Fill
 them in and the trades table shows a running P&L next to that trade,
-in both dollars and percent, updating on the same 10s cadence as the
-live price — size is treated as margin (what you actually put up), so
+in both dollars and percent, updating from the real-time price — size is
+treated as margin (what you actually put up), so
 `size x leverage` is the notional position, same mental model a real
 perp exchange uses. Leave them blank and the trade still saves fine,
 just without a P&L column.
@@ -543,7 +539,8 @@ src/
     cli.py                             # entry point: python -m src.spy.cli — prints results, no JSON write
 tests/                        # unit tests with hand-built fixtures + one real-response fixture
 site/                         # static HTML/CSS/JS, hosted on GitHub Pages
-  app.js                     # live chart (direct Kraken polling) + renders the daily levels/scorecard
+  live-stream.js             # Kraken WebSocket v2 subscription and message normalization
+  app.js                     # real-time chart + renders the daily levels/scorecard
   data/                      # JSON written by the Action; the page reads levels/scorecard from here
 .github/workflows/
   update-levels.yml          # the daily cron: level engine + backtest + commit + Pages deploy

@@ -8,8 +8,9 @@ all informational, no trade signals.
 The default BTC/ETH chart is the primary range surface: it marks the active
 nearest-support/resistance bracket behind the candles, labels RANGE HIGH and
 RANGE LOW, and exposes the latest Kraken price plus fetch age in the chart.
-Candles and live price poll every 10 seconds. The range boundaries still come
-from the daily snapshot and must not move merely because the live price ticks.
+The forming candle and live price stream from Kraken on every trade. The range
+boundaries still come from the daily snapshot and must not move merely because
+the live price ticks.
 
 Live: https://williamalexanderwilson.github.io/daily-levels/
 Repo: https://github.com/WilliamAlexanderWilson/daily-levels (public)
@@ -186,7 +187,7 @@ even across refreshes. Visible tabs get an in-page toast; hidden tabs can
 also receive a browser notification after the user explicitly enables and
 permits it. Preference and the last 20 fingerprints live only in browser
 localStorage. This is intentionally not Telegram/background infrastructure:
-the static page must remain open for its 10-second poll to evaluate a setup.
+the static page must remain open for the live stream to evaluate a setup.
 
 Final visual acceptance caught that the default chart still contradicted
 the simplified brief: every level, order-book wall, proximity band, and
@@ -201,7 +202,7 @@ Noise follow-up: Full analysis is now a live **level radar**, not an all-labels
 dump. Every calculated level remains as a faint line for context, while only
 the nearest support/resistance bracket, the 60-day range edges, the tightest
 round-number band, and the nearest bid/ask wall receive strong styling and
-labels. The emphasis is re-ranked on each 10-second price poll. Do not move
+labels. The emphasis is re-ranked from the real-time price. Do not move
 the actual level calculations to that cadence: the stable daily map is the
 reference; live price changes which parts deserve attention.
 
@@ -235,7 +236,8 @@ GitHub Action, Pages deployment.
 
 Also built, beyond the original Phase 1/2 spec, in response to live usage:
 - **Live chart**, independent of the daily snapshot — 1m/5m/15m/30m/1h/4h/Daily
-  timeframes, all polling Kraken directly every 10s, with retry+backoff.
+  timeframes, all streaming Kraken OHLC updates on every trade. REST remains
+  the initial-history source and a reconnect fallback with retry+backoff.
 - **Nearest-level cards** — nearest resistance/support/round-number to the
   live price, each with its aggregated historical hold rate, right next
   to the price. This came from the user repeatedly asking for an entry
@@ -270,8 +272,8 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   that. Built the real thing instead: Kraken's public spot order book
   (`/0/public/Depth`, CORS-friendly, confirmed live) shows actual resting
   bids/asks right now. `fetchOrderBookWalls` in `site/app.js` takes the
-  top 3 per side that are at least 2x the book's median size, polled on
-  the same 10s cadence as the live candle, rendered as thin teal lines
+  top 3 per side that are at least 2x the book's median size, refreshed
+  every 10 seconds independently of the per-trade candle, rendered as thin teal lines
   with size labels. Kraken Futures' open-interest/funding endpoint
   (`futures.kraken.com/derivatives/api/v3/tickers`) has **no CORS header
   at all** (checked the raw response headers directly) - not fetchable
@@ -619,8 +621,8 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
 - **Position tracking: size, leverage, live P&L, and closing a trade.**
   The trade form gained two optional fields (`trade-form-size`,
   `trade-form-leverage`); a trade with both set gets a live P&L column in
-  the trades table (`tradePnl()` in `site/app.js`), re-rendered every
-  live poll tick the same way the nearest-level cards already are. Same
+  the trades table (`tradePnl()` in `site/app.js`), re-rendered from the
+  streamed price the same way the nearest-level cards already are. Same
   mental model as the liquidation estimate: `size` is margin, `size x
   leverage` is notional, and liquidation price for a leveraged entry is
   the identical `entry * (1 -+ 1/leverage)` formula used there - this
@@ -630,10 +632,10 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   Closing a trade (the "Close" button, `closingTradeId` state +
   `confirmCloseTrade()`) freezes `tradePnl()`'s reference price at
   `trade.exitPrice` instead of the live price, permanently - confirmed
-  directly by closing a trade, then waiting through a real 10s live poll
-  tick and checking the P&L string was byte-identical before and after,
+  directly by closing a trade, then receiving another live price update
+  and checking the P&L string was byte-identical before and after,
   not just inspecting the code. `closingTradeId` exists specifically so
-  the inline exit-price input survives that same 10s re-render instead
+  the inline exit-price input survives that same live re-render instead
   of vanishing out from under the user mid-entry (the table fully
   rebuilds its DOM on every render, same as every other table on this
   site). A closed trade also gets a second chart marker (a colored
@@ -737,7 +739,7 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
     never actually proven broken because `context` happened to always be
     present) - fixed with one global `[hidden] { display: none !important; }`
     rule rather than patching each class.
-  SPY has no live polling, unlike BTC/ETH's chart - Alpaca needs an auth
+  SPY has no live stream, unlike BTC/ETH's chart - Alpaca needs an auth
   header the browser can't send cleanly for a public static site, and
   Yahoo's chart endpoint (VIX only now) has no CORS header either
   (confirmed live, same way the Kraken Futures gap above was confirmed),
@@ -803,6 +805,10 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   site; Cloudflare-fronted, looked like bot-detection more than a simple
   rate limit). `fetchKrakenCandles` in `site/app.js` retries 3x with
   backoff for exactly this. Don't remove that retry thinking it's dead code.
+- **BTC/ETH live updates use Kraken WebSocket v2 OHLC, not a fast polling
+  loop.** `site/live-stream.js` subscribes to `wss://ws.kraken.com/v2`; the
+  channel emits the forming candle on every trade. `fetchKrakenCandles`
+  remains necessary for initial history and as a reconnect fallback.
 - **GitHub Pages' classic "deploy from a branch" only serves `/` or
   `/docs`, not `/site`.** Pages is configured with `build_type: workflow`
   instead; `update-levels.yml` deploys it directly in the same job as the
@@ -922,7 +928,7 @@ Backtest/scorecard, Daily diff.
   SPY view), styled bullish/bearish via the existing `--support`/`--resistance` CSS
   variables. Explicitly worded to avoid call-to-action framing ("not a signal, read the
   odds yourself") and never says "buy"/"sell"/"enter." This is still a once-a-day-cadence
-  feature like every other level, not live-ticking every 10s like price/order-book - said
+  feature like every other level, not live-ticking like price - said
   plainly to the user rather than oversold as "live."
   `tests/test_exhaustion_pattern.py` mirrors the SPY test file's structure (hand-built HA
   rows for the core logic, bypassing the recursive real-OHLC conversion) but needed one
