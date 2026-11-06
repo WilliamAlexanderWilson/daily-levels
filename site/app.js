@@ -1499,6 +1499,7 @@
     setDecisionClass("loading");
     document.getElementById("decision-badge").textContent = "CALCULATING";
     document.getElementById("decision-method").textContent = state.asset === "btc" ? "Macro range framework" : "Rolling range framework";
+    document.getElementById("decision-source-link").hidden = true;
     document.getElementById("decision-title").textContent = "Building the current range read…";
     document.getElementById("decision-summary").textContent = "Waiting for price, levels, and historical context.";
     document.getElementById("decision-range").hidden = true;
@@ -1511,6 +1512,7 @@
     setDecisionClass("wait");
     document.getElementById("decision-badge").textContent = "DATA UNAVAILABLE";
     document.getElementById("decision-method").textContent = "No decision from partial data";
+    document.getElementById("decision-source-link").hidden = true;
     document.getElementById("decision-title").textContent = "The range read could not be built";
     document.getElementById("decision-summary").textContent = message;
     document.getElementById("decision-range").hidden = true;
@@ -1694,6 +1696,7 @@
 
     if (!decision.support || !decision.resistance) {
       document.getElementById("decision-method").textContent = "Insufficient bracket";
+      document.getElementById("decision-source-link").hidden = true;
       document.getElementById("decision-rr").textContent = "No setup";
       document.getElementById("decision-rr-note").textContent = "wait for a complete range";
       fillDecisionScore("support", null);
@@ -1712,6 +1715,9 @@
         ? `Immediate support/resistance bracket · ${state.range.toUpperCase()} close gate`
         : `Immediate bracket · ${Math.round(decision.macroPosition * 100)}% through 60-day range · ${state.range.toUpperCase()} close gate`;
     document.getElementById("decision-method").textContent = macroText;
+    const sourceLink = document.getElementById("decision-source-link");
+    sourceLink.hidden = !decision.strategyRange || !decision.strategyRange.sourceUrl;
+    if (!sourceLink.hidden) sourceLink.href = decision.strategyRange.sourceUrl;
     document.getElementById("decision-support-caption").textContent = decision.strategyRange ? "Macro floor" : "Support / invalidation";
     document.getElementById("decision-resistance-caption").textContent = decision.strategyRange ? "Ceiling / reclaim" : "Resistance / target";
     document.getElementById("decision-support").textContent = decision.strategyRange
@@ -1807,6 +1813,7 @@
     setDecisionClass("wait");
     document.getElementById("decision-badge").textContent = "NO VALIDATED EDGE";
     document.getElementById("decision-method").textContent = "Out-of-sample result · Oct 11, 2026";
+    document.getElementById("decision-source-link").hidden = true;
     document.getElementById("decision-title").textContent = "SPY setup failed its holdout test";
     document.getElementById("decision-summary").textContent =
       "Every tested trend/doji parameter was profitable on the first half and unprofitable on the untouched second half. The honest current read is observe, not buy or short.";
@@ -2843,6 +2850,7 @@
     document.getElementById("spy-backtest-section").hidden = !isSpy;
     document.getElementById("spy-signals-section").hidden = !isSpy;
     document.getElementById("crypto-explainer").hidden = isSpy;
+    document.getElementById("range-method-sources").hidden = asset !== "btc";
     document.getElementById("spy-explainer").hidden = !isSpy;
     document.getElementById("chart-live-ticker").hidden = isSpy;
     if (isSpy) document.getElementById("live-badge").hidden = true;
@@ -2877,6 +2885,15 @@
   function wireAdvancedAnalysis() {
     const details = document.getElementById("advanced-analysis");
     if (!details) return;
+    const sourceLink = document.getElementById("decision-source-link");
+    if (sourceLink) {
+      sourceLink.addEventListener("click", () => {
+        // The source summary lives in the intentionally collapsed analysis
+        // panel. Open it before the hash navigation runs so the linked
+        // evidence is visible rather than hidden inside a closed <details>.
+        details.open = true;
+      });
+    }
     details.addEventListener("toggle", () => {
       clearPriceSnapState();
       if (state.asset !== "spy") {

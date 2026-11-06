@@ -95,8 +95,18 @@ body {
 
 .subtitle {
   color: var(--text-muted);
-  margin: 0.25rem 0 0;
+  margin: 0.45rem 0 0;
   font-size: 0.95rem;
+}
+
+.brand-owner {
+  margin: 0.35rem 0 0;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .stale-banner {
@@ -445,6 +455,20 @@ main {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.decision-source-link {
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.decision-source-link:hover,
+.decision-source-link:focus-visible {
+  text-decoration: underline;
 }
 
 .decision-copy-block h2 {
@@ -1634,11 +1658,37 @@ tr.low-confidence-row {
   padding-left: 1.2rem;
 }
 
+.method-sources {
+  margin-top: 1.2rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-strong) 70%, transparent);
+}
+
+.method-sources h3,
+.method-sources p {
+  margin: 0;
+}
+
+.method-sources ul {
+  margin-bottom: 0;
+}
+
+.method-sources a {
+  color: var(--accent);
+}
+
 .site-footer {
   text-align: center;
   padding: 1.5rem 1rem 2rem;
   color: var(--text-muted);
   font-size: 0.8rem;
+}
+
+.site-footer strong {
+  color: var(--text);
+  font-weight: 700;
 }
 
 @media (max-width: 480px) {

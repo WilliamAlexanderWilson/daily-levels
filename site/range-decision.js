@@ -24,7 +24,8 @@
     failureLevel: 74000,
     longWatchHigh: 62000,
     sourceDate: "2026-11-04",
-    sourceLabel: "Mathieu higher-timeframe framework",
+    sourceLabel: "Sourced macro-range framework",
+    sourceUrl: "#range-method-sources",
   });
 
   function midpoint(level) {
