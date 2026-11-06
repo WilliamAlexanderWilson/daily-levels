@@ -25,6 +25,14 @@
     "intrabar": "stop wins if stop and target occur in the same candle",
     "minimum_edge_touches": 2
   },
+  "forward_tracking": {
+    "version": "range-rejection-v1",
+    "frozen_at": "2026-11-06T04:00:00+00:00",
+    "data_through": "2026-11-06T16:00:00+00:00",
+    "mode": "candidate-level observation only; no real orders and no combined portfolio",
+    "candidate_count": 6,
+    "validated_candidate_key": null
+  },
   "validation_leader_key": "structure",
   "selected_key": null,
   "holdout_passed": false,
@@ -261,7 +269,21 @@
           "return_pct": 1.1854,
           "r_multiple": 0.8951
         }
-      ]
+      ],
+      "forward_paper": {
+        "metrics": {
+          "trades": 0,
+          "win_rate_pct": null,
+          "expectancy_pct": null,
+          "profit_factor": null,
+          "profit_factor_infinite": false,
+          "total_return_pct": null,
+          "max_drawdown_pct": null
+        },
+        "closed_trades": [],
+        "open_trade": null,
+        "pending_entry": null
+      }
     },
     {
       "spec": {
@@ -494,7 +516,33 @@
           "return_pct": -2.5979,
           "r_multiple": -1.0174
         }
-      ]
+      ],
+      "forward_paper": {
+        "metrics": {
+          "trades": 0,
+          "win_rate_pct": null,
+          "expectancy_pct": null,
+          "profit_factor": null,
+          "profit_factor_infinite": false,
+          "total_return_pct": null,
+          "max_drawdown_pct": null
+        },
+        "closed_trades": [],
+        "open_trade": {
+          "status": "open",
+          "direction": "long",
+          "signal_time": "2026-11-06T08:00:00+00:00",
+          "entry_time": "2026-11-06T12:00:00+00:00",
+          "entry": 76090.03,
+          "stop": 74491.1,
+          "target": 79916.0,
+          "range_low": 74986.0,
+          "range_high": 84846.0,
+          "bars_observed": 1,
+          "max_hold_bars": 120
+        },
+        "pending_entry": null
+      }
     },
     {
       "spec": {
@@ -727,7 +775,21 @@
           "return_pct": -2.1569,
           "r_multiple": -1.0216
         }
-      ]
+      ],
+      "forward_paper": {
+        "metrics": {
+          "trades": 0,
+          "win_rate_pct": null,
+          "expectancy_pct": null,
+          "profit_factor": null,
+          "profit_factor_infinite": false,
+          "total_return_pct": null,
+          "max_drawdown_pct": null
+        },
+        "closed_trades": [],
+        "open_trade": null,
+        "pending_entry": null
+      }
     },
     {
       "spec": {
@@ -960,7 +1022,33 @@
           "return_pct": 4.6901,
           "r_multiple": 1.3858
         }
-      ]
+      ],
+      "forward_paper": {
+        "metrics": {
+          "trades": 0,
+          "win_rate_pct": null,
+          "expectancy_pct": null,
+          "profit_factor": null,
+          "profit_factor_infinite": false,
+          "total_return_pct": null,
+          "max_drawdown_pct": null
+        },
+        "closed_trades": [],
+        "open_trade": {
+          "status": "open",
+          "direction": "long",
+          "signal_time": "2026-11-06T08:00:00+00:00",
+          "entry_time": "2026-11-06T12:00:00+00:00",
+          "entry": 76090.03,
+          "stop": 74491.1,
+          "target": 79916.0,
+          "range_low": 74986.0,
+          "range_high": 84846.0,
+          "bars_observed": 1,
+          "max_hold_bars": 120
+        },
+        "pending_entry": null
+      }
     },
     {
       "spec": {
@@ -1193,7 +1281,21 @@
           "return_pct": -2.1569,
           "r_multiple": -1.0216
         }
-      ]
+      ],
+      "forward_paper": {
+        "metrics": {
+          "trades": 0,
+          "win_rate_pct": null,
+          "expectancy_pct": null,
+          "profit_factor": null,
+          "profit_factor_infinite": false,
+          "total_return_pct": null,
+          "max_drawdown_pct": null
+        },
+        "closed_trades": [],
+        "open_trade": null,
+        "pending_entry": null
+      }
     },
     {
       "spec": {
@@ -1426,7 +1528,33 @@
           "return_pct": -2.5979,
           "r_multiple": -1.0174
         }
-      ]
+      ],
+      "forward_paper": {
+        "metrics": {
+          "trades": 0,
+          "win_rate_pct": null,
+          "expectancy_pct": null,
+          "profit_factor": null,
+          "profit_factor_infinite": false,
+          "total_return_pct": null,
+          "max_drawdown_pct": null
+        },
+        "closed_trades": [],
+        "open_trade": {
+          "status": "open",
+          "direction": "long",
+          "signal_time": "2026-11-06T08:00:00+00:00",
+          "entry_time": "2026-11-06T12:00:00+00:00",
+          "entry": 76090.03,
+          "stop": 74491.1,
+          "target": 79916.0,
+          "range_low": 74986.0,
+          "range_high": 84846.0,
+          "bars_observed": 1,
+          "max_hold_bars": 120
+        },
+        "pending_entry": null
+      }
     }
   ]
 }

@@ -251,6 +251,14 @@ the fixed validation period, and then reports a locked historical holdout with
 permanent calendar boundaries. The generated `site/data/btc_range_lab.json` is research
 evidence, not a profitability promise or an instruction to trade.
 
+The same artifact also contains a **prospective paper record** beginning at
+the permanently frozen `2026-11-06 04:00 UTC` boundary. All six definitions
+are observed separately because none currently qualifies as validated; their
+returns are never combined into a portfolio. A paper position remains open
+until its target, stop, or full maximum holding window is actually observed —
+the refresh job never invents an early time exit merely because the newest
+candle is the end of today's data. This record places no orders.
+
 ## Futures context (funding rate, open interest)
 
 `src/context/futures.py` fetches Kraken Futures' aggregate perpetual data

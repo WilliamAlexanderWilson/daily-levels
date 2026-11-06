@@ -115,5 +115,26 @@ holdout trades, positive holdout expectancy, and profit factor above 1.
 6. Only after BTC survives that process, apply the same frozen methodology to
    ETH. SPY requires a separate market-hours and gap-aware design.
 
+## Forward paper record
+
+Implemented after the initial research review. The six original definitions,
+cost assumptions, entry rule, stop, midpoint target, and holding windows are
+frozen as `range-rejection-v1` from `2026-11-06 04:00 UTC`. Every scheduled
+Range Lab refresh now incorporates genuinely later evidence deterministically:
+
+- each candidate is tracked separately; results are not pooled;
+- an edge rejection on the newest completed candle is marked pending until the
+  next 4-hour open exists;
+- a filled paper observation remains open until target, stop, or its complete
+  holding window is observed;
+- only closed observations enter forward expectancy, profit factor, and
+  drawdown; and
+- no order is sent and no candidate is relabeled validated by this feature.
+
+Because no candidate passed the initial validation gate, this is an
+observation record, not a deployment of a selected strategy. A future label
+change requires enough prospective observations and a separately documented
+evidence threshold; it must not be inferred from one favorable result.
+
 The next objective is not to force a profitable-looking answer. It is to find
 whether a repeatable edge survives realistic costs and genuinely unseen data.

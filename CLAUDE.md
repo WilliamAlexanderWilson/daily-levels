@@ -134,6 +134,14 @@ site/
 Trade journal (`site/app.js`) saves to the browser's localStorage, not the
 repo — there's nothing server-side to list here for it.
 
+Range Lab forward paper tracking is different from that discretionary journal:
+`src/range_lab/engine.py::forward_paper_track` deterministically replays all
+completed PF_XBTUSD 4-hour candles after the frozen 2026-11-06 04:00 UTC
+research cutoff. It tracks every frozen candidate separately because no
+candidate is validated, never combines their returns, never places an order,
+and leaves an unresolved position open rather than manufacturing a time exit
+at the end of the currently available data.
+
 ---
 
 ## Where we are

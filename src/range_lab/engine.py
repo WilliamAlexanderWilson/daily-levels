@@ -21,6 +21,7 @@ MAX_NORMALIZED_SLOPE = 0.35
 TRAIN_END = pd.Timestamp("2024-01-01T00:00:00Z")
 VALIDATION_END = pd.Timestamp("2025-01-01T00:00:00Z")
 HOLDOUT_END = pd.Timestamp("2026-11-06T04:00:00Z")
+PAPER_TRACKING_VERSION = "range-rejection-v1"
 
 
 @dataclass(frozen=True)
@@ -259,6 +260,145 @@ def backtest_spec(
     return trades
 
 
+def _paper_trade(
+    candles: pd.DataFrame,
+    entry_index: int,
+    direction: str,
+    range_state: dict,
+    max_hold_bars: int,
+) -> tuple[dict, int, bool]:
+    """Evaluate a forward-paper trade without closing incomplete evidence.
+
+    Historical backtests may cap a position at a partition boundary. A live
+    paper record cannot do that: until the full holding window has elapsed,
+    an untouched target/stop is an open position, not a time exit.
+    """
+    raw_entry = float(candles.iloc[entry_index]["open"])
+    entry = raw_entry * (1 + SLIPPAGE_PER_SIDE if direction == "long" else 1 - SLIPPAGE_PER_SIDE)
+    target = range_state["midpoint"]
+    stop = (
+        range_state["low"] - STOP_ATR_MULTIPLE * range_state["atr"]
+        if direction == "long"
+        else range_state["high"] + STOP_ATR_MULTIPLE * range_state["atr"]
+    )
+    if (direction == "long" and entry >= target) or (direction == "short" and entry <= target):
+        return {}, entry_index, True
+
+    final_required_index = entry_index + max_hold_bars - 1
+    last_observed_index = min(len(candles) - 1, final_required_index)
+    for cursor in range(entry_index, last_observed_index + 1):
+        bar = candles.iloc[cursor]
+        stop_hit = bar["low"] <= stop if direction == "long" else bar["high"] >= stop
+        target_hit = bar["high"] >= target if direction == "long" else bar["low"] <= target
+        if stop_hit:
+            raw_exit = min(stop, float(bar["open"])) if direction == "long" else max(stop, float(bar["open"]))
+            exit_price = raw_exit * (1 - SLIPPAGE_PER_SIDE if direction == "long" else 1 + SLIPPAGE_PER_SIDE)
+            reason = "stop"
+        elif target_hit:
+            exit_price = target * (1 - SLIPPAGE_PER_SIDE if direction == "long" else 1 + SLIPPAGE_PER_SIDE)
+            reason = "target"
+        else:
+            continue
+        net_return = _trade_return(direction, entry, exit_price)
+        risk_fraction = abs(entry - stop) / entry + (2 * FEE_PER_SIDE)
+        return {
+            "status": "closed",
+            "direction": direction,
+            "signal_time": candles.index[entry_index - 1].isoformat(),
+            "entry_time": candles.index[entry_index].isoformat(),
+            "exit_time": candles.index[cursor].isoformat(),
+            "entry": round(entry, 2),
+            "exit": round(exit_price, 2),
+            "stop": round(stop, 2),
+            "target": round(target, 2),
+            "range_low": round(range_state["low"], 2),
+            "range_high": round(range_state["high"], 2),
+            "reason": reason,
+            "return_pct": round(net_return * 100, 4),
+            "r_multiple": round(net_return / risk_fraction, 4) if risk_fraction else 0.0,
+        }, cursor, True
+
+    if final_required_index <= len(candles) - 1:
+        raw_exit = float(candles.iloc[final_required_index]["close"])
+        exit_price = raw_exit * (1 - SLIPPAGE_PER_SIDE if direction == "long" else 1 + SLIPPAGE_PER_SIDE)
+        net_return = _trade_return(direction, entry, exit_price)
+        risk_fraction = abs(entry - stop) / entry + (2 * FEE_PER_SIDE)
+        return {
+            "status": "closed",
+            "direction": direction,
+            "signal_time": candles.index[entry_index - 1].isoformat(),
+            "entry_time": candles.index[entry_index].isoformat(),
+            "exit_time": candles.index[final_required_index].isoformat(),
+            "entry": round(entry, 2),
+            "exit": round(exit_price, 2),
+            "stop": round(stop, 2),
+            "target": round(target, 2),
+            "range_low": round(range_state["low"], 2),
+            "range_high": round(range_state["high"], 2),
+            "reason": "time",
+            "return_pct": round(net_return * 100, 4),
+            "r_multiple": round(net_return / risk_fraction, 4) if risk_fraction else 0.0,
+        }, final_required_index, True
+
+    return {
+        "status": "open",
+        "direction": direction,
+        "signal_time": candles.index[entry_index - 1].isoformat(),
+        "entry_time": candles.index[entry_index].isoformat(),
+        "entry": round(entry, 2),
+        "stop": round(stop, 2),
+        "target": round(target, 2),
+        "range_low": round(range_state["low"], 2),
+        "range_high": round(range_state["high"], 2),
+        "bars_observed": last_observed_index - entry_index + 1,
+        "max_hold_bars": max_hold_bars,
+    }, last_observed_index, False
+
+
+def forward_paper_track(candles: pd.DataFrame, spec: RangeSpec, start: pd.Timestamp) -> dict:
+    """Replay only evidence that arrived after the frozen forward boundary."""
+    candles = candles.sort_index()
+    atr = _true_range(candles).rolling(14).mean()
+    cursor = max(spec.lookback_bars, 15, int(candles.index.searchsorted(start)))
+    closed: list[dict] = []
+    open_trade = None
+    pending_entry = None
+    while cursor < len(candles):
+        state = _range_at(candles, cursor, spec, atr)
+        direction = _signal(candles.iloc[cursor], state) if state else None
+        if not direction:
+            cursor += 1
+            continue
+        if cursor + 1 >= len(candles):
+            pending_entry = {
+                "status": "pending_entry",
+                "direction": direction,
+                "signal_time": candles.index[cursor].isoformat(),
+                "range_low": round(state["low"], 2),
+                "range_high": round(state["high"], 2),
+                "stop_reference_atr": round(state["atr"], 2),
+                "target": round(state["midpoint"], 2),
+            }
+            break
+        trade, exit_index, resolved = _paper_trade(
+            candles, cursor + 1, direction, state, spec.lookback_bars
+        )
+        if not trade:
+            cursor += 1
+            continue
+        if not resolved:
+            open_trade = trade
+            break
+        closed.append(trade)
+        cursor = exit_index + 1
+    return {
+        "metrics": _metrics(closed),
+        "closed_trades": closed,
+        "open_trade": open_trade,
+        "pending_entry": pending_entry,
+    }
+
+
 def _metrics(trades: list[dict]) -> dict:
     if not trades:
         return {
@@ -329,6 +469,7 @@ def build_range_lab(
                 for name in periods
             },
             "recent_trades": trades[-12:],
+            "forward_paper": forward_paper_track(candles, spec, holdout_end),
         }
         candidates.append(result)
 
@@ -397,6 +538,14 @@ def build_range_lab(
             "exit": "range midpoint, stop beyond boundary by 0.35 ATR, or time exit",
             "intrabar": "stop wins if stop and target occur in the same candle",
             "minimum_edge_touches": MIN_EDGE_TOUCHES,
+        },
+        "forward_tracking": {
+            "version": PAPER_TRACKING_VERSION,
+            "frozen_at": holdout_end.isoformat(),
+            "data_through": data_through.isoformat(),
+            "mode": "candidate-level observation only; no real orders and no combined portfolio",
+            "candidate_count": len(candidates),
+            "validated_candidate_key": selected["spec"]["key"] if passed else None,
         },
         "validation_leader_key": validation_leader["spec"]["key"],
         "selected_key": selected["spec"]["key"] if selected else None,

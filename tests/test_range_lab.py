@@ -2,7 +2,15 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from src.range_lab.engine import RangeSpec, _metrics, _run_trade, backtest_spec, build_range_lab
+from src.range_lab.engine import (
+    RangeSpec,
+    _metrics,
+    _paper_trade,
+    _run_trade,
+    backtest_spec,
+    build_range_lab,
+    forward_paper_track,
+)
 from src.range_lab.fetch import _parse_candles, _validate_history
 
 
@@ -85,6 +93,81 @@ def test_trade_fees_scale_exit_fee_with_exit_notional():
     result = _trade_return("long", 100.0, 110.0)
     expected = 0.10 - FEE_PER_SIDE - (FEE_PER_SIDE * 1.10)
     assert result == expected
+
+
+def test_forward_paper_trade_stays_open_until_full_holding_window():
+    index = pd.date_range(datetime(2026, 11, 6, tzinfo=timezone.utc), periods=3, freq="4h")
+    candles = pd.DataFrame(
+        {
+            "open": [100.0, 100.0, 100.0],
+            "high": [101.0, 101.0, 101.0],
+            "low": [99.0, 99.0, 99.0],
+            "close": [100.0, 100.0, 100.0],
+            "volume": [1.0, 1.0, 1.0],
+        },
+        index=index,
+    )
+    trade, _, resolved = _paper_trade(
+        candles,
+        entry_index=1,
+        direction="long",
+        range_state={"low": 90.0, "high": 130.0, "midpoint": 120.0, "atr": 1.0},
+        max_hold_bars=3,
+    )
+    assert resolved is False
+    assert trade["status"] == "open"
+    assert trade["bars_observed"] == 2
+    assert "exit_time" not in trade
+    assert "return_pct" not in trade
+
+
+def test_forward_paper_trade_closes_at_time_only_after_full_window():
+    index = pd.date_range(datetime(2026, 11, 6, tzinfo=timezone.utc), periods=4, freq="4h")
+    candles = pd.DataFrame(
+        {
+            "open": [100.0] * 4,
+            "high": [101.0] * 4,
+            "low": [99.0] * 4,
+            "close": [100.0] * 4,
+            "volume": [1.0] * 4,
+        },
+        index=index,
+    )
+    trade, exit_index, resolved = _paper_trade(
+        candles,
+        entry_index=1,
+        direction="long",
+        range_state={"low": 90.0, "high": 130.0, "midpoint": 120.0, "atr": 1.0},
+        max_hold_bars=3,
+    )
+    assert resolved is True
+    assert exit_index == 3
+    assert trade["status"] == "closed"
+    assert trade["reason"] == "time"
+    assert trade["exit_time"] == index[3].isoformat()
+
+
+def test_forward_paper_track_records_pending_entry_without_inventing_fill(monkeypatch):
+    index = pd.date_range(datetime(2026, 11, 1, tzinfo=timezone.utc), periods=30, freq="4h")
+    candles = pd.DataFrame(
+        {"open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0, "volume": 1.0},
+        index=index,
+    )
+    spec = RangeSpec("structure", "Structure", "structure", 20)
+
+    def fake_range(_candles, _cursor, _spec, _atr):
+        return {"low": 90.0, "high": 110.0, "midpoint": 100.0, "edge": 2.0, "atr": 1.0}
+
+    def fake_signal(_candle, _state):
+        return "long"
+
+    monkeypatch.setattr("src.range_lab.engine._range_at", fake_range)
+    monkeypatch.setattr("src.range_lab.engine._signal", fake_signal)
+    result = forward_paper_track(candles, spec, start=index[-1])
+    assert result["metrics"]["trades"] == 0
+    assert result["open_trade"] is None
+    assert result["pending_entry"]["status"] == "pending_entry"
+    assert "entry" not in result["pending_entry"]
 
 
 def test_partition_replay_caps_positions_at_boundary(monkeypatch):
