@@ -247,8 +247,8 @@ edge-rejection candle, and enters at the next candle's open.
 
 The report includes modeled fees and slippage, pessimistically treats a
 same-candle stop/target collision as a stop, selects a candidate using only
-the validation period, and then reports the most recent 20% of history as an
-untouched holdout. The generated `site/data/btc_range_lab.json` is research
+the fixed validation period, and then reports a locked historical holdout with
+permanent calendar boundaries. The generated `site/data/btc_range_lab.json` is research
 evidence, not a profitability promise or an instruction to trade.
 
 ## Futures context (funding rate, open interest)

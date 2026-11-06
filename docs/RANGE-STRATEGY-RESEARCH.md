@@ -10,11 +10,9 @@ No tested range definition is currently approved as a validated trading edge.
 The dashboard must remain a research and patience tool, not an automatic
 buy/sell service.
 
-The validation-period leader was the 10%–20% definition, but it still had
-negative expectancy. The 4–8 ATR definition performed strongly in the final
-holdout, but performed poorly in validation. Selecting it because the newest
-period looks good would use the holdout for model selection and invalidate the
-test.
+The validation-period leader was the structure definition, but it still had
+negative expectancy. No definition was positive in validation, so none was
+eligible to be selected for the locked historical holdout.
 
 ## What “range” means in this experiment
 
@@ -50,9 +48,16 @@ to the other.
 - Instrument: Kraken `PF_XBTUSD` perpetual futures.
 - Timeframe: 4 hours.
 - Sample: 10,133 completed candles, 2022-03-23 through 2026-11-06.
-- Training: first 60%.
-- Validation/model selection: next 20%.
-- Untouched holdout: final 20%.
+- Training: history before 2024-01-01.
+- Validation/model selection: 2024-01-01 through 2024-12-31.
+- Locked historical holdout: 2025-01-01 through 2026-11-06.
+
+These calendar boundaries are permanent across scheduled refreshes. Each
+partition is replayed separately, with prior candles available only as range
+context and position state reset at the boundary. Because the historical
+holdout was inspected while building this first version, it is not presented
+as pristine prospective evidence; genuinely new evidence begins with forward
+paper tracking after the strategy definitions are frozen.
 
 Kraken's public futures chart endpoint supplies bounded historical candles.
 The spot OHLC endpoint used elsewhere in the site is limited to its latest 720
@@ -64,14 +69,14 @@ spot; the Range Lab clearly labels its futures research source.
 | Definition | Validation trades | Validation expectancy | Holdout trades | Holdout expectancy | Holdout profit factor |
 |---|---:|---:|---:|---:|---:|
 | $2k–$4k | 0 | — | 2 | +1.1763% | — |
-| $5k–$10k | 7 | -1.2495% | 18 | -0.1949% | 0.867 |
-| 5%–10% | 19 | -1.2719% | 16 | -0.1580% | 0.846 |
-| 10%–20% | 17 | -0.1425% | 18 | -0.0571% | 0.970 |
-| 4–8 ATR | 14 | -1.7219% | 15 | +1.2894% | 2.615 |
-| Structure | 27 | -0.6759% | 28 | -0.1147% | 0.930 |
+| $5k–$10k | 15 | -2.0302% | 25 | -0.4902% | 0.678 |
+| 5%–10% | 3 | -2.1859% | 35 | -0.7627% | 0.440 |
+| 10%–20% | 23 | -2.0779% | 34 | -0.2593% | 0.862 |
+| 4–8 ATR | 16 | -1.4990% | 29 | -0.1643% | 0.880 |
+| Structure | 29 | -0.8840% | 54 | -0.4968% | 0.715 |
 
-The positive holdout values with two or fifteen trades are not enough to
-override failed validation. The configured pass gate requires positive
+The positive holdout value with only two trades is not enough to override
+missing validation evidence. The configured pass gate requires positive
 validation before a candidate may be selected, followed by at least 30
 holdout trades, positive holdout expectancy, and profit factor above 1.
 

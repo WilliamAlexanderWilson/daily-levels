@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-06T07:02:35.537092+00:00",
+  "generated_at": "2026-11-06T07:07:05.620290+00:00",
   "instrument": "Kraken PF_XBTUSD perpetual futures",
   "timeframe": "4h",
   "history": {
@@ -8,9 +8,10 @@
     "candles": 10133
   },
   "split": {
-    "train_end": "2024-12-30T12:00:00+00:00",
-    "validation_end": "2025-12-03T08:00:00+00:00",
-    "selection_rule": "highest validation expectancy after costs; holdout never used to choose"
+    "train_end": "2024-01-01T00:00:00+00:00",
+    "validation_end": "2025-01-01T00:00:00+00:00",
+    "holdout_end": "2026-11-06T04:00:00+00:00",
+    "selection_rule": "fixed calendar partitions; highest validation expectancy after costs; holdout never used to choose"
   },
   "costs": {
     "fee_per_side_pct": 0.2,
@@ -22,7 +23,7 @@
     "intrabar": "stop wins if stop and target occur in the same candle",
     "minimum_edge_touches": 2
   },
-  "validation_leader_key": "percent_10_20",
+  "validation_leader_key": "structure",
   "selected_key": null,
   "holdout_passed": false,
   "verdict": "No strategy earned a validated-edge label. Keep this in research mode; do not treat it as a signal service.",
@@ -280,28 +281,28 @@
       },
       "metrics": {
         "train": {
-          "trades": 23,
-          "win_rate_pct": 13.04,
-          "expectancy_pct": -2.3287,
-          "profit_factor": 0.152,
-          "total_return_pct": -42.2,
-          "max_drawdown_pct": 42.2
+          "trades": 8,
+          "win_rate_pct": 12.5,
+          "expectancy_pct": -2.8883,
+          "profit_factor": 0.14,
+          "total_return_pct": -21.12,
+          "max_drawdown_pct": 21.12
         },
         "validation": {
-          "trades": 7,
-          "win_rate_pct": 14.29,
-          "expectancy_pct": -1.2495,
-          "profit_factor": 0.256,
-          "total_return_pct": -8.52,
-          "max_drawdown_pct": 11.2
+          "trades": 15,
+          "win_rate_pct": 13.33,
+          "expectancy_pct": -2.0302,
+          "profit_factor": 0.161,
+          "total_return_pct": -26.72,
+          "max_drawdown_pct": 29.54
         },
         "holdout": {
-          "trades": 18,
-          "win_rate_pct": 50.0,
-          "expectancy_pct": -0.1949,
-          "profit_factor": 0.867,
-          "total_return_pct": -4.2,
-          "max_drawdown_pct": 7.89
+          "trades": 25,
+          "win_rate_pct": 40.0,
+          "expectancy_pct": -0.4902,
+          "profit_factor": 0.678,
+          "total_return_pct": -12.37,
+          "max_drawdown_pct": 12.68
         }
       },
       "recent_trades": [
@@ -510,28 +511,28 @@
       },
       "metrics": {
         "train": {
-          "trades": 19,
-          "win_rate_pct": 31.58,
-          "expectancy_pct": -0.9467,
-          "profit_factor": 0.364,
-          "total_return_pct": -16.81,
-          "max_drawdown_pct": 16.81
+          "trades": 16,
+          "win_rate_pct": 37.5,
+          "expectancy_pct": -0.7144,
+          "profit_factor": 0.474,
+          "total_return_pct": -11.11,
+          "max_drawdown_pct": 16.04
         },
         "validation": {
-          "trades": 19,
-          "win_rate_pct": 15.79,
-          "expectancy_pct": -1.2719,
-          "profit_factor": 0.226,
-          "total_return_pct": -21.79,
-          "max_drawdown_pct": 21.79
+          "trades": 3,
+          "win_rate_pct": 0.0,
+          "expectancy_pct": -2.1859,
+          "profit_factor": 0.0,
+          "total_return_pct": -6.42,
+          "max_drawdown_pct": 6.42
         },
         "holdout": {
-          "trades": 16,
-          "win_rate_pct": 50.0,
-          "expectancy_pct": -0.158,
-          "profit_factor": 0.846,
-          "total_return_pct": -2.81,
-          "max_drawdown_pct": 6.44
+          "trades": 35,
+          "win_rate_pct": 31.43,
+          "expectancy_pct": -0.7627,
+          "profit_factor": 0.44,
+          "total_return_pct": -23.98,
+          "max_drawdown_pct": 25.21
         }
       },
       "recent_trades": [
@@ -740,28 +741,28 @@
       },
       "metrics": {
         "train": {
-          "trades": 44,
-          "win_rate_pct": 27.27,
-          "expectancy_pct": -1.1598,
-          "profit_factor": 0.467,
-          "total_return_pct": -41.4,
-          "max_drawdown_pct": 45.13
+          "trades": 23,
+          "win_rate_pct": 39.13,
+          "expectancy_pct": -0.366,
+          "profit_factor": 0.802,
+          "total_return_pct": -9.33,
+          "max_drawdown_pct": 18.82
         },
         "validation": {
-          "trades": 17,
-          "win_rate_pct": 41.18,
-          "expectancy_pct": -0.1425,
-          "profit_factor": 0.917,
-          "total_return_pct": -3.37,
-          "max_drawdown_pct": 15.89
+          "trades": 23,
+          "win_rate_pct": 13.04,
+          "expectancy_pct": -2.0779,
+          "profit_factor": 0.183,
+          "total_return_pct": -38.69,
+          "max_drawdown_pct": 41.81
         },
         "holdout": {
-          "trades": 18,
-          "win_rate_pct": 44.44,
-          "expectancy_pct": -0.0571,
-          "profit_factor": 0.97,
-          "total_return_pct": -2.38,
-          "max_drawdown_pct": 14.52
+          "trades": 34,
+          "win_rate_pct": 41.18,
+          "expectancy_pct": -0.2593,
+          "profit_factor": 0.862,
+          "total_return_pct": -10.47,
+          "max_drawdown_pct": 21.56
         }
       },
       "recent_trades": [
@@ -970,28 +971,28 @@
       },
       "metrics": {
         "train": {
-          "trades": 40,
-          "win_rate_pct": 35.0,
-          "expectancy_pct": -0.6059,
-          "profit_factor": 0.655,
-          "total_return_pct": -23.17,
-          "max_drawdown_pct": 23.94
+          "trades": 24,
+          "win_rate_pct": 45.83,
+          "expectancy_pct": -0.0106,
+          "profit_factor": 0.992,
+          "total_return_pct": -1.37,
+          "max_drawdown_pct": 8.5
         },
         "validation": {
-          "trades": 14,
-          "win_rate_pct": 14.29,
-          "expectancy_pct": -1.7219,
-          "profit_factor": 0.135,
-          "total_return_pct": -21.73,
-          "max_drawdown_pct": 21.73
+          "trades": 16,
+          "win_rate_pct": 18.75,
+          "expectancy_pct": -1.499,
+          "profit_factor": 0.356,
+          "total_return_pct": -22.11,
+          "max_drawdown_pct": 22.11
         },
         "holdout": {
-          "trades": 15,
-          "win_rate_pct": 60.0,
-          "expectancy_pct": 1.2894,
-          "profit_factor": 2.615,
-          "total_return_pct": 20.47,
-          "max_drawdown_pct": 4.94
+          "trades": 29,
+          "win_rate_pct": 37.93,
+          "expectancy_pct": -0.1643,
+          "profit_factor": 0.88,
+          "total_return_pct": -5.71,
+          "max_drawdown_pct": 21.73
         }
       },
       "recent_trades": [
@@ -1200,28 +1201,28 @@
       },
       "metrics": {
         "train": {
-          "trades": 64,
-          "win_rate_pct": 32.81,
-          "expectancy_pct": -0.6109,
-          "profit_factor": 0.697,
-          "total_return_pct": -35.35,
-          "max_drawdown_pct": 39.46
+          "trades": 37,
+          "win_rate_pct": 37.84,
+          "expectancy_pct": -0.5038,
+          "profit_factor": 0.735,
+          "total_return_pct": -18.91,
+          "max_drawdown_pct": 20.61
         },
         "validation": {
-          "trades": 27,
-          "win_rate_pct": 29.63,
-          "expectancy_pct": -0.6759,
-          "profit_factor": 0.62,
-          "total_return_pct": -17.72,
-          "max_drawdown_pct": 22.95
+          "trades": 29,
+          "win_rate_pct": 24.14,
+          "expectancy_pct": -0.884,
+          "profit_factor": 0.6,
+          "total_return_pct": -24.36,
+          "max_drawdown_pct": 29.7
         },
         "holdout": {
-          "trades": 28,
-          "win_rate_pct": 46.43,
-          "expectancy_pct": -0.1147,
-          "profit_factor": 0.93,
-          "total_return_pct": -4.71,
-          "max_drawdown_pct": 13.83
+          "trades": 54,
+          "win_rate_pct": 37.04,
+          "expectancy_pct": -0.4968,
+          "profit_factor": 0.715,
+          "total_return_pct": -25.59,
+          "max_drawdown_pct": 30.11
         }
       },
       "recent_trades": [

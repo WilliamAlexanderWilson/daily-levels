@@ -18,6 +18,9 @@ EDGE_FRACTION = 0.10
 STOP_ATR_MULTIPLE = 0.35
 MIN_EDGE_TOUCHES = 2
 MAX_NORMALIZED_SLOPE = 0.35
+TRAIN_END = pd.Timestamp("2024-01-01T00:00:00Z")
+VALIDATION_END = pd.Timestamp("2025-01-01T00:00:00Z")
+HOLDOUT_END = pd.Timestamp("2026-11-06T04:00:00Z")
 
 
 @dataclass(frozen=True)
@@ -222,11 +225,19 @@ def _run_trade(
     }, exit_index
 
 
-def backtest_spec(candles: pd.DataFrame, spec: RangeSpec) -> list[dict]:
+def backtest_spec(
+    candles: pd.DataFrame,
+    spec: RangeSpec,
+    start: pd.Timestamp | None = None,
+    end: pd.Timestamp | None = None,
+) -> list[dict]:
     candles = candles.sort_index()
+    if end is not None:
+        candles = candles[candles.index < end]
     atr = _true_range(candles).rolling(14).mean()
     trades: list[dict] = []
-    cursor = max(spec.lookback_bars, 15)
+    period_start_index = int(candles.index.searchsorted(start)) if start is not None else 0
+    cursor = max(spec.lookback_bars, 15, period_start_index)
     while cursor < len(candles) - 1:
         state = _range_at(candles, cursor, spec, atr)
         direction = _signal(candles.iloc[cursor], state) if state else None
@@ -274,40 +285,40 @@ def _metrics(trades: list[dict]) -> dict:
     }
 
 
-def _split_trades(trades: list[dict], start: pd.Timestamp, end: pd.Timestamp) -> list[dict]:
-    # A validation trade that exits in the holdout has consumed holdout prices
-    # and cannot be used for model selection. Keep both ends of every trade
-    # inside one chronological partition; this is an explicit boundary embargo.
-    return [
-        trade
-        for trade in trades
-        if start <= pd.Timestamp(trade["entry_time"]) < end
-        and pd.Timestamp(trade["exit_time"]) < end
-    ]
-
-
-def build_range_lab(candles: pd.DataFrame, specs: tuple[RangeSpec, ...] = SPECS) -> dict:
+def build_range_lab(
+    candles: pd.DataFrame,
+    specs: tuple[RangeSpec, ...] = SPECS,
+    *,
+    train_end: pd.Timestamp = TRAIN_END,
+    validation_end: pd.Timestamp = VALIDATION_END,
+    holdout_end: pd.Timestamp = HOLDOUT_END,
+) -> dict:
     if len(candles) < 1_000:
         raise ValueError("At least 1,000 candles are required for a chronological holdout")
     candles = candles.sort_index()
-    train_end = candles.index[int(len(candles) * 0.60)]
-    validation_end = candles.index[int(len(candles) * 0.80)]
-    final_end = candles.index[-1] + pd.Timedelta(hours=4)
+    if not (candles.index[0] < train_end < validation_end < holdout_end):
+        raise ValueError("Fixed chronological boundaries must fall inside the available history")
+    if candles.index[-1] + pd.Timedelta(hours=4) < holdout_end:
+        raise ValueError("History does not reach the fixed holdout end")
     periods = {
         "train": (candles.index[0], train_end),
         "validation": (train_end, validation_end),
-        "holdout": (validation_end, final_end),
+        "holdout": (validation_end, holdout_end),
     }
 
     candidates = []
     for spec in specs:
-        trades = backtest_spec(candles, spec)
+        trades_by_period = {
+            name: backtest_spec(candles, spec, start=start, end=end)
+            for name, (start, end) in periods.items()
+        }
+        trades = [trade for name in periods for trade in trades_by_period[name]]
         result = {
             "spec": asdict(spec),
             "latest_range": _latest_range_snapshot(candles, spec),
             "metrics": {
-                name: _metrics(_split_trades(trades, start, end))
-                for name, (start, end) in periods.items()
+                name: _metrics(trades_by_period[name])
+                for name in periods
             },
             "recent_trades": trades[-12:],
         }
@@ -349,7 +360,8 @@ def build_range_lab(candles: pd.DataFrame, specs: tuple[RangeSpec, ...] = SPECS)
         "split": {
             "train_end": train_end.isoformat(),
             "validation_end": validation_end.isoformat(),
-            "selection_rule": "highest validation expectancy after costs; holdout never used to choose",
+            "holdout_end": holdout_end.isoformat(),
+            "selection_rule": "fixed calendar partitions; highest validation expectancy after costs; holdout never used to choose",
         },
         "costs": {
             "fee_per_side_pct": FEE_PER_SIDE * 100,

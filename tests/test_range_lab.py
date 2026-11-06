@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from src.range_lab.engine import RangeSpec, _metrics, _run_trade, _split_trades, build_range_lab
+from src.range_lab.engine import RangeSpec, _metrics, _run_trade, backtest_spec, build_range_lab
 from src.range_lab.fetch import _parse_candles
 
 
@@ -59,20 +59,27 @@ def test_time_exit_charges_slippage_on_both_sides():
     assert trade["return_pct"] < -0.49
 
 
-def test_split_embargo_excludes_trade_that_exits_in_next_period():
-    start = pd.Timestamp("2025-01-01T00:00:00Z")
-    end = pd.Timestamp("2025-02-01T00:00:00Z")
-    trades = [
-        {
-            "entry_time": "2025-01-31T20:00:00+00:00",
-            "exit_time": "2025-02-01T04:00:00+00:00",
-        },
-        {
-            "entry_time": "2025-01-10T00:00:00+00:00",
-            "exit_time": "2025-01-11T00:00:00+00:00",
-        },
-    ]
-    assert _split_trades(trades, start, end) == [trades[1]]
+def test_partition_replay_caps_positions_at_boundary(monkeypatch):
+    index = pd.date_range(datetime(2023, 1, 1, tzinfo=timezone.utc), periods=200, freq="4h")
+    candles = pd.DataFrame(
+        {"open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0, "volume": 1.0},
+        index=index,
+    )
+    spec = RangeSpec("structure", "Structure", "structure", 20)
+    boundary = index[100]
+    calls = []
+
+    def fake_range(_candles, cursor, _spec, _atr):
+        return {"low": 90.0, "high": 110.0, "midpoint": 100.0, "edge": 2.0, "atr": 1.0}
+
+    def fake_signal(_candle, _state):
+        calls.append(True)
+        return None
+
+    monkeypatch.setattr("src.range_lab.engine._range_at", fake_range)
+    monkeypatch.setattr("src.range_lab.engine._signal", fake_signal)
+    backtest_spec(candles, spec, start=boundary, end=index[110])
+    assert len(calls) == 9
 
 
 def test_build_range_lab_preserves_untouched_selection_boundary(monkeypatch):
@@ -90,21 +97,33 @@ def test_build_range_lab_preserves_untouched_selection_boundary(monkeypatch):
     spec_a = RangeSpec("a", "A", "structure", 20)
     spec_b = RangeSpec("b", "B", "structure", 20)
 
-    def fake_backtest(_candles, spec):
+    def fake_backtest(_candles, spec, start=None, end=None):
         validation_time = index[750].isoformat()
         holdout_time = index[1_050].isoformat()
         if spec.key == "a":
-            return [
+            trades = [
                 {"entry_time": validation_time, "exit_time": index[751].isoformat(), "return_pct": 2.0},
                 {"entry_time": holdout_time, "exit_time": index[1_051].isoformat(), "return_pct": -10.0},
             ]
+        else:
+            trades = [
+                {"entry_time": validation_time, "exit_time": index[751].isoformat(), "return_pct": 1.0},
+                {"entry_time": holdout_time, "exit_time": index[1_051].isoformat(), "return_pct": 50.0},
+            ]
         return [
-            {"entry_time": validation_time, "exit_time": index[751].isoformat(), "return_pct": 1.0},
-            {"entry_time": holdout_time, "exit_time": index[1_051].isoformat(), "return_pct": 50.0},
+            trade for trade in trades
+            if (start is None or pd.Timestamp(trade["entry_time"]) >= start)
+            and (end is None or pd.Timestamp(trade["exit_time"]) < end)
         ]
 
     monkeypatch.setattr("src.range_lab.engine.backtest_spec", fake_backtest)
-    result = build_range_lab(candles, (spec_a, spec_b))
+    result = build_range_lab(
+        candles,
+        (spec_a, spec_b),
+        train_end=index[600],
+        validation_end=index[900],
+        holdout_end=index[-1] + pd.Timedelta(hours=4),
+    )
     assert result["validation_leader_key"] == "a"
     assert result["selected_key"] is None
     assert result["holdout_passed"] is False
