@@ -161,6 +161,17 @@ observations may overlap so longer holding time cannot suppress a later paired
 signal. None may be promoted based on later results in the already-viewed
 historical holdout.
 
+The frozen regime diagnostic is `range-walk-forward-v1`, preregistered in
+`docs/RANGE-STRATEGY-RESEARCH.md` at commit `3a36950` before its results were
+computed. `walk_forward_stability` runs one continuous baseline simulation
+from 2023-01-01 through the end of 2026 H1 and buckets trades by entry time
+into seven non-overlapping six-month windows; it must not reset or truncate a
+position at a reporting boundary. Regimes use the fixed +/-15% BTC window
+return thresholds. Windows below 10 trades are low-sample, and the historical
+stable label requires at least four eligible windows, at least 75% positive,
+positive aggregate expectancy, and PF above 1. No definition passed. This
+screen never changes validation, selection, holdout, or forward-paper labels.
+
 ---
 
 ## Where we are

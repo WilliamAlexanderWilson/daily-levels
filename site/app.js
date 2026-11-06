@@ -1893,6 +1893,39 @@
         ? "Runner cleared the historical validation gate, but this second-round holdout was already visible and is not prospective proof."
         : "Runner did not clear the historical validation gate. A favorable old holdout result is not actionable evidence.";
     }
+    const walkForward = document.getElementById("range-lab-walk-forward");
+    walkForward.hidden = !view.walkForward;
+    if (view.walkForward) {
+      const status = document.getElementById("range-lab-walk-forward-status");
+      status.textContent = view.walkForward.stable ? "HISTORICALLY STABLE · SHOW" : "NOT STABLE · SHOW";
+      status.className = view.walkForward.stable ? "is-stable" : "is-failed";
+      document.getElementById("range-lab-walk-eligible").textContent = `${view.walkForward.eligibleWindows} / 7`;
+      document.getElementById("range-lab-walk-positive").textContent =
+        `${view.walkForward.positiveWindows} · ${view.walkForward.positiveShare}`;
+      document.getElementById("range-lab-walk-trades").textContent = String(view.walkForward.aggregateTrades);
+      document.getElementById("range-lab-walk-expectancy").textContent = view.walkForward.aggregateExpectancy;
+      document.getElementById("range-lab-walk-pf").textContent = view.walkForward.aggregateProfitFactor;
+      document.getElementById("range-lab-walk-drawdown").textContent = view.walkForward.aggregateDrawdown;
+      const windows = document.getElementById("range-lab-walk-windows");
+      windows.innerHTML = "";
+      for (const window of view.walkForward.windows) {
+        const card = document.createElement("article");
+        card.className = `range-lab-walk-window ${window.sampleEligible ? (window.positive ? "is-positive" : "is-negative") : "is-low-sample"}`;
+        const heading = document.createElement("div");
+        const label = document.createElement("strong");
+        label.textContent = window.label;
+        const regime = document.createElement("span");
+        regime.textContent = `${window.regime.toUpperCase()} · ${window.marketReturn}`;
+        heading.append(label, regime);
+        const result = document.createElement("small");
+        result.textContent = `${window.trades} trades · ${window.expectancy} · PF ${window.profitFactor}${window.sampleEligible ? "" : " · LOW SAMPLE"}`;
+        card.append(heading, result);
+        windows.appendChild(card);
+      }
+      document.getElementById("range-lab-walk-verdict").textContent = view.walkForward.stable
+        ? "Passed the frozen historical stability screen, but this is still already-viewed history—not prospective proof or a trade instruction."
+        : "Did not pass the frozen historical stability screen. Do not treat isolated positive windows as a live edge or trade instruction.";
+    }
     const forwardStart = RangeLab.forwardStart(activeRangeLabData);
     document.getElementById("range-lab-paper-note").textContent = forwardStart === "not started"
       ? "Forward paper tracking will begin with the next Range Lab data refresh. It places no orders and does not create a recommendation."
@@ -1917,6 +1950,7 @@
         document.getElementById("range-lab-options").innerHTML = "";
         document.getElementById("range-lab-detail").hidden = true;
         document.getElementById("range-lab-exit-test").hidden = true;
+        document.getElementById("range-lab-walk-forward").hidden = true;
       }
       return;
     }

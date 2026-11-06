@@ -23,6 +23,21 @@ VALIDATION_END = pd.Timestamp("2025-01-01T00:00:00Z")
 HOLDOUT_END = pd.Timestamp("2026-11-06T04:00:00Z")
 PAPER_TRACKING_VERSION = "range-rejection-v1"
 EXIT_EXPERIMENT_VERSION = "range-exit-runner-v1"
+WALK_FORWARD_VERSION = "range-walk-forward-v1"
+WALK_FORWARD_MIN_TRADES = 10
+WALK_FORWARD_MIN_ELIGIBLE_WINDOWS = 4
+WALK_FORWARD_MIN_POSITIVE_SHARE = 0.75
+WALK_FORWARD_BULL_THRESHOLD = 0.15
+WALK_FORWARD_BEAR_THRESHOLD = -0.15
+WALK_FORWARD_WINDOWS = (
+    ("2023_h1", "2023 H1", pd.Timestamp("2023-01-01T00:00:00Z"), pd.Timestamp("2023-07-01T00:00:00Z")),
+    ("2023_h2", "2023 H2", pd.Timestamp("2023-07-01T00:00:00Z"), pd.Timestamp("2024-01-01T00:00:00Z")),
+    ("2024_h1", "2024 H1", pd.Timestamp("2024-01-01T00:00:00Z"), pd.Timestamp("2024-07-01T00:00:00Z")),
+    ("2024_h2", "2024 H2", pd.Timestamp("2024-07-01T00:00:00Z"), pd.Timestamp("2025-01-01T00:00:00Z")),
+    ("2025_h1", "2025 H1", pd.Timestamp("2025-01-01T00:00:00Z"), pd.Timestamp("2025-07-01T00:00:00Z")),
+    ("2025_h2", "2025 H2", pd.Timestamp("2025-07-01T00:00:00Z"), pd.Timestamp("2026-01-01T00:00:00Z")),
+    ("2026_h1", "2026 H1", pd.Timestamp("2026-01-01T00:00:00Z"), pd.Timestamp("2026-07-01T00:00:00Z")),
+)
 
 
 @dataclass(frozen=True)
@@ -578,6 +593,115 @@ def _metrics(trades: list[dict]) -> dict:
     }
 
 
+def _walk_forward_regime(
+    candles: pd.DataFrame, start: pd.Timestamp, end: pd.Timestamp
+) -> tuple[str, float]:
+    window = candles[(candles.index >= start) & (candles.index < end)]
+    if len(window) < 2:
+        raise ValueError("Walk-forward regime window is not covered by candle history")
+    # Normalize binary floating-point noise so an exact +/-15% remains on the
+    # preregistered sideways boundary instead of slipping across it.
+    market_return = round(
+        float(window.iloc[-1]["close"] / window.iloc[0]["close"] - 1), 12
+    )
+    if market_return > WALK_FORWARD_BULL_THRESHOLD:
+        regime = "bull"
+    elif market_return < WALK_FORWARD_BEAR_THRESHOLD:
+        regime = "bear"
+    else:
+        regime = "sideways"
+    return regime, round(market_return * 100, 2)
+
+
+def walk_forward_stability(candles: pd.DataFrame, spec: RangeSpec) -> dict | None:
+    """Measure frozen baseline behavior across pre-registered time windows.
+
+    The simulation is continuous and only the reporting buckets change. A
+    trade is assigned by entry time, so positions are neither reset nor
+    truncated at a six-month boundary.
+    """
+    candles = candles.sort_index()
+    first_start = WALK_FORWARD_WINDOWS[0][2]
+    final_end = WALK_FORWARD_WINDOWS[-1][3]
+    if candles.index[0] >= first_start or candles.index[-1] < final_end:
+        return None
+
+    simulated = backtest_spec(candles, spec, start=first_start)
+    trades = [
+        trade
+        for trade in simulated
+        if first_start <= pd.Timestamp(trade["entry_time"]) < final_end
+    ]
+    windows = []
+    for key, label, start, end in WALK_FORWARD_WINDOWS:
+        window_trades = [
+            trade
+            for trade in trades
+            if start <= pd.Timestamp(trade["entry_time"]) < end
+        ]
+        metrics = _metrics(window_trades)
+        regime, market_return_pct = _walk_forward_regime(candles, start, end)
+        sample_eligible = metrics["trades"] >= WALK_FORWARD_MIN_TRADES
+        positive = bool(
+            sample_eligible
+            and metrics["expectancy_pct"] is not None
+            and metrics["expectancy_pct"] > 0
+            and (
+                metrics["profit_factor_infinite"]
+                or (
+                    metrics["profit_factor"] is not None
+                    and metrics["profit_factor"] > 1
+                )
+            )
+        )
+        windows.append({
+            "key": key,
+            "label": label,
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "regime": regime,
+            "market_return_pct": market_return_pct,
+            "sample_eligible": sample_eligible,
+            "positive": positive,
+            "metrics": metrics,
+        })
+
+    aggregate = _metrics(trades)
+    eligible_windows = sum(window["sample_eligible"] for window in windows)
+    positive_windows = sum(window["positive"] for window in windows)
+    positive_share = positive_windows / eligible_windows if eligible_windows else 0.0
+    aggregate_positive = bool(
+        aggregate["expectancy_pct"] is not None
+        and aggregate["expectancy_pct"] > 0
+        and (
+            aggregate["profit_factor_infinite"]
+            or (
+                aggregate["profit_factor"] is not None
+                and aggregate["profit_factor"] > 1
+            )
+        )
+    )
+    stable = bool(
+        eligible_windows >= WALK_FORWARD_MIN_ELIGIBLE_WINDOWS
+        and positive_share >= WALK_FORWARD_MIN_POSITIVE_SHARE
+        and aggregate_positive
+    )
+    return {
+        "version": WALK_FORWARD_VERSION,
+        "status": (
+            "historically stable under the frozen screen; not prospective proof"
+            if stable
+            else "did not pass the frozen historical stability screen"
+        ),
+        "stable": stable,
+        "eligible_windows": eligible_windows,
+        "positive_windows": positive_windows,
+        "positive_share_pct": round(positive_share * 100, 2),
+        "aggregate": aggregate,
+        "windows": windows,
+    }
+
+
 def build_range_lab(
     candles: pd.DataFrame,
     specs: tuple[RangeSpec, ...] = SPECS,
@@ -657,6 +781,7 @@ def build_range_lab(
                 "runner": runner_metrics,
                 "runner_minus_baseline": deltas,
             },
+            "walk_forward": walk_forward_stability(candles, spec),
             "forward_paper": forward_paper_track(candles, spec, holdout_end),
         }
         candidates.append(result)
@@ -736,6 +861,25 @@ def build_range_lab(
             "cohort": "paired to the baseline's exact signal, direction, and next-bar entry; runner observations may overlap",
             "costs": "same fee and slippage per side, weighted by leg size",
             "intrabar": "stop wins for all remaining size when stop and an unfilled target share a candle",
+        },
+        "walk_forward_screen": {
+            "version": WALK_FORWARD_VERSION,
+            "frozen_at": "2026-11-06",
+            "status": "exploratory historical stability diagnostic; not an untouched holdout or selection rule",
+            "window_count": len(WALK_FORWARD_WINDOWS),
+            "window_length": "six months; completed non-overlapping windows only",
+            "start": WALK_FORWARD_WINDOWS[0][2].isoformat(),
+            "end": WALK_FORWARD_WINDOWS[-1][3].isoformat(),
+            "assignment": "continuous simulation; bucket by entry timestamp; do not reset or truncate positions at window boundaries",
+            "regimes": {
+                "bull": f"window close-to-close return above {WALK_FORWARD_BULL_THRESHOLD * 100:.0f}%",
+                "bear": f"window close-to-close return below {WALK_FORWARD_BEAR_THRESHOLD * 100:.0f}%",
+                "sideways": "otherwise",
+            },
+            "minimum_trades_per_window": WALK_FORWARD_MIN_TRADES,
+            "minimum_eligible_windows": WALK_FORWARD_MIN_ELIGIBLE_WINDOWS,
+            "minimum_positive_share_pct": WALK_FORWARD_MIN_POSITIVE_SHARE * 100,
+            "promotion_effect": "none; does not change validation, selection, holdout, or forward-paper labels",
         },
         "forward_tracking": {
             "version": PAPER_TRACKING_VERSION,

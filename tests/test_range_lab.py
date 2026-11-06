@@ -8,10 +8,12 @@ from src.range_lab.engine import (
     _paper_trade,
     _run_runner_trade,
     _run_trade,
+    _walk_forward_regime,
     backtest_runner_cohort,
     backtest_spec,
     build_range_lab,
     forward_paper_track,
+    walk_forward_stability,
 )
 from src.range_lab.fetch import _parse_candles, _validate_history
 from src.range_lab.reconciliation import reconcile_spot_futures
@@ -404,6 +406,65 @@ def test_partition_replay_caps_positions_at_boundary(monkeypatch):
     monkeypatch.setattr("src.range_lab.engine._signal", fake_signal)
     backtest_spec(candles, spec, start=boundary, end=index[110])
     assert len(calls) == 9
+
+
+def test_walk_forward_uses_continuous_entries_and_frozen_sample_gate(monkeypatch):
+    index = pd.date_range(
+        datetime(2022, 12, 1, tzinfo=timezone.utc),
+        datetime(2026, 8, 1, tzinfo=timezone.utc),
+        freq="4h",
+    )
+    candles = pd.DataFrame(
+        {"open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0, "volume": 1.0},
+        index=index,
+    )
+    spec = RangeSpec("structure", "Structure", "structure", 20)
+    starts = pd.date_range("2023-01-01T00:00:00Z", periods=7, freq="6MS")
+    fake_trades = []
+    for window_index, start in enumerate(starts):
+        count = 10 if window_index < 4 else 9
+        for offset in range(count):
+            entry = start + pd.Timedelta(days=offset + 1)
+            exit_time = entry + pd.Timedelta(hours=4)
+            fake_trades.append({
+                "entry_time": entry.isoformat(),
+                "exit_time": exit_time.isoformat(),
+                "return_pct": 1.0,
+            })
+    # The reporting bucket is set by entry, even if the position exits after
+    # the next window begins.
+    fake_trades[9]["entry_time"] = "2023-06-30T20:00:00+00:00"
+    fake_trades[9]["exit_time"] = "2023-07-02T00:00:00+00:00"
+
+    calls = []
+
+    def fake_backtest(_candles, _spec, start=None, end=None):
+        calls.append((start, end))
+        return fake_trades
+
+    monkeypatch.setattr("src.range_lab.engine.backtest_spec", fake_backtest)
+    result = walk_forward_stability(candles, spec)
+    assert calls == [(pd.Timestamp("2023-01-01T00:00:00Z"), None)]
+    assert result["eligible_windows"] == 4
+    assert result["positive_windows"] == 4
+    assert result["positive_share_pct"] == 100.0
+    assert result["stable"] is True
+    assert result["windows"][0]["metrics"]["trades"] == 10
+    assert result["windows"][0]["regime"] == "sideways"
+    assert result["windows"][4]["sample_eligible"] is False
+
+
+def test_walk_forward_regime_uses_frozen_fifteen_percent_thresholds():
+    index = pd.date_range(datetime(2025, 1, 1, tzinfo=timezone.utc), periods=2, freq="4h")
+
+    def regime(final_close):
+        candles = pd.DataFrame({"close": [100.0, final_close]}, index=index)
+        return _walk_forward_regime(candles, index[0], index[-1] + pd.Timedelta(hours=4))[0]
+
+    assert regime(116.0) == "bull"
+    assert regime(84.0) == "bear"
+    assert regime(115.0) == "sideways"
+    assert regime(85.0) == "sideways"
 
 
 def test_build_range_lab_preserves_untouched_selection_boundary(monkeypatch):

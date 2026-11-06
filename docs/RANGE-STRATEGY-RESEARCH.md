@@ -182,6 +182,66 @@ pre-existing validation gate and no runner candidate is eligible for
 promotion. Positive old holdout cells are hypotheses for genuinely forward
 evidence, not trade calls.
 
+## Frozen walk-forward stability screen
+
+Frozen 2026-11-06 before any per-window results were computed. Version:
+`range-walk-forward-v1`.
+
+This screen asks whether each existing baseline range definition behaved
+consistently across different historical market regimes. It does not optimize,
+rank, or select a new strategy. The six range definitions, completed-candle
+rejection entry, next-bar-open execution, midpoint target, 0.35 ATR stop,
+maximum holding window, 0.20% fee per side, 0.05% slippage per side, and
+pessimistic same-bar ordering remain unchanged.
+
+The pre-registered design is:
+
+1. Use seven completed, non-overlapping six-month observation windows:
+   2023 H1, 2023 H2, 2024 H1, 2024 H2, 2025 H1, 2025 H2, and 2026 H1.
+2. Run each frozen definition as one chronological simulation from 2023-01-01
+   through 2026-07-01. Range state may use candles before a window, but never
+   candles after a signal. Assign a completed trade to the window containing
+   its entry timestamp. This avoids resetting indicators or truncating trades
+   at a window boundary.
+3. Label each window from its BTC close-to-close return: `bull` above +15%,
+   `bear` below -15%, and `sideways` otherwise. Regime labels describe the
+   observed market; they do not alter entries or exits.
+4. A window is sample-eligible only with at least 10 completed trades. Smaller
+   windows remain visible and are explicitly marked low sample.
+5. A sample-eligible window is positive only when expectancy after modeled
+   costs is above zero and profit factor is above 1 (or infinite because it
+   has wins and no losses).
+6. A definition receives a historical `stable` label only when at least four
+   windows are sample-eligible, at least 75% of eligible windows are positive,
+   aggregate expectancy is above zero, and aggregate profit factor is above 1.
+7. Do not change window length, regime thresholds, minimum sample, stability
+   threshold, costs, or trading rules after viewing results. Do not use the
+   result to relabel a candidate validated, selected, or ready for real orders.
+
+These prices and periods have already been inspected during earlier Range Lab
+work. The result is an exploratory stability diagnostic, not an untouched
+holdout, prospective evidence, or a promise of profitability.
+
+### Frozen walk-forward result
+
+Computed only after commit `3a36950` recorded the rules above.
+
+| Definition | Eligible windows | Positive eligible windows | Aggregate expectancy | Aggregate PF | Aggregate trades | Max drawdown |
+|---|---:|---:|---:|---:|---:|---:|
+| $2k–$4k | 0 | 0 | -1.0011% | 0.409 | 15 | 14.34% |
+| $5k–$10k | 0 | 0 | -1.3600% | 0.351 | 31 | 38.52% |
+| 5%–10% | 2 | 1 | -1.0132% | 0.327 | 39 | 33.19% |
+| 10%–20% | 2 | 0 | -0.5435% | 0.719 | 66 | 44.71% |
+| 4–8 ATR | 0 | 0 | -0.5168% | 0.681 | 52 | 39.19% |
+| Structure | 6 | 2 | -0.4814% | 0.742 | 92 | 46.83% |
+
+No definition passed. Structure had the strongest coverage, but only two of
+its six sample-eligible windows were positive, and its aggregate result was
+negative after modeled costs. Several isolated low-sample windows looked
+positive; the frozen rules deliberately prevent those cells from being
+promoted. The dashboard keeps all seven windows available inside a collapsed
+diagnostic and labels under-10-trade windows `LOW SAMPLE`.
+
 ## Tomorrow's plan
 
 1. ~~Reconcile the futures candles against Kraken spot over their overlapping
@@ -190,8 +250,9 @@ evidence, not trade calls.
 2. ~~Freeze a small, pre-registered second-round test: midpoint exit versus a
    half-at-midpoint/half-at-opposite-edge runner, without adding parameters
    after seeing results.~~ Completed 2026-11-06; no runner cleared validation.
-3. Add walk-forward windows so the dashboard shows whether an edge is stable
-   across regimes instead of relying on one split.
+3. ~~Add walk-forward windows so the dashboard shows whether an edge is stable
+   across regimes instead of relying on one split.~~ Completed 2026-11-06; no
+   definition passed the frozen stability screen.
 4. Add long/short breakdowns, cost sensitivity, drawdown duration, and a
    minimum-sample warning.
 5. Forward-paper-track any candidate that passes, with no real orders, before
