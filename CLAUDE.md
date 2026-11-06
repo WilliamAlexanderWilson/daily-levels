@@ -123,7 +123,7 @@ src/
     cli.py                            # entry point: python -m src.spy.cli — prints results, no JSON write
 tests/                        # hand-built fixtures + one real-Kraken-response fixture
 site/
-  index.html / styles.css / app.js   # live chart (polls Kraken directly) + renders levels/scorecard/diff/trades
+  index.html / styles.css / app.js   # live Kraken WebSocket chart + renders levels/scorecard/diff/trades
   data/                       # JSON the Action writes; the page reads levels/scorecard from here
     history/{btc,eth}/YYYY-MM-DD.json   # one snapshot per day, feeds daily_diff
 .github/workflows/

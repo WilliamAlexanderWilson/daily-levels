@@ -113,7 +113,12 @@
       ? recentBoundaryTest(candles, boundary, side)
       : null;
     const hasTouch = Boolean(boundaryTest && boundaryTest.touched);
-    const hasConfirmation = Boolean(boundaryTest && boundaryTest.confirmed);
+    // A confirmation is actionable context only on the latest completed
+    // candle. Keeping an older reclaim "ready" after price wanders back to
+    // the edge would turn stale history into a seemingly live suggestion.
+    const hasConfirmation = Boolean(
+      boundaryTest && boundaryTest.confirmed && boundaryTest.barsAgo === 0
+    );
     const readyCount = [hasLocation, hasTouch, hasConfirmation].filter(Boolean).length;
     return {
       hasLocation,
@@ -124,6 +129,19 @@
       boundary,
       side,
       boundaryTest,
+    };
+  }
+
+  function confirmedSetup(decision, candles) {
+    const gate = patienceState(decision, candles);
+    if (!gate.isReady || !gate.boundaryTest || gate.boundaryTest.barsAgo !== 0) return null;
+    const direction = decision.status === "long-watch" ? "long" : "short";
+    return {
+      direction,
+      time: gate.boundaryTest.time,
+      close: gate.boundaryTest.close,
+      boundaryName: gate.boundary.name,
+      label: `${direction.toUpperCase()} SETUP ✓`,
     };
   }
 
@@ -364,6 +382,7 @@
     completedCloseAbove,
     strategyTrackPosition,
     patienceState,
+    confirmedSetup,
     patienceAlertFingerprint,
     rangeZonePrices,
     buildStrategyRange,
