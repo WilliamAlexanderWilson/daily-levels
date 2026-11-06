@@ -144,14 +144,36 @@ test("marks only the upper deviation as a short watch", () => {
 
 test("exposes the complete macro range and decision zones for the chart", () => {
   const prices = rangeZonePrices(buildStrategyRange(75900));
-  assert.deepEqual(prices, {
-    low: 60000,
-    longThreshold: 62000,
-    shortThreshold: 80000,
-    high: 82800,
-    supportLow: 72000,
-    supportHigh: 77000,
-    failureLevel: 74000,
-  });
+  assert.equal(prices.low, 60000);
+  assert.equal(prices.high, 82800);
+  assert.equal(prices.supportLow, 72000);
+  assert.equal(prices.supportHigh, 77000);
+  assert.deepEqual(prices.segments.map(({ low, high, kind }) => ({ low, high, kind })), [
+    { low: 80000, high: 82800, kind: "short" },
+    { low: 77000, high: 80000, kind: "wait" },
+    { low: 72000, high: 77000, kind: "long" },
+    { low: 62000, high: 72000, kind: "wait" },
+    { low: 60000, high: 62000, kind: "long" },
+  ]);
   assert.equal(BTC_MACRO_RANGE.sourceDate, "2026-11-04");
+});
+
+test("keeps a just-confirmed support reclaim eligible for the 3-of-3 gate", () => {
+  const candles = [
+    { time: 1, low: 71500, high: 78000, close: 77500 },
+    { time: 2, low: 77400, high: 77800, close: 77600 }, // forming: ignored
+  ];
+  const decision = buildStrategyRange(77500, BTC_MACRO_RANGE, candles);
+  assert.equal(decision.status, "long-watch");
+  assert.equal(patienceState(decision, candles).isReady, true);
+});
+
+test("keeps a just-confirmed upper rejection eligible for the 3-of-3 gate", () => {
+  const candles = [
+    { time: 1, low: 79000, high: 81000, close: 79500 },
+    { time: 2, low: 79400, high: 79900, close: 79600 }, // forming: ignored
+  ];
+  const decision = buildStrategyRange(79500, BTC_MACRO_RANGE, candles);
+  assert.equal(decision.status, "short-watch");
+  assert.equal(patienceState(decision, candles).isReady, true);
 });

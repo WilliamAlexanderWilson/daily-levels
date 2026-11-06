@@ -133,6 +133,13 @@
         supportLow: range.supportLow,
         supportHigh: range.supportHigh,
         failureLevel: range.failureLevel,
+        segments: [
+          { low: range.high, high: range.reclaim, kind: "short", label: "SHORT WATCH · UPPER DEVIATION" },
+          { low: range.supportHigh, high: range.high, kind: "wait", label: "WAIT" },
+          { low: range.supportLow, high: range.supportHigh, kind: "long", label: "LONG WATCH · DECISION SUPPORT" },
+          { low: range.longWatchHigh, high: range.supportLow, kind: "wait", label: "WAIT" },
+          { low: range.low, high: range.longWatchHigh, kind: "long", label: "LONG WATCH · RANGE FLOOR" },
+        ],
       };
     }
     if (!decision || !decision.support || !decision.resistance) return null;
@@ -178,7 +185,7 @@
     };
   }
 
-  function buildStrategyRange(price, range = BTC_MACRO_RANGE) {
+  function buildStrategyRange(price, range = BTC_MACRO_RANGE, candles = []) {
     if (!Number.isFinite(price) || !range || !(range.high > range.low) || !(range.reclaim >= range.high)) {
       return emptyDecision("The sourced macro-range framework is unavailable. Do not substitute a nearby level bracket.");
     }
@@ -195,7 +202,22 @@
     let summary = "Let price reach a defined decision area. Nearby levels are context, not a reason to manufacture a trade.";
     let confirmationSupport = support;
 
-    if (price >= range.supportLow && price <= range.supportHigh) {
+    const supportTest = recentBoundaryTest(candles, support, "support");
+    const resistanceTest = recentBoundaryTest(candles, resistance, "resistance");
+    const recentSupportConfirmation = Boolean(supportTest && supportTest.confirmed && supportTest.barsAgo === 0);
+    const recentResistanceConfirmation = Boolean(resistanceTest && resistanceTest.confirmed && resistanceTest.barsAgo === 0);
+
+    if (recentSupportConfirmation && price > range.supportHigh && price < range.high) {
+      status = "long-watch";
+      label = "LONG WATCH";
+      title = "Support reclaim confirmed — assess, do not chase";
+      summary = `The most recent completed candle tested ${range.supportLow.toLocaleString()}–${range.supportHigh.toLocaleString()} support and closed back above it. The Patience gate can now complete; risk and size remain separate decisions.`;
+    } else if (recentResistanceConfirmation && price < range.high && price > range.supportHigh) {
+      status = "short-watch";
+      label = "SHORT WATCH";
+      title = "Upper rejection confirmed — assess, do not chase";
+      summary = `The most recent completed candle tested the ${range.high.toLocaleString()}–${range.reclaim.toLocaleString()} deviation and closed back below it. The Patience gate can now complete; risk and size remain separate decisions.`;
+    } else if (price >= range.supportLow && price <= range.supportHigh) {
       status = "long-watch";
       label = "LONG WATCH";
       title = "Support decision zone — wait for the reclaim";

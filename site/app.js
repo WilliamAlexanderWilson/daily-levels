@@ -774,11 +774,18 @@
     band.style.right = `${axisWidth}px`;
     band.classList.toggle("is-compact", visibleHeight < 90);
     const clampY = (coordinate) => Math.max(clippedTop, Math.min(clippedBottom, coordinate));
-    const zones = [
-      { className: "active-range-short", label: "SHORT WATCH", top: clippedTop, bottom: clampY(yShortThreshold) },
-      { className: "active-range-wait", label: "WAIT", top: clampY(yShortThreshold), bottom: clampY(yLongThreshold) },
-      { className: "active-range-long", label: "LONG WATCH", top: clampY(yLongThreshold), bottom: clippedBottom },
-    ];
+    const zones = Array.isArray(zonePrices.segments)
+      ? zonePrices.segments.map((segment) => ({
+          className: `active-range-${segment.kind}`,
+          label: segment.label,
+          top: clampY(candleSeries.priceToCoordinate(segment.high)),
+          bottom: clampY(candleSeries.priceToCoordinate(segment.low)),
+        }))
+      : [
+          { className: "active-range-short", label: "SHORT WATCH", top: clippedTop, bottom: clampY(yShortThreshold) },
+          { className: "active-range-wait", label: "WAIT", top: clampY(yShortThreshold), bottom: clampY(yLongThreshold) },
+          { className: "active-range-long", label: "LONG WATCH", top: clampY(yLongThreshold), bottom: clippedBottom },
+        ];
     for (const zone of zones) {
       const zoneElement = document.createElement("span");
       zoneElement.className = `active-range-zone ${zone.className}`;
@@ -788,7 +795,7 @@
       band.appendChild(zoneElement);
     }
 
-    if (Number.isFinite(zonePrices.supportLow) && Number.isFinite(zonePrices.supportHigh)) {
+    if (!Array.isArray(zonePrices.segments) && Number.isFinite(zonePrices.supportLow) && Number.isFinite(zonePrices.supportHigh)) {
       const ySupportTop = candleSeries.priceToCoordinate(zonePrices.supportHigh);
       const ySupportBottom = candleSeries.priceToCoordinate(zonePrices.supportLow);
       if (ySupportTop !== null && ySupportBottom !== null) {
@@ -1484,7 +1491,7 @@
 
   function renderRangeDecision(levels, scorecard, currentPrice) {
     const decision = state.asset === "btc"
-      ? RangeDecision.buildStrategyRange(currentPrice)
+      ? RangeDecision.buildStrategyRange(currentPrice, RangeDecision.BTC_MACRO_RANGE, activeCandles)
       : RangeDecision.build(levels, scorecard, currentPrice);
     activeRangeDecision = decision;
     setDecisionClass(decision.status);
