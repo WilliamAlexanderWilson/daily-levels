@@ -68,7 +68,7 @@ spot; the Range Lab clearly labels its futures research source.
 
 | Definition | Validation trades | Validation expectancy | Holdout trades | Holdout expectancy | Holdout profit factor |
 |---|---:|---:|---:|---:|---:|
-| $2k–$4k | 0 | — | 2 | +1.1763% | — |
+| $2k–$4k | 0 | — | 2 | +1.1763% | ∞ (no losing trades; sample far too small) |
 | $5k–$10k | 15 | -2.0302% | 25 | -0.4902% | 0.678 |
 | 5%–10% | 3 | -2.1859% | 35 | -0.7627% | 0.440 |
 | 10%–20% | 23 | -2.0779% | 34 | -0.2593% | 0.862 |

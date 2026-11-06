@@ -1898,10 +1898,16 @@
     }
     activeRangeLabData = data;
     panel.hidden = state.asset !== "btc";
+    const freshness = RangeLab.freshness(data);
     const verdict = document.getElementById("range-lab-verdict");
-    verdict.className = `range-lab-verdict ${data.holdout_passed ? "is-passed" : "is-failed"}`;
-    verdict.textContent = data.holdout_passed ? "HOLDOUT PASSED" : "NO VALIDATED EDGE YET";
-    document.getElementById("range-lab-warning").textContent = data.verdict;
+    verdict.className = `range-lab-verdict ${freshness.stale ? "is-stale" : data.holdout_passed ? "is-passed" : "is-failed"}`;
+    verdict.textContent = freshness.stale
+      ? "RESEARCH DATA STALE"
+      : data.holdout_passed ? "HOLDOUT PASSED" : "NO VALIDATED EDGE YET";
+    document.getElementById("range-lab-current-label").textContent = freshness.stale
+      ? "STALE COMPUTED RANGE"
+      : "LAST COMPUTED RANGE";
+    document.getElementById("range-lab-warning").textContent = `${data.verdict} · ${freshness.label}.`;
     const options = document.getElementById("range-lab-options");
     options.innerHTML = "";
     for (const candidate of data.candidates) {

@@ -36,6 +36,12 @@ def test_metrics_compound_and_include_drawdown():
     assert result["max_drawdown_pct"] == 5.0
 
 
+def test_metrics_represents_zero_loss_profit_factor_without_invalid_json_number():
+    result = _metrics([{"return_pct": 1.0}, {"return_pct": 2.0}])
+    assert result["profit_factor"] is None
+    assert result["profit_factor_infinite"] is True
+
+
 def test_time_exit_charges_slippage_on_both_sides():
     index = pd.date_range(datetime(2023, 1, 1, tzinfo=timezone.utc), periods=3, freq="4h")
     candles = pd.DataFrame(
@@ -127,4 +133,38 @@ def test_build_range_lab_preserves_untouched_selection_boundary(monkeypatch):
     assert result["validation_leader_key"] == "a"
     assert result["selected_key"] is None
     assert result["holdout_passed"] is False
+
+
+def test_zero_loss_profit_factor_can_pass_only_with_required_sample_sizes(monkeypatch):
+    index = pd.date_range(datetime(2023, 1, 1, tzinfo=timezone.utc), periods=1_200, freq="4h")
+    candles = pd.DataFrame(
+        {"open": 100.0, "high": 105.0, "low": 95.0, "close": 100.0, "volume": 1.0},
+        index=index,
+    )
+    spec = RangeSpec("only", "Only", "structure", 20)
+    train_end = index[600]
+    validation_end = index[900]
+    holdout_end = index[-1] + pd.Timedelta(hours=4)
+
+    def fake_backtest(_candles, _spec, start=None, end=None):
+        count = 20 if start == train_end else 30 if start == validation_end else 1
+        return [
+            {
+                "entry_time": (start + pd.Timedelta(hours=4 * offset)).isoformat(),
+                "exit_time": (start + pd.Timedelta(hours=4 * offset + 1)).isoformat(),
+                "return_pct": 1.0,
+            }
+            for offset in range(count)
+        ]
+
+    monkeypatch.setattr("src.range_lab.engine.backtest_spec", fake_backtest)
+    result = build_range_lab(
+        candles,
+        (spec,),
+        train_end=train_end,
+        validation_end=validation_end,
+        holdout_end=holdout_end,
+    )
+    assert result["selected_key"] == "only"
+    assert result["holdout_passed"] is True
 

@@ -288,6 +288,11 @@ main {
   background: color-mix(in srgb, var(--support) 13%, transparent);
 }
 
+.range-lab-verdict.is-stale {
+  color: var(--flip);
+  background: color-mix(in srgb, var(--flip) 13%, transparent);
+}
+
 .range-lab-intro,
 .range-lab-warning {
   margin: 0.55rem 0 0;

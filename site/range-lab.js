@@ -35,11 +35,24 @@
       holdout,
       expectancy: metric(holdout.expectancy_pct, "% / trade"),
       totalReturn: metric(holdout.total_return_pct, "%"),
-      profitFactor: Number.isFinite(holdout.profit_factor) ? holdout.profit_factor.toFixed(2) : "—",
+      profitFactor: holdout.profit_factor_infinite
+        ? "∞"
+        : Number.isFinite(holdout.profit_factor) ? holdout.profit_factor.toFixed(2) : "—",
       passed: Boolean(data.holdout_passed && data.selected_key === candidate.spec.key),
     };
   }
 
-  return { candidateByKey, defaultKey, metric, viewModel };
+  function freshness(data, nowMs = Date.now()) {
+    const updatedMs = Date.parse(data && data.generated_at);
+    if (!Number.isFinite(updatedMs)) return { stale: true, ageHours: null, label: "update time unavailable" };
+    const ageHours = Math.max(0, (nowMs - updatedMs) / 3_600_000);
+    return {
+      stale: ageHours > 12,
+      ageHours,
+      label: ageHours < 1 ? "updated within the hour" : `updated ${Math.floor(ageHours)}h ago`,
+    };
+  }
+
+  return { candidateByKey, defaultKey, freshness, metric, viewModel };
 });
 

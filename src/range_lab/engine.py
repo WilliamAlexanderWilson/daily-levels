@@ -260,6 +260,7 @@ def _metrics(trades: list[dict]) -> dict:
             "win_rate_pct": None,
             "expectancy_pct": None,
             "profit_factor": None,
+            "profit_factor_infinite": False,
             "total_return_pct": None,
             "max_drawdown_pct": None,
         }
@@ -280,6 +281,7 @@ def _metrics(trades: list[dict]) -> dict:
         "win_rate_pct": round(100 * len(wins) / len(trades), 2),
         "expectancy_pct": round(100 * sum(returns) / len(returns), 4),
         "profit_factor": round(gross_profit / gross_loss, 3) if gross_loss else None,
+        "profit_factor_infinite": bool(wins and not gross_loss),
         "total_return_pct": round((equity - 1) * 100, 2),
         "max_drawdown_pct": round(max_drawdown * 100, 2),
     }
@@ -327,7 +329,11 @@ def build_range_lab(
     def validation_score(candidate: dict) -> tuple[float, float, int]:
         metrics = candidate["metrics"]["validation"]
         expectancy = metrics["expectancy_pct"] if metrics["expectancy_pct"] is not None else -inf
-        profit_factor = metrics["profit_factor"] if metrics["profit_factor"] is not None else -inf
+        profit_factor = (
+            inf
+            if metrics["profit_factor_infinite"]
+            else metrics["profit_factor"] if metrics["profit_factor"] is not None else -inf
+        )
         return expectancy, profit_factor, metrics["trades"]
 
     validation_leader = max(candidates, key=validation_score)
@@ -336,8 +342,10 @@ def build_range_lab(
         validation["trades"] >= 20
         and validation["expectancy_pct"] is not None
         and validation["expectancy_pct"] > 0
-        and validation["profit_factor"] is not None
-        and validation["profit_factor"] > 1
+        and (
+            validation["profit_factor_infinite"]
+            or (validation["profit_factor"] is not None and validation["profit_factor"] > 1)
+        )
     ) else None
     holdout = selected["metrics"]["holdout"] if selected else None
     passed = bool(
@@ -345,11 +353,16 @@ def build_range_lab(
         and holdout["trades"] >= 30
         and holdout["expectancy_pct"] is not None
         and holdout["expectancy_pct"] > 0
-        and holdout["profit_factor"] is not None
-        and holdout["profit_factor"] > 1
+        and (
+            holdout["profit_factor_infinite"]
+            or (holdout["profit_factor"] is not None and holdout["profit_factor"] > 1)
+        )
     )
+    data_through = candles.index[-1] + pd.Timedelta(hours=4)
     return {
-        "generated_at": pd.Timestamp.now(tz="UTC").isoformat(),
+        # Candle-derived rather than wall-clock-derived so a refresh with no
+        # new completed bar does not create a meaningless commit/deployment.
+        "generated_at": data_through.isoformat(),
         "instrument": "Kraken PF_XBTUSD perpetual futures",
         "timeframe": "4h",
         "history": {
