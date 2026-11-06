@@ -126,6 +126,39 @@ and <https://docs.kraken.com/api/docs/futures-api/charts/candles>.
 - Zakamulin shows why transaction costs materially alter mean-reversion
   strategy design: <https://arxiv.org/abs/1103.4934>
 
+## Pre-registered exit comparison
+
+Frozen 2026-11-06 before the runner results were computed. Version:
+`range-exit-runner-v1`.
+
+The baseline remains unchanged: close 100% of the position at the range
+midpoint, the original stop, or the existing maximum holding window.
+
+The single comparison variant is:
+
+1. Enter from the same completed-candle rejection at the same next-bar open.
+2. Close 50% at the range midpoint.
+3. Close the remaining 50% at the opposite range boundary.
+4. Keep the original stop 0.35 ATR beyond the entry boundary for all remaining
+   size; do not move it to breakeven after the midpoint fills.
+5. Keep the same maximum holding window. Any unclosed size exits at that final
+   bar's close.
+6. Charge the same 0.20% fee and 0.05% slippage per side, weighted by the size
+   of each leg.
+7. If a stop and an unfilled target occur in the same candle, resolve the stop
+   first for all size still open. If both favorable targets occur without the
+   stop, both may fill because price necessarily crossed the midpoint on the
+   way to the opposite edge.
+8. Apply this one frozen variant to all six existing range definitions and the
+   same train, validation, and historical holdout partitions. Do not add a
+   breakeven rule, trailing stop, alternate split, or new holding period after
+   seeing the results.
+
+This is an exploratory historical sensitivity test, not a new untouched
+holdout: the existing 2025-2026 holdout prices were already inspected while
+building the first Range Lab. Even a favorable runner result cannot earn a
+validated or proven label without genuinely later forward evidence.
+
 ## Tomorrow's plan
 
 1. ~~Reconcile the futures candles against Kraken spot over their overlapping
