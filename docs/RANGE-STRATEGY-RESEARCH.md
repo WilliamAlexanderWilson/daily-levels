@@ -222,6 +222,26 @@ These prices and periods have already been inspected during earlier Range Lab
 work. The result is an exploratory stability diagnostic, not an untouched
 holdout, prospective evidence, or a promise of profitability.
 
+### Frozen walk-forward result
+
+Computed only after commit `3a36950` recorded the rules above.
+
+| Definition | Eligible windows | Positive eligible windows | Aggregate expectancy | Aggregate PF | Aggregate trades | Max drawdown |
+|---|---:|---:|---:|---:|---:|---:|
+| $2k–$4k | 0 | 0 | -1.0011% | 0.409 | 15 | 14.34% |
+| $5k–$10k | 0 | 0 | -1.3600% | 0.351 | 31 | 38.52% |
+| 5%–10% | 2 | 1 | -1.0132% | 0.327 | 39 | 33.19% |
+| 10%–20% | 2 | 0 | -0.5435% | 0.719 | 66 | 44.71% |
+| 4–8 ATR | 0 | 0 | -0.5168% | 0.681 | 52 | 39.19% |
+| Structure | 6 | 2 | -0.4814% | 0.742 | 92 | 46.83% |
+
+No definition passed. Structure had the strongest coverage, but only two of
+its six sample-eligible windows were positive, and its aggregate result was
+negative after modeled costs. Several isolated low-sample windows looked
+positive; the frozen rules deliberately prevent those cells from being
+promoted. The dashboard keeps all seven windows available inside a collapsed
+diagnostic and labels under-10-trade windows `LOW SAMPLE`.
+
 ## Tomorrow's plan
 
 1. ~~Reconcile the futures candles against Kraken spot over their overlapping
@@ -230,8 +250,9 @@ holdout, prospective evidence, or a promise of profitability.
 2. ~~Freeze a small, pre-registered second-round test: midpoint exit versus a
    half-at-midpoint/half-at-opposite-edge runner, without adding parameters
    after seeing results.~~ Completed 2026-11-06; no runner cleared validation.
-3. Add walk-forward windows so the dashboard shows whether an edge is stable
-   across regimes instead of relying on one split.
+3. ~~Add walk-forward windows so the dashboard shows whether an edge is stable
+   across regimes instead of relying on one split.~~ Completed 2026-11-06; no
+   definition passed the frozen stability screen.
 4. Add long/short breakdowns, cost sensitivity, drawdown duration, and a
    minimum-sample warning.
 5. Forward-paper-track any candidate that passes, with no real orders, before

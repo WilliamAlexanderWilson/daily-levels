@@ -43,6 +43,38 @@ const data = {
           holdout: { trades: 24, expectancy_pct: 0.5, profit_factor: 1.3, profit_factor_infinite: false },
         },
       },
+      walk_forward: {
+        stable: false,
+        status: "did not pass the frozen historical stability screen",
+        eligible_windows: 2,
+        positive_windows: 1,
+        positive_share_pct: 50,
+        aggregate: {
+          trades: 39,
+          expectancy_pct: -1.0132,
+          profit_factor: 0.327,
+          profit_factor_infinite: false,
+          max_drawdown_pct: 33.19,
+        },
+        windows: [
+          {
+            label: "2023 H1",
+            regime: "bull",
+            market_return_pct: 84.49,
+            sample_eligible: false,
+            positive: false,
+            metrics: { trades: 2, expectancy_pct: -2.6766, profit_factor: 0, profit_factor_infinite: false },
+          },
+          {
+            label: "2023 H2",
+            regime: "bull",
+            market_return_pct: 39.09,
+            sample_eligible: true,
+            positive: true,
+            metrics: { trades: 11, expectancy_pct: 0.085, profit_factor: 1.1, profit_factor_infinite: false },
+          },
+        ],
+      },
     },
     {
       spec: { key: "structure", label: "Structure range", method: "structure" },
@@ -69,6 +101,39 @@ assert.deepEqual(view.exitComparison, {
   runnerHoldoutTrades: 24,
   runnerHoldoutProfitFactor: "1.30",
   validationEligible: false,
+});
+assert.deepEqual(view.walkForward, {
+  stable: false,
+  status: "did not pass the frozen historical stability screen",
+  eligibleWindows: 2,
+  positiveWindows: 1,
+  positiveShare: "50%",
+  aggregateTrades: 39,
+  aggregateExpectancy: "-1.0132% / trade",
+  aggregateProfitFactor: "0.33",
+  aggregateDrawdown: "33.19%",
+  windows: [
+    {
+      label: "2023 H1",
+      regime: "bull",
+      marketReturn: "+84.49% BTC",
+      trades: 2,
+      expectancy: "-2.6766% / trade",
+      profitFactor: "0.00",
+      sampleEligible: false,
+      positive: false,
+    },
+    {
+      label: "2023 H2",
+      regime: "bull",
+      marketReturn: "+39.09% BTC",
+      trades: 11,
+      expectancy: "+0.085% / trade",
+      profitFactor: "1.10",
+      sampleEligible: true,
+      positive: true,
+    },
+  ],
 });
 assert.equal(RangeLab.freshness(data, Date.parse("2026-11-06T10:00:00Z")).stale, false);
 assert.equal(RangeLab.freshness(data, Date.parse("2026-11-07T10:00:00Z")).stale, true);

@@ -33,6 +33,7 @@
       pending_entry: null,
     };
     const exitComparison = candidate.exit_comparison || null;
+    const walkForward = candidate.walk_forward || null;
     let paperStatus = "Waiting for a completed 4H rejection";
     if (paper.pending_entry) {
       paperStatus = `Pending ${paper.pending_entry.direction} entry · next 4H open`;
@@ -72,6 +73,37 @@
           && exitComparison.runner.validation.expectancy_pct > 0
           && (exitComparison.runner.validation.profit_factor_infinite
             || exitComparison.runner.validation.profit_factor > 1),
+      } : null,
+      walkForward: walkForward ? {
+        stable: Boolean(walkForward.stable),
+        status: walkForward.status,
+        eligibleWindows: walkForward.eligible_windows,
+        positiveWindows: walkForward.positive_windows,
+        positiveShare: `${walkForward.positive_share_pct}%`,
+        aggregateTrades: walkForward.aggregate.trades,
+        aggregateExpectancy: metric(walkForward.aggregate.expectancy_pct, "% / trade"),
+        aggregateProfitFactor: walkForward.aggregate.profit_factor_infinite
+          ? "∞"
+          : Number.isFinite(walkForward.aggregate.profit_factor)
+            ? walkForward.aggregate.profit_factor.toFixed(2)
+            : "—",
+        aggregateDrawdown: Number.isFinite(walkForward.aggregate.max_drawdown_pct)
+          ? `${walkForward.aggregate.max_drawdown_pct}%`
+          : "—",
+        windows: walkForward.windows.map((window) => ({
+          label: window.label,
+          regime: window.regime,
+          marketReturn: metric(window.market_return_pct, "% BTC"),
+          trades: window.metrics.trades,
+          expectancy: metric(window.metrics.expectancy_pct, "% / trade"),
+          profitFactor: window.metrics.profit_factor_infinite
+            ? "∞"
+            : Number.isFinite(window.metrics.profit_factor)
+              ? window.metrics.profit_factor.toFixed(2)
+              : "—",
+          sampleEligible: Boolean(window.sample_eligible),
+          positive: Boolean(window.positive),
+        })),
       } : null,
       passed: Boolean(data.holdout_passed && data.selected_key === candidate.spec.key),
     };

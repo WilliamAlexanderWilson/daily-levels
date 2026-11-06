@@ -277,6 +277,18 @@ allowed so holding time cannot change which signals are compared. The UI
 therefore shows the comparison inside a collapsed detail instead of promoting
 it as an entry or exit instruction.
 
+The preregistered `range-walk-forward-v1` diagnostic then runs each unchanged
+baseline definition continuously across seven completed six-month windows
+from 2023 H1 through 2026 H1. Trades are bucketed by entry time without
+resetting or truncating positions at window boundaries. A window needs at
+least 10 trades to count; the frozen stability screen requires at least four
+eligible windows, 75% positive eligible windows, positive aggregate
+expectancy, and aggregate profit factor above 1. No definition passed.
+Structure had the most coverage (6 eligible windows, 2 positive) but remained
+negative overall (-0.4814% expectancy, 0.742 PF, 46.83% max drawdown). The UI
+keeps the seven-window detail collapsed and marks small samples rather than
+turning isolated historical wins into a signal.
+
 ## Futures context (funding rate, open interest)
 
 `src/context/futures.py` fetches Kraken Futures' aggregate perpetual data
