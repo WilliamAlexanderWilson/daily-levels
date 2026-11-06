@@ -307,6 +307,29 @@ main {
   margin-top: 0.85rem;
 }
 
+.range-lab-reconciliation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.7rem;
+  margin-top: 0.7rem;
+  padding: 0.58rem 0.68rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 68%, transparent);
+}
+
+.range-lab-reconciliation span {
+  color: var(--accent);
+  font: 750 0.62rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.06em;
+}
+
+.range-lab-reconciliation strong {
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
 .range-lab-option {
   min-width: 0;
   border: 1px solid var(--border);

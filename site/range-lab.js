@@ -80,5 +80,30 @@
     return typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : "not started";
   }
 
-  return { candidateByKey, defaultKey, forwardStart, freshness, metric, researchCutoff, viewModel };
+  function reconciliationView(data) {
+    const reconciliation = data && data.spot_futures_reconciliation;
+    const close = reconciliation && reconciliation.field_basis && reconciliation.field_basis.close;
+    if (!reconciliation || !close) return null;
+    const totalMissing = reconciliation.missing_in_spot + reconciliation.missing_in_futures;
+    return {
+      overlap: `${reconciliation.overlap_candles} aligned 4H candles`,
+      missing: `${totalMissing} missing timestamp${totalMissing === 1 ? "" : "s"}`,
+      signedCloseBasis: metric(close.mean_signed_pct, "% mean futures basis"),
+      p95CloseBasis: `${close.p95_abs_pct}% p95 absolute close difference`,
+      directionAgreement: `${reconciliation.candle_direction_agreement_pct}% candle-direction agreement`,
+      start: reconciliation.comparison_start.slice(0, 10),
+      end: reconciliation.comparison_end.slice(0, 10),
+    };
+  }
+
+  return {
+    candidateByKey,
+    defaultKey,
+    forwardStart,
+    freshness,
+    metric,
+    reconciliationView,
+    researchCutoff,
+    viewModel,
+  };
 });

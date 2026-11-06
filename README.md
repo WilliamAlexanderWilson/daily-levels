@@ -259,6 +259,14 @@ until its target, stop, or full maximum holding window is actually observed —
 the refresh job never invents an early time exit merely because the newest
 candle is the end of today's data. This record places no orders.
 
+It also reconciles the futures research feed against the completed Kraken
+BTC/USD spot 4-hour candles available from the bounded spot endpoint. The
+2026-11-06 comparison found 720 aligned timestamps with no gaps, +0.0072%
+mean futures close basis, 0.0340% p95 absolute close difference, and 98.33%
+candle-direction agreement. That supports using the spot chart as nearby
+visual context over the measured window; it does **not** make spot and futures
+identical execution markets or validate the strategy.
+
 ## Futures context (funding rate, open interest)
 
 `src/context/futures.py` fetches Kraken Futures' aggregate perpetual data

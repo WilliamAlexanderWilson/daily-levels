@@ -80,6 +80,33 @@ missing validation evidence. The configured pass gate requires positive
 validation before a candidate may be selected, followed by at least 30
 holdout trades, positive holdout expectancy, and profit factor above 1.
 
+## Futures-versus-spot reconciliation
+
+Completed 2026-11-06 over the bounded recent Kraken spot window used by the
+visible chart:
+
+- 720 completed 4-hour timestamps aligned;
+- zero timestamps missing from either market;
+- futures close averaged 0.0072% above spot;
+- median absolute close difference was 0.0104%, p95 was 0.0340%, and the
+  maximum was 0.0841%;
+- candle direction agreed 98.33% of the time; and
+- the futures and spot high-low envelopes overlapped on all compared bars.
+
+The intrabar extremes were less interchangeable than closes: p95 absolute
+high difference was 0.1328% and p95 absolute low difference was 0.1518%, with
+maximums of 1.0072% and 0.6870%. The conclusion is therefore narrow: recent
+spot candles are close enough to provide visual context for the futures
+research, but they are not a substitute for futures fills, stops, or backtest
+inputs. This comparison is data-quality evidence, not profitability evidence.
+
+Kraken's spot documentation says the endpoint returns up to 720 recent entries
+and always includes the forming candle. The live 2026-11-06 response contained
+721 rows including that forming candle, so the implementation does not hardcode
+an assumed completed-row count; it compares the completed timestamps actually
+returned. Sources: <https://docs.kraken.com/api-reference/market-data/get-ohlc-data>
+and <https://docs.kraken.com/api/docs/futures-api/charts/candles>.
+
 ## Research evidence
 
 - Kraken describes range trading as buying near support and selling near
@@ -101,8 +128,9 @@ holdout trades, positive holdout expectancy, and profit factor above 1.
 
 ## Tomorrow's plan
 
-1. Reconcile the futures candles against Kraken spot over their overlapping
-   720-candle window and report missing bars and price differences.
+1. ~~Reconcile the futures candles against Kraken spot over their overlapping
+   recent window and report missing bars and price differences.~~ Completed
+   2026-11-06; results are recorded above and emitted in the live artifact.
 2. Freeze a small, pre-registered second-round test: midpoint exit versus a
    half-at-midpoint/half-at-opposite-edge runner, without adding parameters
    after seeing results.

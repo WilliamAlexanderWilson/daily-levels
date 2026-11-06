@@ -12,6 +12,7 @@ from src.range_lab.engine import (
     forward_paper_track,
 )
 from src.range_lab.fetch import _parse_candles, _validate_history
+from src.range_lab.reconciliation import reconcile_spot_futures
 
 
 def test_parse_kraken_futures_candles():
@@ -44,6 +45,58 @@ def test_history_validation_rejects_missing_four_hour_candle():
         assert "1 missing" in str(error)
     else:
         raise AssertionError("gapped history must be rejected")
+
+
+def test_spot_futures_reconciliation_reports_coverage_and_basis():
+    index = pd.date_range(datetime(2026, 11, 1, tzinfo=timezone.utc), periods=4, freq="4h")
+    spot = pd.DataFrame(
+        {
+            "open": [100.0, 101.0, 102.0, 103.0],
+            "high": [102.0, 103.0, 104.0, 105.0],
+            "low": [99.0, 100.0, 101.0, 102.0],
+            "close": [101.0, 102.0, 103.0, 104.0],
+        },
+        index=index,
+    )
+    futures = spot * 1.01
+    result = reconcile_spot_futures(futures, spot)
+    assert result["overlap_candles"] == 4
+    assert result["missing_in_spot"] == 0
+    assert result["missing_in_futures"] == 0
+    assert result["field_basis"]["close"]["median_signed_pct"] == 1.0
+    assert result["field_basis"]["close"]["p95_abs_pct"] == 1.0
+    assert result["candle_direction_agreement_pct"] == 100.0
+    assert result["high_low_envelope_overlap_pct"] == 100.0
+
+
+def test_spot_futures_reconciliation_reports_missing_inner_timestamp():
+    index = pd.date_range(datetime(2026, 11, 1, tzinfo=timezone.utc), periods=4, freq="4h")
+    values = {
+        "open": [100.0] * 4,
+        "high": [101.0] * 4,
+        "low": [99.0] * 4,
+        "close": [100.0] * 4,
+    }
+    futures = pd.DataFrame(values, index=index)
+    spot = futures.drop(index[1])
+    result = reconcile_spot_futures(futures, spot)
+    assert result["overlap_candles"] == 3
+    assert result["missing_in_spot"] == 1
+    assert result["missing_spot_timestamps"] == [index[1].isoformat()]
+
+
+def test_spot_futures_reconciliation_rejects_non_overlapping_history():
+    futures_index = pd.date_range(datetime(2026, 11, 1, tzinfo=timezone.utc), periods=2, freq="4h")
+    spot_index = pd.date_range(datetime(2026, 11, 2, tzinfo=timezone.utc), periods=2, freq="4h")
+    values = {"open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0}
+    futures = pd.DataFrame(values, index=futures_index)
+    spot = pd.DataFrame(values, index=spot_index)
+    try:
+        reconcile_spot_futures(futures, spot)
+    except ValueError as error:
+        assert "no overlapping time window" in str(error)
+    else:
+        raise AssertionError("non-overlapping markets must not produce reconciliation metrics")
 
 
 def test_metrics_compound_and_include_drawdown():
