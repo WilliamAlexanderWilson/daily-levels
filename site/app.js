@@ -31,6 +31,8 @@
   const RANGE_INTERVALS = { "1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240, "1d": 1440 };
   const PATIENCE_ALERT_PREF_KEY = "range-desk:patience-alerts:v1";
   const PATIENCE_ALERTED_KEY = "range-desk:patience-alerted:v1";
+  const PAPER_EVENT_STATE_KEY = "range-desk:paper-event-state:v1";
+  const RANGE_LAB_POLL_MS = 300000;
 
   const state = {
     asset: "btc",
@@ -1359,6 +1361,7 @@
     setInterval(pollLiveCandleFallback, FALLBACK_POLL_MS);
     setInterval(refreshOrderBookWalls, ORDER_BOOK_POLL_MS);
     setInterval(renderChartLiveTicker, 1000);
+    setInterval(pollRangeLab, RANGE_LAB_POLL_MS);
     refreshOrderBookWalls();
   }
 
@@ -1547,9 +1550,9 @@
     if (!button || !status) return;
     const permission = patienceAlertPermission();
     button.setAttribute("aria-pressed", String(patienceAlertsEnabled));
-    button.textContent = patienceAlertsEnabled ? "Disable ready alert" : "Enable ready alert";
-    if (!patienceAlertsEnabled) status.textContent = "Off · no setup notifications";
-    else if (permission === "granted") status.textContent = "On · browser alert when this tab is hidden";
+    button.textContent = patienceAlertsEnabled ? "Disable alerts" : "Enable alerts";
+    if (!patienceAlertsEnabled) status.textContent = "Off · no setup or paper-observation notifications";
+    else if (permission === "granted") status.textContent = "On · in-page and hidden-tab browser alerts";
     else if (permission === "denied") status.textContent = "On · in-page alert only (browser notifications blocked)";
     else if (permission === "unsupported") status.textContent = "On · in-page alert only on this device";
     else status.textContent = "On · permission not yet selected";
@@ -1578,15 +1581,55 @@
     patienceToastTimer = null;
   }
 
-  function showPatienceToast(title, detail, direction) {
+  function showAlertToast(label, title, detail) {
     const toast = document.getElementById("patience-alert-toast");
     if (!toast) return;
-    document.getElementById("patience-alert-toast-label").textContent = `PATIENCE GATE · 3/3 · ${direction} SETUP`;
+    document.getElementById("patience-alert-toast-label").textContent = label;
     document.getElementById("patience-alert-toast-title").textContent = title;
     document.getElementById("patience-alert-toast-detail").textContent = detail;
     toast.hidden = false;
     if (patienceToastTimer) clearTimeout(patienceToastTimer);
     patienceToastTimer = setTimeout(hidePatienceToast, 12000);
+  }
+
+  function showPatienceToast(title, detail, direction) {
+    showAlertToast(`PATIENCE GATE · 3/3 · ${direction} SETUP`, title, detail);
+  }
+
+  function maybeSendPaperEventAlerts(data) {
+    const current = RangeLab.paperEventSnapshot(data);
+    let previous = null;
+    try {
+      previous = JSON.parse(readLocalStorage(PAPER_EVENT_STATE_KEY, "null"));
+    } catch (_) {
+      previous = null;
+    }
+    writeLocalStorage(PAPER_EVENT_STATE_KEY, JSON.stringify(current));
+    if (!previous || !patienceAlertsEnabled) return;
+    const events = RangeLab.paperEvents(previous, current)
+      .filter((event) => !alertedFingerprints().includes(event.fingerprint));
+    if (!events.length) return;
+    for (const event of events) rememberAlertFingerprint(event.fingerprint);
+    const title = events.length === 1
+      ? `${events[0].label} paper observation ${events[0].kind}`
+      : `${events.length} Range Lab paper observations changed`;
+    const detail = events.map((event) => event.copy).join(" ");
+    showAlertToast("RANGE LAB · PAPER OBSERVATION", title, detail);
+    if (document.hidden && patienceAlertPermission() === "granted") {
+      try {
+        const notification = new Notification(title, {
+          body: detail,
+          tag: "range-desk-paper-observation",
+          renotify: false,
+        });
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+      } catch (err) {
+        console.error("paper-observation notification unavailable; in-page alert still shown", err);
+      }
+    }
   }
 
   function maybeSendPatienceAlert(decision, gateState) {
@@ -1880,6 +1923,32 @@
     document.getElementById("range-lab-paper-expectancy").textContent = view.paperExpectancy;
     document.getElementById("range-lab-paper-profit-factor").textContent = view.paperProfitFactor;
     document.getElementById("range-lab-paper-status").textContent = view.paperStatus;
+    const gatePanel = document.getElementById("range-forward-gate");
+    gatePanel.hidden = !view.forwardGate;
+    gatePanel.classList.toggle("is-qualified", Boolean(view.forwardGate && view.forwardGate.qualified));
+    if (view.forwardGate) {
+      const gate = view.forwardGate;
+      document.getElementById("range-forward-gate-status").textContent = gate.status;
+      document.getElementById("range-forward-gate-score").textContent = `${gate.passedChecks} / ${gate.totalChecks} CHECKS`;
+      document.getElementById("range-forward-progress-count").textContent = `${gate.closed} / ${gate.required} CLOSED`;
+      document.getElementById("range-forward-progress-percent").textContent = `${gate.progress}%`;
+      const progress = document.querySelector(".range-forward-progress");
+      progress.setAttribute("aria-valuemax", String(gate.required));
+      progress.setAttribute("aria-valuenow", String(gate.closed));
+      document.getElementById("range-forward-progress-bar").style.width = `${Math.max(0, Math.min(100, gate.progress))}%`;
+      const checks = document.getElementById("range-forward-checks");
+      checks.innerHTML = "";
+      for (const check of gate.checks) {
+        const card = document.createElement("article");
+        card.className = `range-forward-check ${check.passed ? "is-passed" : "is-waiting"}`;
+        const label = document.createElement("strong");
+        label.textContent = `${check.passed ? "✓" : "○"} ${check.label}`;
+        const detail = document.createElement("small");
+        detail.textContent = check.detail;
+        card.append(label, detail);
+        checks.appendChild(card);
+      }
+    }
     const exitTest = document.getElementById("range-lab-exit-test");
     exitTest.hidden = !view.exitComparison;
     if (view.exitComparison) {
@@ -2008,6 +2077,7 @@
           "Spot-versus-futures comparison unavailable with the research artifact.";
         document.getElementById("range-lab-options").innerHTML = "";
         document.getElementById("range-lab-detail").hidden = true;
+        document.getElementById("range-forward-gate").hidden = true;
         document.getElementById("range-lab-exit-test").hidden = true;
         document.getElementById("range-lab-walk-forward").hidden = true;
         document.getElementById("range-lab-robustness").hidden = true;
@@ -2015,6 +2085,7 @@
       return;
     }
     activeRangeLabData = data;
+    maybeSendPaperEventAlerts(data);
     panel.hidden = state.asset !== "btc";
     const freshness = RangeLab.freshness(data);
     const verdict = document.getElementById("range-lab-verdict");
@@ -2051,6 +2122,16 @@
       options.appendChild(button);
     }
     selectRangeLabCandidate(activeRangeLabCandidateKey || RangeLab.defaultKey(data));
+  }
+
+  async function pollRangeLab() {
+    if (state.asset !== "btc") return;
+    try {
+      const data = await fetchJson(rangeLabUrl());
+      if (state.asset === "btc") renderRangeLab(data);
+    } catch (err) {
+      console.error("range lab refresh unavailable; keeping the last visible snapshot", err);
+    }
   }
 
   function renderSpyDecision(chartData, trades, backtest) {

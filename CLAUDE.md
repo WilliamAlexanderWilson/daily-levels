@@ -142,6 +142,23 @@ candidate is validated, never combines their returns, never places an order,
 and leaves an unresolved position open rather than manufacturing a time exit
 at the end of the currently available data.
 
+`range-forward-gate-v1` was preregistered in
+`docs/RANGE-STRATEGY-RESEARCH.md` at commit `64d8e58` while all candidates had
+zero closed forward observations. `forward_qualification_gate` uses only each
+candidate's own closed post-cutoff cohort. It requires 50 closed observations,
+base and stressed expectancy above zero with PF >= 1.20, drawdown <= 20%, two
+positive chronological halves with at least 25 each, and positive long and
+short groups with at least 20 each. Re-evaluate the full record every refresh;
+the label is revocable and remains research-only. Never use this gate to place
+orders or automatically extend the method to ETH.
+
+The browser polls `btc_range_lab.json` every five minutes while open. With the
+existing alert preference enabled, it compares a persisted initial snapshot
+and emits at most one local notice per open/close event fingerprint. Disabled
+alerts still advance the snapshot so reenabling cannot replay a backlog. These
+notices must retain the words `paper observation` and must not be described as
+buy, sell, call, or signal alerts.
+
 `src/range_lab/reconciliation.py` compares the PF_XBTUSD research candles with
 the completed BTC/USD spot 4-hour bars that the bounded spot endpoint currently
 returns. Do not hardcode the documented 720-row response count: on 2026-11-06

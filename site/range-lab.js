@@ -23,6 +23,97 @@
     return Number.isFinite(value) ? `${value > 0 ? "+" : ""}${value}${suffix}` : "—";
   }
 
+  function profitFactor(metrics) {
+    if (!metrics) return "—";
+    if (metrics.profit_factor_infinite) return "∞";
+    return Number.isFinite(metrics.profit_factor) ? metrics.profit_factor.toFixed(2) : "—";
+  }
+
+  function forwardGateView(gate) {
+    if (!gate || !gate.checks) return null;
+    const checks = gate.checks;
+    const sample = checks.sample || {};
+    const base = checks.base_edge || {};
+    const stressed = checks.stressed_edge || {};
+    const drawdown = checks.drawdown || {};
+    const halves = checks.halves || {};
+    const directions = checks.directions || {};
+    const rows = [
+      { key: "sample", label: "Sample", passed: Boolean(sample.passed), detail: `${sample.closed_trades || 0}/${sample.required_trades || 50} closed` },
+      { key: "base", label: "Base edge", passed: Boolean(base.passed), detail: `${metric(base.metrics && base.metrics.expectancy_pct, "% / observation")} · PF ${profitFactor(base.metrics)}` },
+      { key: "stress", label: "Cost stress", passed: Boolean(stressed.passed), detail: `${metric(stressed.metrics && stressed.metrics.expectancy_pct, "% / observation")} · PF ${profitFactor(stressed.metrics)}` },
+      { key: "drawdown", label: "Drawdown", passed: Boolean(drawdown.passed), detail: `${Number.isFinite(drawdown.observed_pct) ? `${drawdown.observed_pct}%` : "—"} / max ${drawdown.maximum_pct || 20}%` },
+      { key: "halves", label: "Time halves", passed: Boolean(halves.passed), detail: `${halves.earlier ? halves.earlier.trades : 0} earlier · ${halves.later ? halves.later.trades : 0} later` },
+      { key: "directions", label: "Both directions", passed: Boolean(directions.passed), detail: `${directions.long ? directions.long.trades : 0} long · ${directions.short ? directions.short.trades : 0} short` },
+    ];
+    return {
+      status: gate.status || "WAIT — FORWARD EVIDENCE UNAVAILABLE",
+      qualified: Boolean(gate.qualified),
+      progress: Number.isFinite(gate.progress_pct) ? gate.progress_pct : 0,
+      passedChecks: Number.isFinite(gate.passed_checks) ? gate.passed_checks : rows.filter((row) => row.passed).length,
+      totalChecks: Number.isFinite(gate.total_checks) ? gate.total_checks : rows.length,
+      closed: sample.closed_trades || 0,
+      required: sample.required_trades || 50,
+      checks: rows,
+    };
+  }
+
+  function paperEventSnapshot(data) {
+    const snapshot = {};
+    for (const candidate of (data && data.candidates) || []) {
+      const key = candidate && candidate.spec && candidate.spec.key;
+      const paper = candidate && candidate.forward_paper;
+      if (!key || !paper) continue;
+      const open = paper.open_trade;
+      const closed = Array.isArray(paper.closed_trades) && paper.closed_trades.length
+        ? paper.closed_trades[paper.closed_trades.length - 1]
+        : null;
+      snapshot[key] = {
+        label: candidate.spec.label || key,
+        open: open && open.entry_time ? `open:${key}:${open.entry_time}` : null,
+        openDirection: open && open.direction ? open.direction : null,
+        openTime: open && open.entry_time ? open.entry_time : null,
+        closed: closed && closed.exit_time ? `closed:${key}:${closed.exit_time}:${closed.reason || "resolved"}` : null,
+        closedDirection: closed && closed.direction ? closed.direction : null,
+        closedReason: closed && closed.reason ? closed.reason : null,
+        closedTime: closed && closed.exit_time ? closed.exit_time : null,
+      };
+    }
+    return snapshot;
+  }
+
+  function paperEvents(previous, current) {
+    if (!previous || !Object.keys(previous).length) return [];
+    const events = [];
+    for (const [key, next] of Object.entries(current || {})) {
+      const before = previous[key] || {};
+      if (next.open && next.open !== before.open) {
+        events.push({
+          fingerprint: next.open,
+          key,
+          label: next.label,
+          kind: "opened",
+          direction: next.openDirection,
+          time: next.openTime,
+          copy: `${next.label} paper observation opened${next.openDirection ? ` · ${next.openDirection}` : ""}.`,
+        });
+      }
+      if (next.closed && next.closed !== before.closed) {
+        events.push({
+          fingerprint: next.closed,
+          key,
+          label: next.label,
+          kind: "closed",
+          direction: next.closedDirection,
+          reason: next.closedReason,
+          time: next.closedTime,
+          copy: `${next.label} paper observation closed${next.closedReason ? ` · ${next.closedReason}` : ""}.`,
+        });
+      }
+    }
+    return events;
+  }
+
   function viewModel(data, key) {
     const candidate = candidateByKey(data, key || defaultKey(data));
     if (!candidate) return null;
@@ -35,6 +126,7 @@
     const exitComparison = candidate.exit_comparison || null;
     const walkForward = candidate.walk_forward || null;
     const robustness = candidate.robustness || null;
+    const forwardGate = forwardGateView(candidate.forward_gate);
     let paperStatus = "Waiting for a completed 4H rejection";
     if (paper.pending_entry) {
       paperStatus = `Pending ${paper.pending_entry.direction} entry · next 4H open`;
@@ -58,6 +150,7 @@
         ? "∞"
         : Number.isFinite(paper.metrics.profit_factor) ? paper.metrics.profit_factor.toFixed(2) : "—",
       paperStatus,
+      forwardGate,
       exitComparison: exitComparison ? {
         baselineValidation: metric(exitComparison.baseline.validation.expectancy_pct, "% / trade"),
         runnerValidation: metric(exitComparison.runner.validation.expectancy_pct, "% / trade"),
@@ -201,9 +294,13 @@
   return {
     candidateByKey,
     defaultKey,
+    forwardGateView,
     forwardStart,
     freshness,
     metric,
+    paperEvents,
+    paperEventSnapshot,
+    profitFactor,
     reconciliationView,
     researchCutoff,
     viewModel,

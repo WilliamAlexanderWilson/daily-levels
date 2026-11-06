@@ -259,6 +259,22 @@ until its target, stop, or full maximum holding window is actually observed —
 the refresh job never invents an early time exit merely because the newest
 candle is the end of today's data. This record places no orders.
 
+The preregistered `range-forward-gate-v1` patience screen evaluates each
+candidate independently and can only label it a **forward-qualified research
+candidate** after 50 closed observations, positive base and stressed edge with
+profit factor at least 1.20, maximum drawdown no greater than 20%, positive
+chronological halves, and positive long and short subgroups. The full record is
+rechecked on every refresh, so qualification can be revoked. At the first
+post-implementation refresh, every candidate was still at 0/50 closed; three
+had open paper observations and none qualified. The dashboard shows this gate
+prominently ahead of the collapsed historical diagnostics.
+
+When the existing alert preference is enabled, the open tab checks the Range
+Lab artifact every five minutes and can show one deduplicated local notice when
+a paper observation opens or closes. The first snapshot is silent, disabled
+alerts create no backlog, and the browser must remain open; this is not a
+background monitoring service or an order system.
+
 It also reconciles the futures research feed against the completed Kraken
 BTC/USD spot 4-hour candles available from the bounded spot endpoint. The
 2026-11-06 comparison found 720 aligned timestamps with no gaps, +0.0072%

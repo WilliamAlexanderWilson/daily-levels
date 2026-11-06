@@ -1,8 +1,11 @@
 from datetime import datetime, timezone
 
 import pandas as pd
+import pytest
 
 from src.range_lab.engine import (
+    _gate_positive,
+    _public_forward_paper,
     RangeSpec,
     _metrics,
     _drawdown_duration,
@@ -15,6 +18,7 @@ from src.range_lab.engine import (
     backtest_spec,
     build_range_lab,
     forward_paper_track,
+    forward_qualification_gate,
     robustness_analysis,
     walk_forward_stability,
 )
@@ -482,6 +486,227 @@ def test_forward_paper_track_records_pending_entry_without_inventing_fill(monkey
     assert result["open_trade"] is None
     assert result["pending_entry"]["status"] == "pending_entry"
     assert "entry" not in result["pending_entry"]
+
+
+def test_forward_gate_waits_for_fifty_closed_trades(monkeypatch):
+    candles = pd.DataFrame(
+        {"close": [100.0, 101.0]},
+        index=pd.date_range(datetime(2026, 1, 1, tzinfo=timezone.utc), periods=2, freq="4h"),
+    )
+    spec = RangeSpec("structure", "Structure", "structure", 20)
+    paper = {
+        "metrics": _metrics([]),
+        "closed_trades": [],
+        "open_trade": {"status": "open", "direction": "long"},
+        "pending_entry": None,
+    }
+    monkeypatch.setattr(
+        "src.range_lab.engine.backtest_cost_cohort",
+        lambda _candles, _spec, baseline, _fee, _slippage: baseline,
+    )
+    result = forward_qualification_gate(candles, spec, paper)
+    assert result["qualified"] is False
+    assert result["status"] == "WAIT — NOT ENOUGH EVIDENCE (0/50 CLOSED)"
+    assert result["progress_pct"] == 0.0
+    assert result["checks"]["sample"]["closed_trades"] == 0
+
+
+def test_forward_gate_profit_factor_threshold_is_inclusive():
+    metrics = {"expectancy_pct": 0.01, "profit_factor": 1.2, "profit_factor_infinite": False}
+    assert _gate_positive(metrics, 1.2) is True
+    metrics["profit_factor"] = 1.199
+    assert _gate_positive(metrics, 1.2) is False
+    metrics["profit_factor"] = 1.0
+    assert _gate_positive(metrics, 1.0, inclusive_profit_factor=False) is False
+
+
+def test_forward_gate_does_not_round_profit_factor_into_a_pass(monkeypatch):
+    candles = pd.DataFrame(
+        {"close": [100.0, 101.0]},
+        index=pd.date_range(datetime(2026, 1, 1, tzinfo=timezone.utc), periods=2, freq="4h"),
+    )
+    spec = RangeSpec("structure", "Structure", "structure", 20)
+    loss = -(25 / 1.1996 / 25)
+    returns = [1.0] * 25 + [loss] * 25
+    trades = []
+    for offset, return_pct in enumerate(returns):
+        entry = pd.Timestamp("2026-11-07T00:00:00Z") + pd.Timedelta(days=offset)
+        trades.append({
+            "signal_time": (entry - pd.Timedelta(hours=4)).isoformat(),
+            "entry_time": entry.isoformat(),
+            "exit_time": (entry + pd.Timedelta(hours=4)).isoformat(),
+            "direction": "long" if offset % 2 == 0 else "short",
+            "reason": "target" if return_pct > 0 else "stop",
+            "return_pct": round(return_pct, 4),
+            "_return_pct_exact": return_pct,
+        })
+    assert _metrics(trades)["profit_factor"] == 1.2
+    monkeypatch.setattr(
+        "src.range_lab.engine.backtest_cost_cohort",
+        lambda _candles, _spec, baseline, _fee, _slippage: baseline,
+    )
+    result = forward_qualification_gate(
+        candles, spec, {"metrics": _metrics(trades), "closed_trades": trades}
+    )
+    assert result["checks"]["base_edge"]["passed"] is False
+    assert result["qualified"] is False
+
+
+def test_forward_gate_does_not_round_drawdown_into_a_pass(monkeypatch):
+    candles = pd.DataFrame(
+        {"close": [100.0, 101.0]},
+        index=pd.date_range(datetime(2026, 1, 1, tzinfo=timezone.utc), periods=2, freq="4h"),
+    )
+    spec = RangeSpec("structure", "Structure", "structure", 20)
+    returns = [1.0] * 50
+    returns[24] = -20.004
+    trades = []
+    for offset, return_pct in enumerate(returns):
+        entry = pd.Timestamp("2026-11-07T00:00:00Z") + pd.Timedelta(days=offset)
+        trades.append({
+            "signal_time": (entry - pd.Timedelta(hours=4)).isoformat(),
+            "entry_time": entry.isoformat(),
+            "exit_time": (entry + pd.Timedelta(hours=4)).isoformat(),
+            "direction": "long" if offset % 2 == 0 else "short",
+            "reason": "target" if return_pct > 0 else "stop",
+            "return_pct": round(return_pct, 4),
+            "_return_pct_exact": return_pct,
+        })
+    assert _metrics(trades)["max_drawdown_pct"] == 20.0
+    monkeypatch.setattr(
+        "src.range_lab.engine.backtest_cost_cohort",
+        lambda _candles, _spec, baseline, _fee, _slippage: baseline,
+    )
+    result = forward_qualification_gate(
+        candles, spec, {"metrics": _metrics(trades), "closed_trades": trades}
+    )
+    assert result["checks"]["base_edge"]["passed"] is True
+    assert result["checks"]["halves"]["passed"] is True
+    assert result["checks"]["directions"]["passed"] is True
+    assert result["checks"]["drawdown"]["passed"] is False
+    assert result["qualified"] is False
+
+
+def test_exact_forward_returns_are_not_serialized():
+    paper = {
+        "metrics": _metrics([]),
+        "closed_trades": [{"return_pct": 1.0, "_return_pct_exact": 0.99995}],
+        "open_trade": None,
+        "pending_entry": None,
+    }
+    public = _public_forward_paper(paper)
+    assert public["closed_trades"] == [{"return_pct": 1.0}]
+    assert paper["closed_trades"][0]["_return_pct_exact"] == 0.99995
+
+
+def test_forward_gate_exact_thresholds_and_later_half_extra_trade(monkeypatch):
+    candles = pd.DataFrame(
+        {"close": [100.0, 101.0]},
+        index=pd.date_range(datetime(2026, 1, 1, tzinfo=timezone.utc), periods=2, freq="4h"),
+    )
+    spec = RangeSpec("structure", "Structure", "structure", 20)
+    trades = []
+    for offset in range(50):
+        entry = pd.Timestamp("2026-11-07T00:00:00Z") + pd.Timedelta(days=offset)
+        trades.append({
+            "status": "closed",
+            "signal_time": (entry - pd.Timedelta(hours=4)).isoformat(),
+            "entry_time": entry.isoformat(),
+            "exit_time": (entry + pd.Timedelta(hours=4)).isoformat(),
+            "direction": "long" if offset < 25 else "short",
+            "reason": "target",
+            "return_pct": 1.0,
+        })
+
+    monkeypatch.setattr(
+        "src.range_lab.engine.backtest_cost_cohort",
+        lambda _candles, _spec, baseline, _fee, _slippage: baseline,
+    )
+    paper = {
+        "metrics": _metrics(trades),
+        "closed_trades": trades,
+        "open_trade": None,
+        "pending_entry": None,
+    }
+    result = forward_qualification_gate(candles, spec, paper)
+    assert result["qualified"] is True
+    assert result["passed_checks"] == result["total_checks"] == 6
+    assert result["progress_pct"] == 100.0
+    assert result["checks"]["halves"]["earlier"]["trades"] == 25
+    assert result["checks"]["halves"]["later"]["trades"] == 25
+    assert result["checks"]["directions"]["long"]["trades"] == 25
+    assert result["checks"]["directions"]["short"]["trades"] == 25
+
+    extra = dict(trades[-1])
+    extra["signal_time"] = "2027-01-15T20:00:00+00:00"
+    extra["entry_time"] = "2027-01-16T00:00:00+00:00"
+    extra["exit_time"] = "2027-01-16T04:00:00+00:00"
+    trades.append(extra)
+    paper["metrics"] = _metrics(trades)
+    result = forward_qualification_gate(candles, spec, paper)
+    assert result["checks"]["halves"]["earlier"]["trades"] == 25
+    assert result["checks"]["halves"]["later"]["trades"] == 26
+
+
+def test_forward_gate_is_revoked_when_later_full_sample_fails(monkeypatch):
+    candles = pd.DataFrame(
+        {"close": [100.0, 101.0]},
+        index=pd.date_range(datetime(2026, 1, 1, tzinfo=timezone.utc), periods=2, freq="4h"),
+    )
+    spec = RangeSpec("structure", "Structure", "structure", 20)
+    trades = []
+    for offset in range(50):
+        entry = pd.Timestamp("2026-11-07T00:00:00Z") + pd.Timedelta(days=offset)
+        trades.append({
+            "status": "closed",
+            "signal_time": (entry - pd.Timedelta(hours=4)).isoformat(),
+            "entry_time": entry.isoformat(),
+            "exit_time": (entry + pd.Timedelta(hours=4)).isoformat(),
+            "direction": "long" if offset < 25 else "short",
+            "reason": "target",
+            "return_pct": 1.0,
+        })
+    trades[-1]["return_pct"] = -50.0
+    monkeypatch.setattr(
+        "src.range_lab.engine.backtest_cost_cohort",
+        lambda _candles, _spec, baseline, _fee, _slippage: baseline,
+    )
+    paper = {
+        "metrics": _metrics(trades),
+        "closed_trades": trades,
+        "open_trade": None,
+        "pending_entry": None,
+    }
+    result = forward_qualification_gate(candles, spec, paper)
+    assert result["qualified"] is False
+    assert result["status"] == "NOT FORWARD-QUALIFIED"
+    assert result["checks"]["sample"]["passed"] is True
+    assert result["checks"]["halves"]["passed"] is False
+
+
+def test_forward_gate_rejects_a_stressed_cohort_identity_change(monkeypatch):
+    candles = pd.DataFrame(
+        {"close": [100.0, 101.0]},
+        index=pd.date_range(datetime(2026, 1, 1, tzinfo=timezone.utc), periods=2, freq="4h"),
+    )
+    spec = RangeSpec("structure", "Structure", "structure", 20)
+    trade = {
+        "status": "closed",
+        "signal_time": "2026-11-06T20:00:00+00:00",
+        "entry_time": "2026-11-07T00:00:00+00:00",
+        "exit_time": "2026-11-07T04:00:00+00:00",
+        "direction": "long",
+        "reason": "target",
+        "return_pct": 1.0,
+    }
+    paper = {"metrics": _metrics([trade]), "closed_trades": [trade]}
+    changed = dict(trade, reason="stop")
+    monkeypatch.setattr(
+        "src.range_lab.engine.backtest_cost_cohort",
+        lambda _candles, _spec, _baseline, _fee, _slippage: [changed],
+    )
+    with pytest.raises(RuntimeError, match="changed the closed paper cohort"):
+        forward_qualification_gate(candles, spec, paper)
 
 
 def test_partition_replay_caps_positions_at_boundary(monkeypatch):
