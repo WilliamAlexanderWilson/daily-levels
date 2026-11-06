@@ -55,7 +55,7 @@
       <div class="decision-copy-block">
         <div class="decision-heading-row">
           <span id="decision-badge" class="decision-badge">CALCULATING</span>
-          <span id="decision-method" class="decision-method">Nearest-level range</span>
+          <span id="decision-method" class="decision-method">Macro range framework</span>
         </div>
         <h2 id="decision-title">Building the current range read…</h2>
         <p id="decision-summary">Waiting for price, levels, and historical context.</p>
@@ -67,12 +67,12 @@
       <div class="decision-range" id="decision-range">
         <div class="range-label-row">
           <span>
-            <small>Support / invalidation</small>
+            <small id="decision-support-caption">Macro floor</small>
             <strong id="decision-support">—</strong>
           </span>
           <span class="range-position-copy" id="decision-position">—</span>
           <span class="range-label-right">
-            <small>Resistance / target</small>
+            <small id="decision-resistance-caption">Macro ceiling</small>
             <strong id="decision-resistance">—</strong>
           </span>
         </div>
@@ -130,7 +130,12 @@
 
     <div id="exhaustion-banner" class="exhaustion-banner" hidden></div>
 
-    <div id="nearest-levels" class="nearest-levels">
+    <details class="nearby-context" id="nearby-context">
+      <summary>
+        <span><strong>Nearby level context</strong><small>Optional rolling levels — not the macro range</small></span>
+        <span>Show</span>
+      </summary>
+      <div id="nearest-levels" class="nearest-levels">
       <div class="nearest-card nearest-resistance" id="nearest-resistance-card" hidden>
         <div class="nearest-card-label">Nearest resistance above</div>
         <div class="nearest-card-name"></div>
@@ -158,14 +163,15 @@
         </div>
         <div class="nearest-card-hold"></div>
       </div>
-    </div>
+      </div>
 
-    <div class="level-jump" id="level-jump-wrap">
-      <label for="level-jump-select">Jump to level</label>
-      <select id="level-jump-select">
-        <option value="">Default view</option>
-      </select>
-    </div>
+      <div class="level-jump" id="level-jump-wrap">
+        <label for="level-jump-select">Jump to level</label>
+        <select id="level-jump-select">
+          <option value="">Default view</option>
+        </select>
+      </div>
+    </details>
 
     <div class="trade-controls" id="trade-controls">
       <button type="button" id="mark-trade-btn" class="mark-trade-btn">+ Mark trade</button>
@@ -184,7 +190,7 @@
         <strong id="chart-live-price" aria-live="polite" aria-atomic="true">—</strong>
         <small id="chart-live-age" aria-hidden="true">Connecting…</small>
       </div>
-      <div id="chart-focus-status" class="chart-focus-status" aria-live="polite">Active range · live focus</div>
+      <div id="chart-focus-status" class="chart-focus-status" aria-live="polite">Macro range · live focus</div>
       <div id="chart-loading-overlay" class="chart-loading-overlay" hidden>Loading…</div>
     </div>
 

@@ -1,6 +1,16 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { build, patienceAlertFingerprint, patienceState, rangeZonePrices, recentBoundaryTest } = require("../site/range-decision.js");
+const {
+  BTC_MACRO_RANGE,
+  build,
+  buildStrategyRange,
+  completedCloseAbove,
+  patienceAlertFingerprint,
+  patienceState,
+  rangeZonePrices,
+  recentBoundaryTest,
+  strategyTrackPosition,
+} = require("../site/range-decision.js");
 
 const levels = [
   { name: "Range low (60d)", price_low: 80, price_high: 80 },
@@ -117,4 +127,82 @@ test("alert fingerprint deduplicates one confirmed setup and changes for a new c
   assert.equal(patienceAlertFingerprint("btc", "4h", decision, first), patienceAlertFingerprint("btc", "4h", decision, first));
   assert.notEqual(patienceAlertFingerprint("btc", "4h", decision, first), patienceAlertFingerprint("btc", "4h", decision, second));
   assert.equal(patienceAlertFingerprint("btc", "4h", decision, { ...first, isReady: false }), null);
+});
+
+test("uses the sourced BTC macro range instead of the nearest-level bracket", () => {
+  const decision = buildStrategyRange(75900);
+  assert.equal(decision.status, "long-watch");
+  assert.equal(decision.support.name, "Decision support");
+  assert.equal(decision.strategyRange.low, 60000);
+  assert.equal(decision.strategyRange.high, 80000);
+  assert.ok(Math.abs(decision.macroPosition - 0.795) < 0.001);
+});
+
+test("marks only the upper deviation as a short watch", () => {
+  assert.equal(buildStrategyRange(79500).status, "wait");
+  assert.equal(buildStrategyRange(81000).status, "short-watch");
+  assert.equal(buildStrategyRange(83500).status, "wait");
+});
+
+test("exposes the complete macro range and decision zones for the chart", () => {
+  const prices = rangeZonePrices(buildStrategyRange(75900));
+  assert.equal(prices.low, 60000);
+  assert.equal(prices.high, 82800);
+  assert.equal(prices.supportLow, 72000);
+  assert.equal(prices.supportHigh, 77000);
+  assert.deepEqual(prices.segments.map(({ low, high, kind }) => ({ low, high, kind })), [
+    { low: 80000, high: 82800, kind: "short" },
+    { low: 77000, high: 80000, kind: "wait" },
+    { low: 72000, high: 77000, kind: "long" },
+    { low: 62000, high: 72000, kind: "wait" },
+    { low: 60000, high: 62000, kind: "long" },
+  ]);
+  assert.equal(BTC_MACRO_RANGE.sourceDate, "2026-11-04");
+});
+
+test("keeps a just-confirmed support reclaim eligible for the 3-of-3 gate", () => {
+  const candles = [
+    { time: 1, low: 71500, high: 78000, close: 77500 },
+    { time: 2, low: 77400, high: 77800, close: 77600 }, // forming: ignored
+  ];
+  const decision = buildStrategyRange(77500, BTC_MACRO_RANGE, candles);
+  assert.equal(decision.status, "long-watch");
+  assert.equal(patienceState(decision, candles).isReady, true);
+});
+
+test("keeps a just-confirmed upper rejection eligible for the 3-of-3 gate", () => {
+  const candles = [
+    { time: 1, low: 79000, high: 81000, close: 79500 },
+    { time: 2, low: 79400, high: 79900, close: 79600 }, // forming: ignored
+  ];
+  const decision = buildStrategyRange(79500, BTC_MACRO_RANGE, candles);
+  assert.equal(decision.status, "short-watch");
+  assert.equal(patienceState(decision, candles).isReady, true);
+});
+
+test("a candle confirming both macro boundaries produces WAIT", () => {
+  const candles = [
+    { time: 1, low: 71000, high: 83000, close: 79000 },
+    { time: 2, low: 78800, high: 79200, close: 79000 }, // forming: ignored
+  ];
+  const decision = buildStrategyRange(79000, BTC_MACRO_RANGE, candles);
+  assert.equal(decision.status, "wait");
+  assert.match(decision.title, /Conflicting boundary/);
+});
+
+test("macro summary track spans the floor through the reclaim", () => {
+  const decision = buildStrategyRange(75900);
+  assert.ok(Math.abs(strategyTrackPosition(decision, 75900) - ((75900 - 60000) / (82800 - 60000))) < 0.0001);
+  assert.equal(strategyTrackPosition(decision, 90000), 1);
+});
+
+test("reclaim acceptance requires a completed candle close", () => {
+  assert.equal(completedCloseAbove([
+    { time: 1, close: 82700 },
+    { time: 2, close: 84000 }, // forming: ignored
+  ], 82800), false);
+  assert.equal(completedCloseAbove([
+    { time: 1, close: 83000 },
+    { time: 2, close: 83100 }, // forming: ignored
+  ], 82800), true);
 });
