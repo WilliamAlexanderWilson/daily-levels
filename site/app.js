@@ -2884,6 +2884,15 @@
   function wireAdvancedAnalysis() {
     const details = document.getElementById("advanced-analysis");
     if (!details) return;
+    const sourceLink = document.getElementById("decision-source-link");
+    if (sourceLink) {
+      sourceLink.addEventListener("click", () => {
+        // The source summary lives in the intentionally collapsed analysis
+        // panel. Open it before the hash navigation runs so the linked
+        // evidence is visible rather than hidden inside a closed <details>.
+        details.open = true;
+      });
+    }
     details.addEventListener("toggle", () => {
       clearPriceSnapState();
       if (state.asset !== "spy") {

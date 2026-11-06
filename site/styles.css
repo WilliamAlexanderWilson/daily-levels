@@ -1658,6 +1658,27 @@ tr.low-confidence-row {
   padding-left: 1.2rem;
 }
 
+.method-sources {
+  margin-top: 1.2rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-strong) 70%, transparent);
+}
+
+.method-sources h3,
+.method-sources p {
+  margin: 0;
+}
+
+.method-sources ul {
+  margin-bottom: 0;
+}
+
+.method-sources a {
+  color: var(--accent);
+}
+
 .site-footer {
   text-align: center;
   padding: 1.5rem 1rem 2rem;

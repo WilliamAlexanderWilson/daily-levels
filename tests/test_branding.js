@@ -15,7 +15,10 @@ test("product branding stays separate from the range method provenance", () => {
   const source = fs.readFileSync(path.join(siteRoot, "range-decision.js"), "utf8");
   const html = fs.readFileSync(path.join(siteRoot, "index.html"), "utf8");
   assert.match(source, /sourceLabel: "Sourced macro-range framework"/);
-  assert.match(source, /sourceUrl: "https:\/\/youtu\.be\/cOxjsDvGRTA"/);
+  assert.match(source, /sourceUrl: "#range-method-sources"/);
   assert.doesNotMatch(source, /sourceLabel:\s*["']William Wilson/);
-  assert.match(html, /Method source ↗/);
+  assert.match(html, /Method sources ↗/);
+  for (const sourceId of ["cOxjsDvGRTA", "HBKEvXjDbS0", "v3fXVye-TVg"]) {
+    assert.match(html, new RegExp(`https:\\/\\/youtu\\.be\\/${sourceId}`));
+  }
 });

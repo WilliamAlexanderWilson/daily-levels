@@ -25,7 +25,7 @@
     longWatchHigh: 62000,
     sourceDate: "2026-11-04",
     sourceLabel: "Sourced macro-range framework",
-    sourceUrl: "https://youtu.be/cOxjsDvGRTA",
+    sourceUrl: "#range-method-sources",
   });
 
   function midpoint(level) {
