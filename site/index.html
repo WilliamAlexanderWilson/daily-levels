@@ -220,8 +220,8 @@
       <span class="legend-item"><i class="swatch flip"></i>Flip (must hold)</span>
       <span class="legend-item"><i class="swatch current"></i>Current price</span>
       <span class="legend-item"><i class="swatch liquidity"></i>Order book wall</span>
-      <span class="legend-item"><i class="swatch support"></i>Est. long liquidations</span>
-      <span class="legend-item"><i class="swatch resistance"></i>Est. short liquidations</span>
+      <span class="legend-item"><i class="swatch support"></i>Modeled long-liq risk</span>
+      <span class="legend-item"><i class="swatch resistance"></i>Modeled short-liq risk</span>
       <span class="legend-item"><i class="swatch round-zone"></i>Round-number proximity (hold rate)</span>
     </div>
     <div id="spy-legend" class="chart-legend" hidden>
@@ -230,13 +230,11 @@
       <span class="legend-item"><i class="swatch current"></i>Current price</span>
     </div>
     <p class="liquidation-note" id="liquidation-note">
-      The green/red strip next to the price axis is a <strong>model, not
-      real position data</strong> — no exchange publishes actual entry
-      prices or leverage. It projects the real traded volume at each price
-      (the same data the volume profile uses) through a few standard perp
-      leverage tiers (10x/25x/50x/100x), split evenly long/short since
-      there's no signal to weight either way. Read it as "where crowded
-      leverage plausibly sits," not a fact.
+      <strong>Estimated liquidation risk · daily model.</strong> Only the
+      strongest clusters are shown. They project real traded volume through
+      assumed 10x/25x/50x/100x leverage — not actual trader positions. Use
+      the 15-second order-book walls and price reaction as live confirmation;
+      never use this background alone as an entry signal.
     </p>
     <p class="liquidation-note" id="spy-chart-note" hidden>
       Candles are <strong>Heikin-Ashi</strong>, not real OHLC — that's what
@@ -460,6 +458,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js"></script>
   <script src="range-decision.js"></script>
+  <script src="liquidation-risk.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

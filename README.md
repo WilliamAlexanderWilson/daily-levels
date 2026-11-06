@@ -96,7 +96,7 @@ python -m src.backtest.cli
 
 # run the tests
 python -m pytest
-node --test tests/test_range_decision.js
+node --test tests/*.js
 
 # view the site locally
 cd site && python3 -m http.server 8000
@@ -307,8 +307,9 @@ blurred wash across the full width of the chart, sitting behind the
 candles the same way a Coinglass-style heatmap does — not a sidebar or
 a strip off to the edge. Green rows mean estimated long liquidations
 dominate at that price, red means short; brightness carries the
-modeled intensity, rescaled against whatever's actually in view so a
-far-away hotspot never makes your current screen look falsely cold.
+modeled intensity. The browser preserves the model's global ranking and
+hides bins below 80% of its peak, so a weak area cannot be promoted into
+a fake hotspot merely because the strongest cluster is off-screen.
 Capped to within 25% of the current price so it doesn't extrapolate off
 into irrelevant territory. Treat it the way you'd treat any third-party
 liquidation heatmap: a plausible read on where crowded leverage might
