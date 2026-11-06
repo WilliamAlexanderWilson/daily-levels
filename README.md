@@ -56,6 +56,24 @@ one-time alert can appear while the tab is hidden. The opt-in setting and a
 short deduplication history are stored only in that browser's localStorage;
 no account, server, Telegram bot, or trading connection is involved.
 
+## Global market-open clock
+
+The BTC, ETH, and SPY views share one compact global-session clock. It keeps
+the chronologically next major market open visible with a one-second countdown
+in William's Dallas/Central time, while a collapsed list shows seven regular
+sessions ranked for this dashboard: New York cash, Chicago CME U.S. index
+futures, London, Tokyo, Hong Kong, Frankfurt/Xetra, and Sydney. BTC and ETH are
+correctly labeled 24/7; these opens are liquidity/volatility context, not
+periods when crypto itself opens.
+
+Session calculations use each exchange's IANA timezone, so daylight-saving
+changes are automatic. Cash clocks model regular Monday-Friday hours; CME
+also models its Sunday-Friday session and daily 4:00-5:00 PM Central halt.
+Exchange holidays, half-days, severe-weather changes, and emergency closures
+can override it, so every row links to the exchange's official hours/calendar.
+The order is a practical attention hierarchy for this dashboard, not a claim
+that one exchange is universally more important in every market regime.
+
 The BTC chart marks the complete macro range behind the candles, including
 the $70k midpoint, $72k-$77k support zone, $80k ceiling, and $82.8k reclaim.
 Nearby rolling levels sit in a closed optional panel. Opening **Full analysis**

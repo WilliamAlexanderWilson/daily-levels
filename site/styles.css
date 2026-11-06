@@ -132,6 +132,127 @@ main {
   margin-bottom: 1.25rem;
 }
 
+.market-clock {
+  margin: -0.35rem 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--surface) 95%, var(--accent));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 5%, transparent);
+  overflow: hidden;
+}
+
+.market-clock-primary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.55fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0.85rem;
+}
+
+.market-clock-kicker {
+  color: var(--accent);
+  font: 800 0.58rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.12em;
+}
+
+.market-clock h2 {
+  margin: 0.18rem 0 0;
+  font-size: clamp(0.92rem, 2vw, 1.08rem);
+  line-height: 1.25;
+}
+
+.market-clock h2 strong {
+  color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+}
+
+.market-clock-primary p,
+.market-clock-context span {
+  margin: 0.16rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.market-clock-context {
+  display: grid;
+  justify-items: end;
+  text-align: right;
+}
+
+.market-clock-context strong {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.market-clock-details {
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 54%, transparent);
+}
+
+.market-clock-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.58rem 0.85rem;
+  cursor: pointer;
+  list-style: none;
+}
+.market-clock-details > summary::-webkit-details-marker { display: none; }
+.market-clock-details > summary span { display: grid; gap: 0.1rem; }
+.market-clock-details > summary strong { font-size: 0.72rem; }
+.market-clock-details > summary small { color: var(--text-muted); font-size: 0.6rem; }
+.market-clock-details > summary b { color: var(--accent); font-size: 0.66rem; }
+.market-clock-details[open] > summary b { font-size: 0; }
+.market-clock-details[open] > summary b::after { content: "Hide"; font-size: 0.66rem; }
+
+.market-session-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.42rem;
+  padding: 0 0.85rem 0.7rem;
+}
+
+.market-session {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(9.5rem, auto) auto;
+  align-items: center;
+  gap: 0.52rem;
+  min-width: 0;
+  padding: 0.48rem 0.55rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--text-muted);
+  border-radius: 9px;
+  background: var(--surface);
+}
+.market-session.is-open { border-left-color: var(--support); }
+.market-session-rank {
+  display: grid;
+  width: 1.45rem;
+  height: 1.45rem;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  font: 800 0.63rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.market-session > span:nth-child(2),
+.market-session-timing { display: grid; gap: 0.08rem; }
+.market-session strong { font-size: 0.68rem; }
+.market-session small { color: var(--text-muted); font-size: 0.57rem; }
+.market-session-timing { text-align: right; }
+.market-session.is-open .market-session-timing strong { color: var(--support); }
+.market-session a { color: var(--accent); font-size: 0.58rem; text-decoration: none; }
+.market-clock-details > p {
+  margin: 0;
+  padding: 0 0.85rem 0.72rem;
+  color: var(--text-muted);
+  font-size: 0.61rem;
+  line-height: 1.4;
+}
+
 .toggle-group {
   display: inline-flex;
   background: var(--surface);
@@ -2185,6 +2306,12 @@ tr.low-confidence-row {
   main {
     padding-inline: 0.7rem;
   }
+  .market-clock-primary { grid-template-columns: 1fr; gap: 0.45rem; }
+  .market-clock-context { justify-items: start; text-align: left; }
+  .market-session-list { grid-template-columns: 1fr; }
+  .market-session { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .market-session-timing { grid-column: 2 / -1; text-align: left; }
+  .market-session a { grid-column: 3; grid-row: 1; }
   .decision-brief {
     grid-template-columns: 1fr;
     gap: 1.1rem;

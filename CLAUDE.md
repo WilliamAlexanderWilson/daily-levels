@@ -134,6 +134,17 @@ site/
 Trade journal (`site/app.js`) saves to the browser's localStorage, not the
 repo — there's nothing server-side to list here for it.
 
+`site/market-sessions.js` owns the shared BTC/ETH/SPY global-open clock. Its
+visible user timezone is deliberately fixed to `America/Chicago` because
+William is in Dallas; each exchange remains calculated in its own IANA
+timezone. Keep the seven-session order stable unless the product decision is
+explicitly revisited: New York cash, Chicago CME U.S. index futures, London,
+Tokyo, Hong Kong, Frankfurt/Xetra, Sydney. Cash exchanges use regular weekdays;
+CME models its Sunday-Friday session and daily 4:00-5:00 PM Central halt. This
+is not a holiday calendar. Preserve the
+holiday/half-day/emergency-closure warning and official source links rather
+than presenting a weekend-only calculation as exchange-authoritative.
+
 Range Lab forward paper tracking is different from that discretionary journal:
 `src/range_lab/engine.py::forward_paper_track` deterministically replays all
 completed PF_XBTUSD 4-hour candles after the frozen 2026-11-06 04:00 UTC

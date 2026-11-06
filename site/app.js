@@ -3406,6 +3406,7 @@
     document.getElementById("range-select").value = state.range;
     document.getElementById("spy-timeframe-select").value = state.spyTimeframe;
     applyAssetVisibility(state.asset);
+    if (window.MarketSessions) MarketSessions.setAsset(state.asset);
   }
 
   function wireToggles() {
@@ -3625,5 +3626,6 @@
   wirePatienceAlerts();
   wireTradeForm();
   wireLevelJumpSelect();
+  if (window.MarketSessions) MarketSessions.mount(document, state.asset);
   loadAndRender().then(startLiveStreaming);
 })();
