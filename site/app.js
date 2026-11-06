@@ -294,6 +294,7 @@
   let activeLevelsWindowDays = null; // RANGE_DAYS from the levels JSON, for the 4H default-zoom calc
   let lastOverlayPriceRange = null; // {from, to} as of the last renderOverlays() call, for the price-scale poll below
   let macroRangeFramedKey = null; // frame the sourced BTC range once per chart load without fighting later manual zooms
+  let macroAutoPriceRange = null; // last range set by macro framing; live ticks may extend only this untouched automatic view
 
   function ensureChart() {
     if (chart) return;
@@ -1025,6 +1026,7 @@
 
     activeLevelsWindowDays = levelsWindowDays;
     macroRangeFramedKey = null;
+    macroAutoPriceRange = null;
     applyDefaultZoom(candleData.length, range, levelsWindowDays);
 
     // Seed the guard to the last rendered candle's true time rather than
@@ -1553,14 +1555,20 @@
         const bottom = Math.min(decision.strategyRange.low * 0.98, recentLow * 0.98);
         candleSeries.priceScale().setAutoScale(false);
         candleSeries.priceScale().setVisibleRange({ from: bottom, to: top });
+        macroAutoPriceRange = { from: bottom, to: top };
         macroRangeFramedKey = frameKey;
       }
       const visiblePriceRange = candleSeries && candleSeries.priceScale().getVisibleRange();
-      if (visiblePriceRange && currentPrice < decision.strategyRange.low * 0.98 && currentPrice < visiblePriceRange.from) {
-        candleSeries.priceScale().setVisibleRange({
+      const automaticViewIsUntouched = visiblePriceRange && macroAutoPriceRange
+        && Math.abs(visiblePriceRange.from - macroAutoPriceRange.from) < 0.01
+        && Math.abs(visiblePriceRange.to - macroAutoPriceRange.to) < 0.01;
+      if (!snappedMarkerKey && automaticViewIsUntouched
+          && currentPrice < decision.strategyRange.low * 0.98 && currentPrice < visiblePriceRange.from) {
+        macroAutoPriceRange = {
           from: currentPrice * 0.98,
           to: visiblePriceRange.to,
-        });
+        };
+        candleSeries.priceScale().setVisibleRange(macroAutoPriceRange);
       }
       document.getElementById("decision-rr-label").textContent = "Higher-timeframe bias";
       document.getElementById("decision-support-label").textContent = "Decision support";
