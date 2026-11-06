@@ -317,14 +317,21 @@
         vertLines: { color: cssVar("--border") },
         horzLines: { color: cssVar("--border") },
       },
-      // The library's default horizontal crosshair line (gray, large-
-      // dashed, with its own price tag) sits wherever the mouse last was
-      // and looks close enough to our own colored level tags to pass for
-      // one - a real source of "what is this line?" confusion, confirmed
-      // by reproducing it directly. It adds no information our own
-      // current-price line doesn't already give, so it's off; the
-      // vertical (time) crosshair line stays, it's unambiguous.
-      crosshair: { horzLine: { visible: false, labelVisible: false } },
+      // Keep a subtle horizontal crosshair and its right-axis label so
+      // the mouse always answers "what price is this height?". Its thin,
+      // neutral dotted styling distinguishes this temporary hover guide
+      // from the colored strategy levels and the green live-price line.
+      crosshair: {
+        mode: LightweightCharts.CrosshairMode.Normal,
+        horzLine: {
+          visible: true,
+          labelVisible: true,
+          color: "rgba(205, 214, 208, 0.62)",
+          width: 1,
+          style: LightweightCharts.LineStyle.Dotted,
+          labelBackgroundColor: cssVar("--surface-strong"),
+        },
+      },
       // minBarSpacing's default (0.5px/candle) physically caps how much
       // history fitContent() can ever show: with Daily now carrying over
       // 4000 candles (see COINBASE_* above) against an ~1100px-wide
