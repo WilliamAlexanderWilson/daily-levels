@@ -1,12 +1,11 @@
 # Range Desk — BTC, ETH & SPY decision dashboard
 
-A focused range-trading workspace. The default screen reduces the product
-to one evidence-labeled decision brief plus the chart: where price sits
-between the nearest support and resistance, whether location favors a
-long watch, short watch, or waiting, the boundary-to-boundary reward/risk
-geometry, and the historical behavior of each boundary. Levels are
-recalculated daily; BTC/ETH candles tick live. The full level map,
-liquidity model, scorecards, explanations, and local trade journal remain
+A focused range-trading workspace. BTC's default screen is organized around
+Mathieu's November 4, 2026 higher-timeframe framework: a $60k floor, $80k
+ceiling, $80k-$82.8k upper deviation/reclaim, and $72k-$77k decision-support
+zone. Live candles and price update every 10 seconds. Rolling calculated
+levels are optional context, not mislabeled as the macro range. The full level
+map, liquidity model, scorecards, explanations, and local trade journal remain
 available under **Full analysis**.
 
 **A watch area is not an entry signal.** The UI never claims to detect the
@@ -16,28 +15,29 @@ Live: https://williamalexanderwilson.github.io/daily-levels/
 
 ## Range method and source boundary
 
-The range brief was added from the user's November 5, 2026 request and the
-transcript of https://youtu.be/sj4rNQ2ytZw. Most of that video is a BloFin
-leverage-platform tutorial and affiliate promotion, not a mechanical range
-strategy. The usable rules are narrow: trade from a range edge rather than
-the middle, define take-profit and stop-loss before entry, prefer isolated
-margin for bounded risk, and treat 5% portfolio risk as aggressive.
+The original linked video, https://youtu.be/sj4rNQ2ytZw, is primarily a BloFin
+leverage tutorial and does not define how to select a range. Follow-up review
+of Mathieu's current market videos established the missing framework:
 
-The video does **not** specify how to select a range, what confirms a hold
-or rejection, or an empirically validated entry threshold. The site makes
-its additional UI assumption visible and testable: the outer 35% of the
-nearest support/resistance bracket is a watch area; the middle 30% is
-`WAIT`. That is a geometry filter, not a backtested claim of edge. See
-`site/range-decision.js` and `tests/test_range_decision.js`.
+- https://youtu.be/cOxjsDvGRTA describes a $60k-$80k range with deviations,
+  $72k-$77k support, and the risk of moving toward the floor if support fails.
+- https://youtu.be/HBKEvXjDbS0 repeats the $20k range and identifies roughly
+  $74k as an important anchored-VWAP failure area.
+- https://youtu.be/v3fXVye-TVg keeps $82.8k as the reclaim required to change
+  the lower higher-timeframe bias.
+
+Those levels are a dated discretionary framework, not an objective or
+backtested signal. `site/range-decision.js` stores the source date alongside
+the prices so the UI cannot silently present them as timeless.
 
 The **Patience gate** then requires three visible facts before calling the
 chart a setup worth reviewing:
 
-1. Price is in the outer watch area, not the middle.
+1. Price is in a sourced watch area, not merely near an arbitrary level.
 2. A completed candle actually traded through the selected support or
    resistance boundary.
-3. That completed candle closed back inside the bracket (above support for
-   a long watch, below resistance for a short watch).
+3. That completed candle closed back inside the selected zone (above support
+   for a long watch, below resistance for a short watch).
 
 The still-forming candle is always excluded. All three conditions produce
 “setup to assess,” never an automatic order; stop placement, size, and the
@@ -50,29 +50,12 @@ one-time alert can appear while the tab is hidden. The opt-in setting and a
 short deduplication history are stored only in that browser's localStorage;
 no account, server, Telegram bot, or trading connection is involved.
 
-The chart follows the same progressive-disclosure rule as the page: with
-**Full analysis** closed, it draws only the two boundaries of the active
-support/resistance bracket. Opening Full analysis switches to a **level
-radar**: the full map remains visible, but background levels become faint
-and unlabeled. Only the live bracket, the 60-day range edges, the tightest
-round-number band, and the nearest bid/ask walls earn labels. Importance is
-re-ranked with the 10-second live-price poll; the underlying calculated
-levels still change only with the daily data run. This keeps attention on
-the range price can actually trade from without hiding the larger map.
-
-That active bracket is also marked directly behind the candles. Its nearest
-resistance is labeled **RANGE HIGH**, its nearest support is labeled
-**RANGE LOW**, and the interior is visibly split into short-watch, wait, and
-long-watch zones using the same 35% / 30% / 35% geometry as the decision
-brief. A persistent on-chart BTC/ETH ticker shows both the latest Kraken
-price and the age of the last successful browser update. The price and
-candle poll every 10 seconds; the daily level boundaries stay fixed so the
-range does not chase each price tick.
-
-The displayed ratio is explicitly **range geometry**, not position `R`:
-distance to the opposite boundary divided by distance to the nearby
-boundary. It cannot become true reward/risk until the trader defines an
-actual stop beyond that boundary.
+The BTC chart marks the complete macro range behind the candles, including
+the $70k midpoint, $72k-$77k support zone, $80k ceiling, and $82.8k reclaim.
+Nearby rolling levels sit in a closed optional panel. Opening **Full analysis**
+restores the broader level radar, order-book walls, and evidence-labeled
+liquidation model. A persistent ticker shows the latest Kraken price and the
+age of the last successful update.
 
 ## How it works
 

@@ -158,6 +158,16 @@ means entry confirmation. The brief shows the exact bracket, boundary
 reward/risk, and existing historical hold-rate evidence. It refuses to
 create a setup outside a complete bracket.
 
+Correction after reviewing the creator's strategy-focused videos rather than
+only the original exchange tutorial: for BTC, the nearest calculated bracket
+is no longer called "the range." The controlling November 4, 2026 framework
+is $60k-$80k, with a $72k-$77k decision-support zone and $80k-$82.8k upper
+deviation/reclaim. Sources are `cOxjsDvGRTA`, `HBKEvXjDbS0`, and
+`v3fXVye-TVg`. `RangeDecision.BTC_MACRO_RANGE` stores these dated inputs. The
+default overlay draws the full macro structure; nearby rolling levels are
+closed optional context. A `LONG WATCH` or `SHORT WATCH` remains only a
+location state and still requires the completed-candle Patience gate.
+
 Follow-up the same day: the user specifically wanted the page to reinforce
 patience and show what happened at the exact range boundary. Added a
 three-condition **Patience gate**. It remains incomplete until (1) price is

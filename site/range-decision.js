@@ -11,6 +11,22 @@
   // 30% is a no-trade area. This is a geometry filter, not a claim of edge.
   const EDGE_FRACTION = 0.35;
 
+  // This is an explicitly sourced market-structure framework, not a value
+  // derived from the daily rolling-level engine. Keeping it as data makes the
+  // distinction visible to the UI and easy to replace when the creator
+  // publishes a materially different range.
+  const BTC_MACRO_RANGE = Object.freeze({
+    low: 60000,
+    high: 80000,
+    reclaim: 82800,
+    supportLow: 72000,
+    supportHigh: 77000,
+    failureLevel: 74000,
+    longWatchHigh: 62000,
+    sourceDate: "2026-11-04",
+    sourceLabel: "Mathieu higher-timeframe framework",
+  });
+
   function midpoint(level) {
     return (level.price_low + level.price_high) / 2;
   }
@@ -107,6 +123,18 @@
   }
 
   function rangeZonePrices(decision) {
+    if (decision && decision.strategyRange) {
+      const range = decision.strategyRange;
+      return {
+        low: range.low,
+        longThreshold: range.longWatchHigh,
+        shortThreshold: range.high,
+        high: range.reclaim,
+        supportLow: range.supportLow,
+        supportHigh: range.supportHigh,
+        failureLevel: range.failureLevel,
+      };
+    }
     if (!decision || !decision.support || !decision.resistance) return null;
     const low = midpoint(decision.support);
     const high = midpoint(decision.resistance);
@@ -135,6 +163,83 @@
       preferredRewardRisk: null,
       supportScore: null,
       resistanceScore: null,
+      strategyRange: null,
+    };
+  }
+
+  function syntheticLevel(name, priceLow, priceHigh, type) {
+    return {
+      name,
+      price_low: priceLow,
+      price_high: priceHigh,
+      type,
+      strength: 0,
+      is_flip: false,
+    };
+  }
+
+  function buildStrategyRange(price, range = BTC_MACRO_RANGE) {
+    if (!Number.isFinite(price) || !range || !(range.high > range.low) || !(range.reclaim >= range.high)) {
+      return emptyDecision("The sourced macro-range framework is unavailable. Do not substitute a nearby level bracket.");
+    }
+
+    const span = range.high - range.low;
+    const macroPosition = (price - range.low) / span;
+    const floor = syntheticLevel("Macro range floor", range.low, range.low, "support");
+    const support = syntheticLevel("Decision support", range.supportLow, range.supportHigh, "support");
+    const resistance = syntheticLevel("Range high + reclaim", range.high, range.reclaim, "resistance");
+
+    let status = "wait";
+    let label = "WAIT";
+    let title = "Inside the macro range — no edge from location alone";
+    let summary = "Let price reach a defined decision area. Nearby levels are context, not a reason to manufacture a trade.";
+    let confirmationSupport = support;
+
+    if (price >= range.supportLow && price <= range.supportHigh) {
+      status = "long-watch";
+      label = "LONG WATCH";
+      title = "Support decision zone — wait for the reclaim";
+      summary = `Price is inside ${range.supportLow.toLocaleString()}–${range.supportHigh.toLocaleString()} support. A sweep and completed close back above the zone is the confirmation gate; a touch is not an entry.`;
+    } else if (price >= range.high && price <= range.reclaim) {
+      status = "short-watch";
+      label = "SHORT WATCH";
+      title = "Upper deviation — rejection must confirm";
+      summary = `Price is testing the ${range.high.toLocaleString()} range ceiling through the ${range.reclaim.toLocaleString()} reclaim level. Wait for a completed close back below the zone before assessing a short.`;
+    } else if (price >= range.low && price <= range.longWatchHigh) {
+      status = "long-watch";
+      label = "LONG WATCH";
+      title = "Macro range floor — only a reclaim confirms";
+      summary = `Price is near the ${range.low.toLocaleString()} macro floor. Treat a sweep below and completed reclaim as evidence; do not catch a falling candle.`;
+      confirmationSupport = floor;
+    } else if (price > range.reclaim) {
+      title = "Above the bearish reclaim threshold";
+      summary = `Price is above ${range.reclaim.toLocaleString()}. The prior lower-bias framework needs fresh acceptance evidence before it can be reused.`;
+    } else if (price < range.low) {
+      title = "Below the macro range — framework invalidated";
+      summary = `Price is below the ${range.low.toLocaleString()} floor. Wait for a new range or a confirmed reclaim instead of treating the old floor as automatic support.`;
+    } else if (price < range.supportLow) {
+      title = "Lower half of the macro range — patience over prediction";
+      summary = `Price is below the decision-support zone but above the ${range.low.toLocaleString()} floor. The next clean location is the floor or a reclaim of ${range.supportLow.toLocaleString()}–${range.supportHigh.toLocaleString()}.`;
+    } else {
+      title = "Between support and the range ceiling — wait";
+      summary = `Price is above ${range.supportHigh.toLocaleString()} support but below the ${range.high.toLocaleString()} ceiling. This is not a clean range edge.`;
+    }
+
+    return {
+      status,
+      label,
+      title,
+      summary,
+      support: confirmationSupport,
+      resistance,
+      bracketPosition: Math.max(0, Math.min(1, macroPosition)),
+      macroPosition,
+      longRewardRisk: null,
+      shortRewardRisk: null,
+      preferredRewardRisk: null,
+      supportScore: null,
+      resistanceScore: null,
+      strategyRange: range,
     };
   }
 
@@ -215,5 +320,7 @@
     patienceState,
     patienceAlertFingerprint,
     rangeZonePrices,
+    buildStrategyRange,
+    BTC_MACRO_RANGE,
   };
 });

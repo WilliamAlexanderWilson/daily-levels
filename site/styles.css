@@ -829,6 +829,40 @@ summary:focus-visible {
   box-shadow: var(--shadow);
 }
 
+.nearby-context {
+  margin: 0 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+}
+
+.nearby-context > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  list-style: none;
+}
+
+.nearby-context > summary::-webkit-details-marker { display: none; }
+.nearby-context > summary span:first-child { display: grid; gap: 0.18rem; }
+.nearby-context > summary strong { color: var(--text); font-size: 0.82rem; }
+.nearby-context > summary small { font-size: 0.7rem; }
+.nearby-context > summary span:last-child {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.nearby-context[open] > summary span:last-child::before { content: "Hide"; }
+.nearby-context[open] > summary span:last-child { font-size: 0; }
+.nearby-context[open] > summary span:last-child::before { font-size: 0.7rem; }
+.nearby-context .nearest-levels { margin: 0; padding: 0 1rem 0.8rem; }
+.nearby-context .level-jump { margin: 0 1rem 1rem; }
+
 .chart-focus-status {
   position: absolute;
   z-index: 9;
@@ -950,6 +984,39 @@ summary:focus-visible {
   background: color-mix(in srgb, var(--support) 13%, transparent);
 }
 
+.macro-support-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--support) 70%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--support) 70%, transparent);
+  background: color-mix(in srgb, var(--support) 11%, transparent);
+  color: color-mix(in srgb, var(--support) 84%, var(--text));
+  font-size: 0.58rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+}
+
+.macro-midpoint-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  height: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--text-muted) 56%, transparent);
+  color: color-mix(in srgb, var(--text-muted) 86%, var(--text));
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-align: right;
+  padding-right: 10px;
+}
+
 .active-range-overlay.is-compact .active-range-zone { font-size: 0; }
 
 .active-range-boundary {
@@ -969,6 +1036,10 @@ summary:focus-visible {
 
 .active-range-boundary-high { background: var(--resistance); }
 .active-range-boundary-low { background: var(--support); }
+.active-range-boundary-reclaim {
+  color: var(--surface);
+  background: var(--stale);
+}
 
 @media (max-width: 640px) {
   .chart-live-ticker {

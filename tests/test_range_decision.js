@@ -1,6 +1,14 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { build, patienceAlertFingerprint, patienceState, rangeZonePrices, recentBoundaryTest } = require("../site/range-decision.js");
+const {
+  BTC_MACRO_RANGE,
+  build,
+  buildStrategyRange,
+  patienceAlertFingerprint,
+  patienceState,
+  rangeZonePrices,
+  recentBoundaryTest,
+} = require("../site/range-decision.js");
 
 const levels = [
   { name: "Range low (60d)", price_low: 80, price_high: 80 },
@@ -117,4 +125,33 @@ test("alert fingerprint deduplicates one confirmed setup and changes for a new c
   assert.equal(patienceAlertFingerprint("btc", "4h", decision, first), patienceAlertFingerprint("btc", "4h", decision, first));
   assert.notEqual(patienceAlertFingerprint("btc", "4h", decision, first), patienceAlertFingerprint("btc", "4h", decision, second));
   assert.equal(patienceAlertFingerprint("btc", "4h", decision, { ...first, isReady: false }), null);
+});
+
+test("uses the sourced BTC macro range instead of the nearest-level bracket", () => {
+  const decision = buildStrategyRange(75900);
+  assert.equal(decision.status, "long-watch");
+  assert.equal(decision.support.name, "Decision support");
+  assert.equal(decision.strategyRange.low, 60000);
+  assert.equal(decision.strategyRange.high, 80000);
+  assert.ok(Math.abs(decision.macroPosition - 0.795) < 0.001);
+});
+
+test("marks only the upper deviation as a short watch", () => {
+  assert.equal(buildStrategyRange(79500).status, "wait");
+  assert.equal(buildStrategyRange(81000).status, "short-watch");
+  assert.equal(buildStrategyRange(83500).status, "wait");
+});
+
+test("exposes the complete macro range and decision zones for the chart", () => {
+  const prices = rangeZonePrices(buildStrategyRange(75900));
+  assert.deepEqual(prices, {
+    low: 60000,
+    longThreshold: 62000,
+    shortThreshold: 80000,
+    high: 82800,
+    supportLow: 72000,
+    supportHigh: 77000,
+    failureLevel: 74000,
+  });
+  assert.equal(BTC_MACRO_RANGE.sourceDate, "2026-11-04");
 });

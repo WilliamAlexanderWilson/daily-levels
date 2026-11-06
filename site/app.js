@@ -287,12 +287,13 @@
   let lastLivePrice = null; // most recent known price, for live P&L on sized/leveraged trades
   let previousLivePrice = null; // gives the on-chart ticker a quiet up/down cue without implying a signal
   let lastLiveTickAt = null; // successful browser fetch time, used to expose freshness instead of just saying "Live"
-  let activeRangeDecision = null; // nearest live support/resistance bracket drawn directly behind the candles
+  let activeRangeDecision = null; // sourced BTC macro range (or rolling fallback for other assets) drawn behind the candles
   let closingTradeId = null; // trade mid-close (exit-price input showing in its row), survives the 10s re-render from the live poll
   let deletingTradeId = null; // trade awaiting delete confirmation (same survive-the-re-render need as closingTradeId) - deleting is permanent, localStorage-only, no undo
   let snappedMarkerKey = null; // key of whichever marker (table row, dropdown pick, or on-chart label) the price scale is currently locked to, if any
   let activeLevelsWindowDays = null; // RANGE_DAYS from the levels JSON, for the 4H default-zoom calc
   let lastOverlayPriceRange = null; // {from, to} as of the last renderOverlays() call, for the price-scale poll below
+  let macroRangeFramedKey = null; // frame the sourced BTC range once per chart load without fighting later manual zooms
 
   function ensureChart() {
     if (chart) return;
@@ -450,7 +451,13 @@
     return Boolean(details && details.open);
   }
 
+  function nearbyContextIsOpen() {
+    const details = document.getElementById("nearby-context");
+    return Boolean(details && details.open);
+  }
+
   function levelsForCurrentView(levels) {
+    if (state.asset === "btc" && !fullAnalysisIsOpen() && !nearbyContextIsOpen()) return [];
     if (fullAnalysisIsOpen() || !Number.isFinite(lastLivePrice)) return levels;
     const { nearestAbove, nearestBelow } = findNearestAboveBelow(levels, lastLivePrice);
     const touching = levels.filter((level) => lastLivePrice >= level.price_low && lastLivePrice <= level.price_high);
@@ -480,7 +487,9 @@
     } else if (fullAnalysisIsOpen()) {
       message = `Level radar · importance refreshes every ${LIVE_POLL_MS / 1000}s`;
     } else {
-      message = `Active range · live price refreshes every ${LIVE_POLL_MS / 1000}s`;
+      message = state.asset === "btc"
+        ? `BTC macro range $60k–$80k · live price every ${LIVE_POLL_MS / 1000}s`
+        : `Rolling range · live price refreshes every ${LIVE_POLL_MS / 1000}s`;
     }
     if (status.textContent !== message) status.textContent = message;
   }
@@ -778,20 +787,53 @@
       zoneElement.textContent = zone.label;
       band.appendChild(zoneElement);
     }
+
+    if (Number.isFinite(zonePrices.supportLow) && Number.isFinite(zonePrices.supportHigh)) {
+      const ySupportTop = candleSeries.priceToCoordinate(zonePrices.supportHigh);
+      const ySupportBottom = candleSeries.priceToCoordinate(zonePrices.supportLow);
+      if (ySupportTop !== null && ySupportBottom !== null) {
+        const supportTop = Math.max(clippedTop, Math.min(clippedBottom, ySupportTop));
+        const supportBottom = Math.max(clippedTop, Math.min(clippedBottom, ySupportBottom));
+        const supportBand = document.createElement("span");
+        supportBand.className = "macro-support-zone";
+        supportBand.style.top = `${supportTop - clippedTop}px`;
+        supportBand.style.height = `${Math.max(1, supportBottom - supportTop)}px`;
+        supportBand.textContent = "DECISION SUPPORT · WAIT FOR RECLAIM";
+        band.appendChild(supportBand);
+      }
+    }
+
+    if (decision.strategyRange) {
+      const midpointPrice = (decision.strategyRange.low + decision.strategyRange.high) / 2;
+      const yMidpoint = candleSeries.priceToCoordinate(midpointPrice);
+      if (yMidpoint !== null && yMidpoint >= clippedTop && yMidpoint <= clippedBottom) {
+        const midpointLine = document.createElement("span");
+        midpointLine.className = "macro-midpoint-line";
+        midpointLine.style.top = `${yMidpoint - clippedTop}px`;
+        midpointLine.textContent = `MIDPOINT · ${formatPriceRange(midpointPrice, midpointPrice)}`;
+        band.appendChild(midpointLine);
+      }
+    }
     container.appendChild(band);
     overlayEls.push(band);
 
-    const boundaries = [
-      { y: yTop, side: "high", price: rangeHigh, name: decision.resistance.name },
-      { y: yBottom, side: "low", price: rangeLow, name: decision.support.name },
-    ];
+    const boundaries = decision.strategyRange
+      ? [
+          { y: candleSeries.priceToCoordinate(decision.strategyRange.reclaim), side: "reclaim", price: decision.strategyRange.reclaim, name: "Bias-changing reclaim" },
+          { y: candleSeries.priceToCoordinate(decision.strategyRange.high), side: "high", price: decision.strategyRange.high, name: "Macro range ceiling" },
+          { y: candleSeries.priceToCoordinate(decision.strategyRange.low), side: "low", price: decision.strategyRange.low, name: "Macro range floor" },
+        ]
+      : [
+          { y: yTop, side: "high", price: rangeHigh, name: decision.resistance.name },
+          { y: yBottom, side: "low", price: rangeLow, name: decision.support.name },
+        ];
     for (const boundary of boundaries) {
-      if (boundary.y < 0 || boundary.y > container.clientHeight) continue;
+      if (boundary.y === null || boundary.y < 0 || boundary.y > container.clientHeight) continue;
       const label = document.createElement("div");
       label.className = `active-range-boundary active-range-boundary-${boundary.side}`;
       label.style.top = `${boundary.y}px`;
       label.style.right = `${axisWidth + 8}px`;
-      label.textContent = `RANGE ${boundary.side.toUpperCase()} · ${formatPriceRange(boundary.price, boundary.price)}`;
+      label.textContent = `${boundary.name.toUpperCase()} · ${formatPriceRange(boundary.price, boundary.price)}`;
       label.title = boundary.name;
       container.appendChild(label);
       overlayEls.push(label);
@@ -975,6 +1017,7 @@
     });
 
     activeLevelsWindowDays = levelsWindowDays;
+    macroRangeFramedKey = null;
     applyDefaultZoom(candleData.length, range, levelsWindowDays);
 
     // Seed the guard to the last rendered candle's true time rather than
@@ -1272,7 +1315,7 @@
   function renderDecisionLoading() {
     setDecisionClass("loading");
     document.getElementById("decision-badge").textContent = "CALCULATING";
-    document.getElementById("decision-method").textContent = "Nearest-level range";
+    document.getElementById("decision-method").textContent = state.asset === "btc" ? "Macro range framework" : "Rolling range framework";
     document.getElementById("decision-title").textContent = "Building the current range read…";
     document.getElementById("decision-summary").textContent = "Waiting for price, levels, and historical context.";
     document.getElementById("decision-range").hidden = true;
@@ -1440,7 +1483,9 @@
   }
 
   function renderRangeDecision(levels, scorecard, currentPrice) {
-    const decision = RangeDecision.build(levels, scorecard, currentPrice);
+    const decision = state.asset === "btc"
+      ? RangeDecision.buildStrategyRange(currentPrice)
+      : RangeDecision.build(levels, scorecard, currentPrice);
     activeRangeDecision = decision;
     setDecisionClass(decision.status);
     document.getElementById("decision-badge").textContent = decision.label;
@@ -1466,14 +1511,53 @@
     }
 
     const bracketPct = decision.bracketPosition * 100;
-    const macroText = decision.macroPosition === null
-      ? `Immediate support/resistance bracket · ${state.range.toUpperCase()} close gate`
-      : `Immediate bracket · ${Math.round(decision.macroPosition * 100)}% through 60-day range · ${state.range.toUpperCase()} close gate`;
+    const macroText = decision.strategyRange
+      ? `${decision.strategyRange.sourceLabel} · ${decision.strategyRange.sourceDate} · ${state.range.toUpperCase()} close gate`
+      : decision.macroPosition === null
+        ? `Immediate support/resistance bracket · ${state.range.toUpperCase()} close gate`
+        : `Immediate bracket · ${Math.round(decision.macroPosition * 100)}% through 60-day range · ${state.range.toUpperCase()} close gate`;
     document.getElementById("decision-method").textContent = macroText;
-    document.getElementById("decision-support").textContent = levelLabelWithPrice(decision.support);
-    document.getElementById("decision-resistance").textContent = levelLabelWithPrice(decision.resistance);
-    document.getElementById("decision-position").textContent = `${Math.round(bracketPct)}% through bracket`;
+    document.getElementById("decision-support-caption").textContent = decision.strategyRange ? "Macro floor" : "Support / invalidation";
+    document.getElementById("decision-resistance-caption").textContent = decision.strategyRange ? "Ceiling / reclaim" : "Resistance / target";
+    document.getElementById("decision-support").textContent = decision.strategyRange
+      ? compactPrice(decision.strategyRange.low)
+      : levelLabelWithPrice(decision.support);
+    document.getElementById("decision-resistance").textContent = decision.strategyRange
+      ? `${compactPrice(decision.strategyRange.high)} / ${compactPrice(decision.strategyRange.reclaim)}`
+      : levelLabelWithPrice(decision.resistance);
+    document.getElementById("decision-position").textContent = decision.strategyRange
+      ? `${Math.round(decision.macroPosition * 100)}% through $60k–$80k`
+      : `${Math.round(bracketPct)}% through bracket`;
     document.getElementById("decision-marker").style.left = `${bracketPct}%`;
+
+    if (decision.strategyRange) {
+      const frameKey = `${state.asset}|${state.range}|${decision.strategyRange.sourceDate}`;
+      if (state.range === "4h" && macroRangeFramedKey !== frameKey && candleSeries && activeCandles.length) {
+        const recentBars = activeCandles.slice(-Math.max(1, (activeLevelsWindowDays || 60) * 6));
+        const recentHigh = Math.max(...recentBars.map((candle) => candle.high));
+        const top = Math.max(decision.strategyRange.reclaim * 1.03, recentHigh * 1.02);
+        const bottom = decision.strategyRange.low * 0.98;
+        candleSeries.priceScale().setAutoScale(false);
+        candleSeries.priceScale().setVisibleRange({ from: bottom, to: top });
+        macroRangeFramedKey = frameKey;
+      }
+      document.getElementById("decision-rr-label").textContent = "Higher-timeframe bias";
+      document.getElementById("decision-support-label").textContent = "Decision support";
+      document.getElementById("decision-resistance-label").textContent = "Bias-changing reclaim";
+      document.getElementById("decision-rr").textContent = currentPrice < decision.strategyRange.reclaim ? "LOWER < 82.8k" : "RECLAIMED > 82.8k";
+      document.getElementById("decision-rr-note").textContent = "framework bias; not a trade instruction";
+      document.getElementById("decision-support-odds").textContent = "$72k–$77k";
+      document.getElementById("decision-support-note").textContent = `loss of ~$${compactPrice(decision.strategyRange.failureLevel)} raises sub-$70k risk`;
+      document.getElementById("decision-resistance-odds").textContent = "$82.8k";
+      document.getElementById("decision-resistance-note").textContent = "acceptance above changes the lower-bias thesis";
+      document.getElementById("decision-caveat").textContent = decision.status === "long-watch"
+        ? "LONG WATCH is not a buy call. Require a sweep/test and a completed close back above the selected support boundary before assessing risk and size."
+        : decision.status === "short-watch"
+          ? "SHORT WATCH is not a sell call. Require rejection and a completed close back below the upper deviation before assessing risk and size."
+          : "The range supplies location, not certainty. Wait for an edge and completed-candle confirmation instead of trading every nearby level.";
+      renderOverlays();
+      return;
+    }
 
     if (decision.status === "long-watch") {
       document.getElementById("decision-rr").textContent = `${decision.longRewardRisk.toFixed(2)}:1 long geometry`;
@@ -2487,7 +2571,9 @@
     const isSpy = asset === "spy";
     document.getElementById("subtitle").textContent = isSpy
       ? "One intraday SPY options setup, backtested against ~2 years of real data."
-      : "One active range, its boundaries, and a patience gate.";
+      : asset === "btc"
+        ? "BTC’s $60k–$80k macro range, live price, and a patience gate."
+        : "One rolling range, its boundaries, and a patience gate.";
 
     document.getElementById("range-select").hidden = isSpy;
     document.getElementById("spy-timeframe-select").hidden = !isSpy;
@@ -2495,6 +2581,7 @@
     document.getElementById("exhaustion-banner").hidden = true; // crypto path's own renderExhaustionBanner() corrects this right after, for btc/eth
     document.getElementById("nearest-levels").hidden = isSpy;
     document.getElementById("level-jump-wrap").hidden = isSpy;
+    document.getElementById("nearby-context").hidden = isSpy;
     document.getElementById("trade-controls").hidden = isSpy;
     document.getElementById("chart-legend").hidden = isSpy;
     document.getElementById("spy-legend").hidden = !isSpy;
@@ -2517,8 +2604,6 @@
     const advancedIds = [
       "futures-context",
       "exhaustion-banner",
-      "nearest-levels",
-      "level-jump-wrap",
       "trade-controls",
       "trade-form",
       "chart-legend",
@@ -2549,6 +2634,15 @@
         renderRoundProximityBands(lastLivePrice, activeProximity);
         renderOrderBookWalls(activeOrderBookWalls);
       }
+      renderOverlays();
+    });
+  }
+
+  function wireNearbyContext() {
+    const details = document.getElementById("nearby-context");
+    if (!details) return;
+    details.addEventListener("toggle", () => {
+      if (state.asset !== "spy") renderLevels(activeLevels);
       renderOverlays();
     });
   }
@@ -2917,6 +3011,7 @@
 
   organizeAdvancedAnalysis();
   wireAdvancedAnalysis();
+  wireNearbyContext();
   readHash();
   setActiveButtons();
   wireToggles();
