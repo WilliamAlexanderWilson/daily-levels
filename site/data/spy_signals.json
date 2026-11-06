@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-11-06T14:45:12.046834+00:00",
+  "generated_at_utc": "2026-11-06T17:15:16.503558+00:00",
   "trades": [
     {
       "signal_time": 1731513600,
@@ -2645,6 +2645,23 @@
       "exit_premium": 3.3350923396321264,
       "exit_reason": "stop",
       "pct_return": -0.11041955985419893
+    },
+    {
+      "signal_time": 1793981100,
+      "direction": "put",
+      "n_confirmed": 1,
+      "confirmed_timeframes": [
+        30
+      ],
+      "entry_underlying": 739.43,
+      "strike": 739.0,
+      "expiry_date": null,
+      "entry_premium": null,
+      "exit_time": 1793981100,
+      "exit_underlying": 739.43,
+      "exit_premium": null,
+      "exit_reason": "incomplete",
+      "pct_return": null
     }
   ]
 }
