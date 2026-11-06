@@ -2,7 +2,11 @@
   "use strict";
 
   const STALE_HOURS = 26;
-  const LIVE_POLL_MS = 10000;
+  const FALLBACK_POLL_MS = 10000;
+  const ORDER_BOOK_POLL_MS = 10000;
+  const LIVE_RECONNECT_MAX_MS = 30000;
+  const LIVE_STREAM_STALE_MS = 15000;
+  const DERIVED_RENDER_THROTTLE_MS = 400;
   const KRAKEN_OHLC_URL = "https://api.kraken.com/0/public/OHLC";
   const KRAKEN_DEPTH_URL = "https://api.kraken.com/0/public/Depth";
   const ASSET_PAIRS = { btc: "BTC/USD", eth: "ETH/USD" };
@@ -260,19 +264,19 @@
   let candleSeries = null;
   let volumeSeries = null;
   const activePriceLines = [];
-  const orderBookPriceLines = []; // separate from activePriceLines - these redraw every poll tick, not just on load/toggle
+  const orderBookPriceLines = []; // separate from activePriceLines - these redraw on their own 10s order-book refresh, not every trade tick
   const overlayEls = [];
   let currentMarkers = []; // {key, low, high, mid, color, label, isZone} for repositioning on redraw
   // native IPriceLine objects, keyed by the same marker key, so "isolate"
   // can toggle lineVisible/axisLabelVisible per line instead of per marker
-  // array - kept separate (levels refresh once per data load, walls every
-  // poll tick) so refreshing one never has to touch the other's entries.
+  // array - kept separate (levels refresh once per data load, walls on a
+  // slower REST cadence) so refreshing one never has to touch the other's entries.
   let levelLinesByKey = new Map();
   let wallLinesByKey = new Map();
   let lastLiveUnixTime = null; // guards against feeding series.update() a time older than its last bar
 
   // the daily levels + scorecard, kept around so the nearest-level cards
-  // can be recomputed on every live price tick, not just on load/toggle.
+  // can react to the real-time price, not just the initial data load.
   let activeLevels = [];
   let activeScorecard = null;
   let activeProximity = null;
@@ -286,9 +290,9 @@
   let pendingTrade = null; // {time, price} captured from a chart click, awaiting form submission
   let lastLivePrice = null; // most recent known price, for live P&L on sized/leveraged trades
   let previousLivePrice = null; // gives the on-chart ticker a quiet up/down cue without implying a signal
-  let lastLiveTickAt = null; // successful browser fetch time, used to expose freshness instead of just saying "Live"
+  let lastLiveTickAt = null; // latest WebSocket trade-event time, used to expose freshness instead of just saying "Live"
   let activeRangeDecision = null; // sourced BTC macro range (or rolling fallback for other assets) drawn behind the candles
-  let closingTradeId = null; // trade mid-close (exit-price input showing in its row), survives the 10s re-render from the live poll
+  let closingTradeId = null; // trade mid-close (exit-price input showing in its row), survives live derived-panel refreshes
   let deletingTradeId = null; // trade awaiting delete confirmation (same survive-the-re-render need as closingTradeId) - deleting is permanent, localStorage-only, no undo
   let snappedMarkerKey = null; // key of whichever marker (table row, dropdown pick, or on-chart label) the price scale is currently locked to, if any
   let activeLevelsWindowDays = null; // RANGE_DAYS from the levels JSON, for the 4H default-zoom calc
@@ -523,11 +527,11 @@
     if (state.asset === "spy") {
       message = "SPY setup view · historical data";
     } else if (fullAnalysisIsOpen()) {
-      message = `Level radar · importance refreshes every ${LIVE_POLL_MS / 1000}s`;
+      message = "Level radar · reacts to the real-time price";
     } else {
       message = state.asset === "btc"
-        ? `BTC macro range $60k–$80k · live price every ${LIVE_POLL_MS / 1000}s`
-        : `Rolling range · live price refreshes every ${LIVE_POLL_MS / 1000}s`;
+        ? "BTC macro range $60k–$80k · real-time Kraken stream"
+        : "Rolling range · real-time Kraken stream";
     }
     if (status.textContent !== message) status.textContent = message;
   }
@@ -1074,21 +1078,25 @@
     lastLiveUnixTime = candles.length ? candles[candles.length - 1].time : null;
   }
 
-  // --- live price polling ---
+  // --- real-time price and forming candle ---
   //
-  // The daily snapshot (levels + the candles baked into site/data) only
-  // updates once a day at 5 AM Central - that's deliberate, it's what
-  // keeps the levels themselves fixed as a stable reference rather than a
-  // moving target. But the chart itself can tick live: Kraken's public
-  // OHLC endpoint sends CORS headers that allow browser-side requests
-  // (verified against api.kraken.com directly), so we can poll it from
-  // here with no server and no API key, same as the daily engine does.
-  // Only the last 1-2 candles get updated in place - the historical
-  // candles and every level line stay exactly as of the daily run.
+  // Historical candles still load once through REST, but the visible price
+  // and current candle are driven by Kraken's public OHLC WebSocket. Kraken
+  // publishes that channel on every trade, so the chart moves as the market
+  // trades instead of waiting for a timer. A 10-second REST request remains
+  // only as a reconnect fallback; it is skipped while the socket is healthy.
 
-  const LIVE_STALE_AFTER_MISSES = 2; // ~20s of failed polls before flagging the badge
-
-  let consecutiveMisses = 0;
+  let liveSocket = null;
+  let liveSocketGeneration = 0;
+  let liveReconnectTimer = null;
+  let liveReconnectAttempt = 0;
+  let liveStreamStatus = "reconnecting";
+  let liveStreamSubscribed = false;
+  let lastLiveMessageAt = null;
+  let derivedRenderTimer = null;
+  let pendingDerivedAsset = null;
+  let pendingDerivedPrice = null;
+  let liveIntervalsStarted = false;
 
   function setLiveBadge(status) {
     // status: "live" | "reconnecting"
@@ -1107,7 +1115,7 @@
     return `Updated ${Math.floor(ageSeconds / 60)}m ago`;
   }
 
-  function renderChartLiveTicker(status = consecutiveMisses >= LIVE_STALE_AFTER_MISSES ? "reconnecting" : "live") {
+  function renderChartLiveTicker(status = liveStreamStatus) {
     const ticker = document.getElementById("chart-live-ticker");
     if (!ticker) return;
     ticker.classList.toggle("is-reconnecting", status === "reconnecting");
@@ -1123,13 +1131,93 @@
       : liveAgeLabel();
   }
 
-  function noteLiveMiss() {
-    consecutiveMisses += 1;
-    if (consecutiveMisses >= LIVE_STALE_AFTER_MISSES) setLiveBadge("reconnecting");
+  function renderDerivedLiveState(asset, price) {
+    if (state.asset !== asset || !Number.isFinite(price)) return;
+    renderLevels(activeLevels);
+    renderNearestLevels(activeLevels, activeScorecard, price);
+    renderRangeDecision(activeLevels, activeScorecard, price);
+    renderRoundProximityBands(price, activeProximity);
+    renderOrderBookWalls(activeOrderBookWalls);
+    renderLevelJumpSelect(activeLevels, price, { preserveInteraction: true });
+    updateLiveTradePnlCells(asset, price);
   }
 
-  async function pollLiveCandle() {
-    if (state.asset === "spy") return; // no CORS-friendly live feed for SPY - chart/backtest are a once-a-day static snapshot
+  function scheduleDerivedLiveState(asset, price) {
+    pendingDerivedAsset = asset;
+    pendingDerivedPrice = price;
+    if (derivedRenderTimer) return;
+    derivedRenderTimer = setTimeout(() => {
+      derivedRenderTimer = null;
+      const nextAsset = pendingDerivedAsset;
+      const nextPrice = pendingDerivedPrice;
+      pendingDerivedAsset = null;
+      pendingDerivedPrice = null;
+      renderDerivedLiveState(nextAsset, nextPrice);
+    }, DERIVED_RENDER_THROTTLE_MS);
+  }
+
+  function applyLiveCandle(candle, asset, range, source = "stream") {
+    if (state.asset !== asset || state.range !== range || !candleSeries) return false;
+    if (lastLiveUnixTime !== null && candle.time < lastLiveUnixTime) return false;
+
+    const point = { time: toTimePoint(candle, range) };
+    candleSeries.update({
+      ...point,
+      open: candle.open,
+      high: candle.high,
+      low: candle.low,
+      close: candle.close,
+    });
+    volumeSeries.update({
+      ...point,
+      value: candle.volume,
+      color: candle.close >= candle.open ? cssVar("--support") : cssVar("--resistance"),
+    });
+    const activeIndex = activeCandles.findIndex((item) => item.time === candle.time);
+    if (activeIndex >= 0) activeCandles[activeIndex] = candle;
+    else activeCandles.push(candle);
+    lastLiveUnixTime = candle.time;
+
+    document.getElementById("price-label").textContent = candle.close.toLocaleString(undefined, {
+      maximumFractionDigits: 2,
+    });
+    previousLivePrice = lastLivePrice;
+    lastLivePrice = candle.close;
+    lastLiveTickAt = Date.now();
+    if (source === "stream") {
+      liveStreamStatus = "live";
+      setLiveBadge("live");
+    } else {
+      liveStreamStatus = "reconnecting";
+      renderChartLiveTicker("reconnecting");
+    }
+    scheduleDerivedLiveState(asset, candle.close);
+    return true;
+  }
+
+  async function pollLiveCandleFallback() {
+    if (state.asset === "spy") return;
+    const streamIsFresh = KrakenLive.isStreamFresh(
+      liveStreamSubscribed,
+      lastLiveMessageAt,
+      Date.now(),
+      LIVE_STREAM_STALE_MS
+    );
+    if (streamIsFresh) return;
+    if (liveStreamSubscribed || (liveSocket && !lastLiveMessageAt)) {
+      // A socket can remain nominally open through a network handoff while
+      // no longer delivering data. Kraken sends heartbeats, so 15 seconds
+      // without any message (or one fallback interval without even an
+      // acknowledgement) is enough to treat it as stalled, use REST for
+      // this tick, and establish a fresh subscription.
+      liveStreamSubscribed = false;
+      liveStreamStatus = "reconnecting";
+      setLiveBadge("reconnecting");
+      const staleSocket = liveSocket;
+      liveSocket = null;
+      if (staleSocket) staleSocket.close();
+      scheduleLiveReconnect(liveSocketGeneration);
+    }
     const asset = state.asset;
     const range = state.range;
     const pair = ASSET_PAIRS[asset];
@@ -1137,7 +1225,7 @@
 
     try {
       const rows = await fetchKrakenCandles(pair, interval);
-      if (!rows.length) return noteLiveMiss();
+      if (!rows.length) return;
 
       // the toggle may have moved on to a different asset/range while this
       // request was in flight - if so, drop the result rather than draw it
@@ -1147,63 +1235,17 @@
       // last 2 rows: the current forming candle, plus the previous one in
       // case it just closed between polls and we'd otherwise miss its
       // final close.
-      const recent = rows.slice(-2);
-      let lastClose = null;
-
-      for (const candle of recent) {
-        // series.update() throws if fed a time older than its current last
-        // bar (e.g. a stale row left over from a reconnect, or any other
-        // ordering surprise) - skip rather than risk it.
-        if (lastLiveUnixTime !== null && candle.time < lastLiveUnixTime) continue;
-
-        const point = { time: toTimePoint(candle, range) };
-
-        candleSeries.update({
-          ...point,
-          open: candle.open,
-          high: candle.high,
-          low: candle.low,
-          close: candle.close,
-        });
-        volumeSeries.update({
-          ...point,
-          value: candle.volume,
-          color: candle.close >= candle.open ? cssVar("--support") : cssVar("--resistance"),
-        });
-        const activeIndex = activeCandles.findIndex((item) => item.time === candle.time);
-        if (activeIndex >= 0) activeCandles[activeIndex] = candle;
-        else activeCandles.push(candle);
-        lastLiveUnixTime = candle.time;
-        lastClose = candle.close;
-      }
-
-      if (lastClose !== null) {
-        document.getElementById("price-label").textContent = lastClose.toLocaleString(undefined, {
-          maximumFractionDigits: 2,
-        });
-        previousLivePrice = lastLivePrice;
-        lastLivePrice = lastClose;
-        lastLiveTickAt = Date.now();
-        renderChartLiveTicker("live");
-        renderLevels(activeLevels);
-        renderNearestLevels(activeLevels, activeScorecard, lastClose);
-        renderRangeDecision(activeLevels, activeScorecard, lastClose);
-        renderRoundProximityBands(lastClose, activeProximity);
-        renderOrderBookWalls(activeOrderBookWalls);
-        renderLevelJumpSelect(activeLevels, lastClose);
-        renderTradesTable(asset, lastClose);
-      }
-
-      consecutiveMisses = 0;
-      setLiveBadge("live");
+      for (const candle of rows.slice(-2)) applyLiveCandle(candle, asset, range, "fallback");
     } catch (err) {
-      console.error("live poll failed", err);
-      noteLiveMiss();
+      console.error("live REST fallback failed", err);
     }
+  }
 
-    // Best-effort, separate from the candle update above - a failed order
-    // book fetch shouldn't mark the whole live poll as missed, it just
-    // means the liquidity walls don't refresh this tick.
+  async function refreshOrderBookWalls() {
+    if (state.asset === "spy") return;
+    const asset = state.asset;
+    const range = state.range;
+    const pair = ASSET_PAIRS[asset];
     try {
       const walls = await fetchOrderBookWalls(pair);
       if (state.asset === asset && state.range === range) renderOrderBookWalls(walls);
@@ -1212,10 +1254,104 @@
     }
   }
 
-  function startLivePolling() {
-    pollLiveCandle();
-    setInterval(pollLiveCandle, LIVE_POLL_MS);
+  function clearLiveReconnectTimer() {
+    if (!liveReconnectTimer) return;
+    clearTimeout(liveReconnectTimer);
+    liveReconnectTimer = null;
+  }
+
+  function scheduleLiveReconnect(generation) {
+    if (generation !== liveSocketGeneration || state.asset === "spy" || liveReconnectTimer) return;
+    liveStreamStatus = "reconnecting";
+    liveStreamSubscribed = false;
+    setLiveBadge("reconnecting");
+    const delay = Math.min(1000 * (2 ** liveReconnectAttempt), LIVE_RECONNECT_MAX_MS);
+    liveReconnectAttempt += 1;
+    liveReconnectTimer = setTimeout(() => {
+      liveReconnectTimer = null;
+      if (generation === liveSocketGeneration) connectLiveStream();
+    }, delay);
+  }
+
+  function connectLiveStream() {
+    if (state.asset === "spy" || typeof WebSocket !== "function") return;
+    clearLiveReconnectTimer();
+    const generation = liveSocketGeneration;
+    const asset = state.asset;
+    const range = state.range;
+    const symbol = ASSET_PAIRS[asset];
+    const interval = RANGE_INTERVALS[range];
+    liveStreamStatus = "reconnecting";
+    liveStreamSubscribed = false;
+    setLiveBadge("reconnecting");
+
+    let socket;
+    try {
+      socket = new WebSocket(KrakenLive.URL);
+    } catch (err) {
+      console.error("live WebSocket creation failed", err);
+      scheduleLiveReconnect(generation);
+      return;
+    }
+    liveSocket = socket;
+    socket.addEventListener("open", () => {
+      if (generation !== liveSocketGeneration) return socket.close();
+      socket.send(JSON.stringify(KrakenLive.subscriptionRequest(symbol, interval, generation)));
+    });
+    socket.addEventListener("message", (event) => {
+      if (generation !== liveSocketGeneration || state.asset !== asset || state.range !== range) return;
+      lastLiveMessageAt = Date.now();
+      const message = KrakenLive.parseMessage(event.data, symbol, interval);
+      if (!message) return;
+      if (message.kind === "subscription") {
+        if (!message.success) {
+          console.error("Kraken live subscription failed", message.error);
+          socket.close();
+          return;
+        }
+        liveStreamSubscribed = true;
+        liveStreamStatus = "live";
+        liveReconnectAttempt = 0;
+        setLiveBadge("live");
+        return;
+      }
+      for (const candle of message.candles) applyLiveCandle(candle, asset, range);
+    });
+    socket.addEventListener("error", () => {
+      if (generation === liveSocketGeneration) socket.close();
+    });
+    socket.addEventListener("close", () => {
+      if (liveSocket === socket) liveSocket = null;
+      scheduleLiveReconnect(generation);
+    });
+  }
+
+  function restartLiveStream() {
+    liveSocketGeneration += 1;
+    const generation = liveSocketGeneration;
+    clearLiveReconnectTimer();
+    liveStreamSubscribed = false;
+    lastLiveMessageAt = null;
+    liveReconnectAttempt = 0;
+    if (liveSocket) {
+      const oldSocket = liveSocket;
+      liveSocket = null;
+      oldSocket.close();
+    }
+    if (state.asset === "spy") return;
+    liveStreamStatus = "reconnecting";
+    setLiveBadge("reconnecting");
+    connectLiveStream();
+  }
+
+  function startLiveStreaming() {
+    restartLiveStream();
+    if (liveIntervalsStarted) return;
+    liveIntervalsStarted = true;
+    setInterval(pollLiveCandleFallback, FALLBACK_POLL_MS);
+    setInterval(refreshOrderBookWalls, ORDER_BOOK_POLL_MS);
     setInterval(renderChartLiveTicker, 1000);
+    refreshOrderBookWalls();
   }
 
   // --- table ---
@@ -2007,7 +2143,7 @@
   // margin actually put up - the standard retail-perp mental model, same
   // one the liquidation estimate's own math (entry * (1 +/- 1/leverage))
   // is built on. An open trade's reference price is the live price (so
-  // this moves every poll tick); a closed one's is frozen at its own
+  // this moves with the streamed price); a closed one's is frozen at its own
   // exitPrice forever, regardless of what currentPrice is passed in -
   // that's what "closed" means.
   function tradePnl(trade, currentPrice) {
@@ -2023,6 +2159,29 @@
       pct: trade.leverage * priceChangePct * 100,
       isRealized: trade.exitPrice != null,
     };
+  }
+
+  function tradePnlDisplay(trade, currentPrice) {
+    const pnl = tradePnl(trade, currentPrice);
+    if (!pnl) return { text: "—", color: "var(--text-muted)" };
+    const sign = pnl.usd >= 0 ? "+" : "";
+    const suffix = pnl.isRealized ? "" : " (live)";
+    return {
+      text: `${sign}$${pnl.usd.toLocaleString(undefined, { maximumFractionDigits: 2 })} (${sign}${pnl.pct.toFixed(1)}%)${suffix}`,
+      color: pnl.usd >= 0 ? "var(--support)" : "var(--resistance)",
+    };
+  }
+
+  function updateLiveTradePnlCells(asset, currentPrice) {
+    if (state.asset !== asset) return;
+    const tradesById = new Map(loadTrades(asset).map((trade) => [String(trade.id), trade]));
+    document.querySelectorAll(".trade-pnl-cell[data-trade-id]").forEach((cell) => {
+      const trade = tradesById.get(cell.dataset.tradeId);
+      if (!trade) return;
+      const display = tradePnlDisplay(trade, currentPrice);
+      cell.textContent = display.text;
+      cell.style.color = display.color;
+    });
   }
 
   function startClosingTrade(id) {
@@ -2069,15 +2228,7 @@
       const sizeText = trade.size ? `$${trade.size.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "—";
       const leverageText = trade.leverage ? `${trade.leverage}x` : "—";
 
-      const pnl = tradePnl(trade, currentPrice);
-      let pnlText = "—";
-      let pnlColor = "var(--text-muted)";
-      if (pnl) {
-        const sign = pnl.usd >= 0 ? "+" : "";
-        const suffix = pnl.isRealized ? "" : " (live)";
-        pnlText = `${sign}$${pnl.usd.toLocaleString(undefined, { maximumFractionDigits: 2 })} (${sign}${pnl.pct.toFixed(1)}%)${suffix}`;
-        pnlColor = pnl.usd >= 0 ? "var(--support)" : "var(--resistance)";
-      }
+      const pnlDisplay = tradePnlDisplay(trade, currentPrice);
 
       tr.innerHTML = `
         <td>${dateText}</td>
@@ -2086,7 +2237,7 @@
         <td>${exitText}</td>
         <td>${sizeText}</td>
         <td>${leverageText}</td>
-        <td class="trade-pnl-cell" style="color: ${pnlColor}">${pnlText}</td>
+        <td class="trade-pnl-cell" data-trade-id="${escapeHtml(String(trade.id))}" style="color: ${pnlDisplay.color}">${pnlDisplay.text}</td>
         <td class="trade-note-cell">${trade.description ? escapeHtml(trade.description) : "—"}</td>
         <td></td>
       `;
@@ -2381,9 +2532,13 @@
     return Math.min(max, Math.max(min, value));
   }
 
-  function renderLevelJumpSelect(levels, currentPrice) {
+  function renderLevelJumpSelect(levels, currentPrice, { preserveInteraction = false } = {}) {
     const select = document.getElementById("level-jump-select");
     if (!select) return;
+    // Rebuilding a native select while it is open can close it or move its
+    // keyboard focus. Stream ticks may refresh the live percentages only
+    // between interactions; the first tick after blur catches it back up.
+    if (preserveInteraction && (document.activeElement === select || select.matches(":active"))) return;
     if (!levels || !levels.length || currentPrice === null || currentPrice === undefined) {
       select.innerHTML = `<option value="">Default view</option>`;
       select.disabled = true;
@@ -2559,7 +2714,7 @@
   // what that pattern has historically done, never a call to go long/short.
   // Computed once a day in the same engine run as every other level
   // (src/levels/exhaustion_pattern.py via src/levels/engine.py), not polled
-  // live - same cadence as POC/VAH/VAL/golden pocket, not the 10s-live
+  // live - same cadence as POC/VAH/VAL/golden pocket, not the real-time
   // price/order-book path.
 
   function renderExhaustionBanner(detected, scorecardEntry) {
@@ -2732,7 +2887,7 @@
     activeRangeDecision = null;
     activeLiquidationBins = [];
     // Order book walls are drawn separately from activePriceLines (they
-    // redraw on every live poll tick, not just on load) and SPY has no live
+    // redraw on every live market update, not just on load) and SPY has no live
     // poll to naturally refresh/clear them - without this a BTC/ETH wall
     // line stays drawn on the price axis after switching to SPY.
     for (const line of orderBookPriceLines) candleSeries.removePriceLine(line);
@@ -2909,7 +3064,7 @@
         // the new asset's own trade list.
         closingTradeId = null;
         deletingTradeId = null;
-        loadAndRender().then(pollLiveCandle);
+        loadAndRender().then(restartLiveStream);
       });
     });
     document.getElementById("range-select").addEventListener("change", (e) => {
@@ -2918,7 +3073,7 @@
       writeHash();
       setMarkingMode(false);
       closeTradeForm();
-      loadAndRender().then(pollLiveCandle);
+      loadAndRender().then(restartLiveStream);
     });
     document.getElementById("spy-timeframe-select").addEventListener("change", (e) => {
       state.spyTimeframe = e.target.value;
@@ -3091,5 +3246,5 @@
   wirePatienceAlerts();
   wireTradeForm();
   wireLevelJumpSelect();
-  loadAndRender().then(startLivePolling);
+  loadAndRender().then(startLiveStreaming);
 })();
