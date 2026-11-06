@@ -30,10 +30,14 @@ def reconcile_spot_futures(futures: pd.DataFrame, spot: pd.DataFrame) -> dict:
 
     futures = futures.sort_index()
     spot = spot.sort_index()
-    comparison_start = max(futures.index.min(), spot.index.min())
-    comparison_end = min(futures.index.max(), spot.index.max())
-    if comparison_start > comparison_end:
+    if futures.index.max() < spot.index.min() or futures.index.min() > spot.index.max():
         raise ValueError("Spot and futures candles have no overlapping time window")
+
+    # Spot is the intentionally bounded side of this comparison. Use its full
+    # returned timestamp range so a futures gap at the first or last spot bar
+    # cannot disappear merely because the shared-index endpoints moved inward.
+    comparison_start = spot.index.min()
+    comparison_end = spot.index.max()
 
     futures_window = futures.loc[comparison_start:comparison_end]
     spot_window = spot.loc[comparison_start:comparison_end]
@@ -81,8 +85,10 @@ def reconcile_spot_futures(futures: pd.DataFrame, spot: pd.DataFrame) -> dict:
         "scope": "latest completed Kraken 4h BTC/USD spot bars available from the bounded recent-only endpoint",
         "futures_market": "PF_XBTUSD perpetual futures trade candles",
         "spot_market": "BTC/USD spot candles",
-        "comparison_start": common[0].isoformat(),
-        "comparison_end": common[-1].isoformat(),
+        "comparison_start": comparison_start.isoformat(),
+        "comparison_end": comparison_end.isoformat(),
+        "aligned_start": common[0].isoformat(),
+        "aligned_end": common[-1].isoformat(),
         "overlap_candles": len(common),
         "futures_candles_in_window": len(futures_window),
         "spot_candles_in_window": len(spot_window),

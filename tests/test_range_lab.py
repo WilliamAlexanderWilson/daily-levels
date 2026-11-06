@@ -85,6 +85,23 @@ def test_spot_futures_reconciliation_reports_missing_inner_timestamp():
     assert result["missing_spot_timestamps"] == [index[1].isoformat()]
 
 
+def test_spot_futures_reconciliation_does_not_hide_missing_endpoint():
+    index = pd.date_range(datetime(2026, 11, 1, tzinfo=timezone.utc), periods=4, freq="4h")
+    values = {
+        "open": [100.0] * 4,
+        "high": [101.0] * 4,
+        "low": [99.0] * 4,
+        "close": [100.0] * 4,
+    }
+    spot = pd.DataFrame(values, index=index)
+    futures = spot.drop(index[0])
+    result = reconcile_spot_futures(futures, spot)
+    assert result["comparison_start"] == index[0].isoformat()
+    assert result["aligned_start"] == index[1].isoformat()
+    assert result["missing_in_futures"] == 1
+    assert result["missing_futures_timestamps"] == [index[0].isoformat()]
+
+
 def test_spot_futures_reconciliation_rejects_non_overlapping_history():
     futures_index = pd.date_range(datetime(2026, 11, 1, tzinfo=timezone.utc), periods=2, freq="4h")
     spot_index = pd.date_range(datetime(2026, 11, 2, tzinfo=timezone.utc), periods=2, freq="4h")

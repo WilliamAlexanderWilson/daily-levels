@@ -14,6 +14,9 @@ const data = {
     missing_in_futures: 0,
     candle_direction_agreement_pct: 95.2,
     field_basis: {
+      open: { p95_abs_pct: 0.18 },
+      high: { p95_abs_pct: 0.31 },
+      low: { p95_abs_pct: 0.29 },
       close: { mean_signed_pct: 0.08, p95_abs_pct: 0.21 },
     },
   },
@@ -57,6 +60,7 @@ assert.deepEqual(RangeLab.reconciliationView(data), {
   missing: "0 missing timestamps",
   signedCloseBasis: "+0.08% mean futures basis",
   p95CloseBasis: "0.21% p95 absolute close difference",
+  p95OhlcBasis: "p95 abs O/H/L/C 0.18% / 0.31% / 0.29% / 0.21%",
   directionAgreement: "95.2% candle-direction agreement",
   start: "2026-07-10",
   end: "2026-11-06",

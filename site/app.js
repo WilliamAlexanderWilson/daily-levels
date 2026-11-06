@@ -1923,7 +1923,7 @@
     const reconciliationPanel = document.getElementById("range-lab-reconciliation");
     const reconciliationCopy = reconciliationPanel.querySelector("strong");
     reconciliationCopy.textContent = reconciliation
-      ? `${reconciliation.overlap} (${reconciliation.start}–${reconciliation.end}) · ${reconciliation.missing} · ${reconciliation.signedCloseBasis} · ${reconciliation.p95CloseBasis} · ${reconciliation.directionAgreement}. Basis check only—not strategy validation.`
+      ? `${reconciliation.overlap} (${reconciliation.start}–${reconciliation.end}) · ${reconciliation.missing} · ${reconciliation.signedCloseBasis} · ${reconciliation.p95OhlcBasis} · ${reconciliation.directionAgreement}. Basis check only—not strategy validation.`
       : "Comparison unavailable until the next Range Lab refresh; futures research and the spot chart are different markets.";
     const options = document.getElementById("range-lab-options");
     options.innerHTML = "";
