@@ -56,9 +56,18 @@ support/resistance bracket. Opening Full analysis switches to a **level
 radar**: the full map remains visible, but background levels become faint
 and unlabeled. Only the live bracket, the 60-day range edges, the tightest
 round-number band, and the nearest bid/ask walls earn labels. Importance is
-re-ranked with the 15-second live-price poll; the underlying calculated
+re-ranked with the 10-second live-price poll; the underlying calculated
 levels still change only with the daily data run. This keeps attention on
 the range price can actually trade from without hiding the larger map.
+
+That active bracket is also marked directly behind the candles. Its nearest
+resistance is labeled **RANGE HIGH**, its nearest support is labeled
+**RANGE LOW**, and the interior is visibly split into short-watch, wait, and
+long-watch zones using the same 35% / 30% / 35% geometry as the decision
+brief. A persistent on-chart BTC/ETH ticker shows both the latest Kraken
+price and the age of the last successful browser update. The price and
+candle poll every 10 seconds; the daily level boundaries stay fixed so the
+range does not chase each price tick.
 
 The displayed ratio is explicitly **range geometry**, not position `R`:
 distance to the opposite boundary divided by distance to the nearby
@@ -85,7 +94,7 @@ actual stop beyond that boundary.
 5. The static site in `site/` reads the levels/scorecard JSON for its
    lines, labels, and table — that part only updates once a day. The
    **chart's candles are fetched live, directly from Kraken, from the
-   browser** (polled every 15s) — there is no server and no database
+   browser** (polled every 10s) — there is no server and no database
    anywhere in this.
 
 ## Local setup
@@ -159,7 +168,7 @@ These are two independent systems that happen to share one page:
 - **The chart** (candles, current price) is fetched directly from Kraken
   by the browser (`fetchKrakenCandles` in `site/app.js`), for whichever of
   the seven timeframes (1m/5m/15m/30m/1h/4h/Daily) is selected, polled
-  every 15s. Kraken's public OHLC endpoint sends CORS headers that allow
+  every 10s. Kraken's public OHLC endpoint sends CORS headers that allow
   this with no server and no API key — confirmed directly against
   `api.kraken.com`. It occasionally fails a request with no CORS header at
   all after a burst of requests in a short window (observed in practice,
@@ -187,7 +196,7 @@ These are two independent systems that happen to share one page:
   before ~2020 into a flat line at the bottom.
 - **Order book liquidity walls** are also live-only: `fetchOrderBookWalls`
   polls Kraken's public spot order book (`/0/public/Depth`) on the same
-  15s cadence, and shows the top 3 bid/ask price levels per side that are
+  10s cadence, and shows the top 3 bid/ask price levels per side that are
   at least 2x the book's median resting size — real orders sitting on the
   book right now, not a modeled estimate. (A true liquidation heatmap
   would need every trader's entry price and leverage across every
@@ -274,7 +283,7 @@ low-confidence flag below 30 resolved occurrences) — never "buy" or "sell."
 
 Computed once a day in the same engine run as every other level on this
 site (`src/levels/exhaustion_pattern.py`), not polled live — same cadence
-as POC/VAH/VAL/golden pocket, not the 15-second live price/order-book path.
+as POC/VAH/VAL/golden pocket, not the 10-second live price/order-book path.
 Most days nothing is detected at all; this is a specific, fairly rare
 candle shape, not a "there's always something nearby" kind of level.
 
@@ -343,7 +352,7 @@ number field sits right next to "+ Mark trade" for exact fills.
 
 **Size and leverage are optional, and turn on live P&L tracking.** Fill
 them in and the trades table shows a running P&L next to that trade,
-in both dollars and percent, updating on the same 15s cadence as the
+in both dollars and percent, updating on the same 10s cadence as the
 live price — size is treated as margin (what you actually put up), so
 `size x leverage` is the notional position, same mental model a real
 perp exchange uses. Leave them blank and the trade still saves fine,

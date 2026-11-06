@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { build, patienceAlertFingerprint, patienceState, recentBoundaryTest } = require("../site/range-decision.js");
+const { build, patienceAlertFingerprint, patienceState, rangeZonePrices, recentBoundaryTest } = require("../site/range-decision.js");
 
 const levels = [
   { name: "Range low (60d)", price_low: 80, price_high: 80 },
@@ -34,6 +34,18 @@ test("keeps the middle of the bracket as wait", () => {
   const decision = build(levels, scorecard, 95);
   assert.equal(decision.status, "wait");
   assert.match(decision.title, /Middle of the range/);
+});
+
+test("range visualization uses the same linear-price watch thresholds as the decision", () => {
+  const decision = build(levels, scorecard, 95);
+  assert.deepEqual(rangeZonePrices(decision), {
+    low: 90,
+    longThreshold: 93.5,
+    shortThreshold: 96.5,
+    high: 100,
+  });
+  assert.equal(build(levels, scorecard, 93.5).status, "long-watch");
+  assert.equal(build(levels, scorecard, 96.5).status, "short-watch");
 });
 
 test("does not manufacture a setup outside the known level map", () => {

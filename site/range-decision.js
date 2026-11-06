@@ -106,6 +106,20 @@
     ].join("|");
   }
 
+  function rangeZonePrices(decision) {
+    if (!decision || !decision.support || !decision.resistance) return null;
+    const low = midpoint(decision.support);
+    const high = midpoint(decision.resistance);
+    if (!Number.isFinite(low) || !Number.isFinite(high) || high <= low) return null;
+    const span = high - low;
+    return {
+      low,
+      longThreshold: low + span * EDGE_FRACTION,
+      shortThreshold: low + span * (1 - EDGE_FRACTION),
+      high,
+    };
+  }
+
   function emptyDecision(reason) {
     return {
       status: "wait",
@@ -200,5 +214,6 @@
     recentBoundaryTest,
     patienceState,
     patienceAlertFingerprint,
+    rangeZonePrices,
   };
 });

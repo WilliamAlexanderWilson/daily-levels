@@ -847,12 +847,149 @@ summary:focus-visible {
   backdrop-filter: blur(8px);
 }
 
+.chart-live-ticker {
+  position: absolute;
+  z-index: 9;
+  top: 12px;
+  left: 12px;
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  column-gap: 0.42rem;
+  min-width: 172px;
+  padding: 8px 11px;
+  border: 1px solid color-mix(in srgb, var(--support) 48%, var(--border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface) 91%, transparent);
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--bg) 58%, transparent);
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+}
+
+.chart-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--support);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--support) 18%, transparent);
+  animation: live-price-pulse 2s ease-out infinite;
+}
+
+.chart-live-asset {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+}
+
+.chart-live-ticker strong {
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 1rem;
+  line-height: 1;
+  text-align: right;
+}
+
+.chart-live-ticker small {
+  grid-column: 2 / 4;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 0.64rem;
+  line-height: 1.1;
+}
+
+.chart-live-ticker.is-up strong { color: var(--support); }
+.chart-live-ticker.is-down strong { color: var(--resistance); }
+.chart-live-ticker.is-reconnecting { border-color: var(--stale); }
+.chart-live-ticker.is-reconnecting .chart-live-dot,
+.chart-live-ticker.is-connecting .chart-live-dot {
+  background: var(--stale);
+  box-shadow: none;
+  animation: none;
+}
+
+@keyframes live-price-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--support) 38%, transparent); }
+  75%, 100% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--support) 0%, transparent); }
+}
+
+.active-range-overlay {
+  position: absolute;
+  left: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+  border-top: 2px solid color-mix(in srgb, var(--resistance) 88%, transparent);
+  border-bottom: 2px solid color-mix(in srgb, var(--support) 88%, transparent);
+}
+
+.active-range-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 10px;
+  color: color-mix(in srgb, var(--text) 62%, transparent);
+  font-size: 0.58rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  line-height: 1;
+}
+
+.active-range-short {
+  color: color-mix(in srgb, var(--resistance) 76%, var(--text));
+  background: color-mix(in srgb, var(--resistance) 13%, transparent);
+}
+
+.active-range-wait { background: color-mix(in srgb, var(--text-muted) 4%, transparent); }
+
+.active-range-long {
+  color: color-mix(in srgb, var(--support) 76%, var(--text));
+  background: color-mix(in srgb, var(--support) 13%, transparent);
+}
+
+.active-range-overlay.is-compact .active-range-zone { font-size: 0; }
+
+.active-range-boundary {
+  position: absolute;
+  z-index: 4;
+  transform: translateY(-50%);
+  max-width: min(44%, 330px);
+  padding: 3px 7px;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 0.63rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.active-range-boundary-high { background: var(--resistance); }
+.active-range-boundary-low { background: var(--support); }
+
 @media (max-width: 640px) {
-  .chart-focus-status {
+  .chart-live-ticker {
     top: 8px;
+    left: 8px;
+    min-width: 142px;
+    padding: 7px 8px;
+  }
+
+  .chart-live-ticker strong { font-size: 0.86rem; }
+
+  .chart-focus-status {
+    top: 62px;
     right: 52px;
     padding: 6px 9px;
     font-size: 0.68rem;
+  }
+
+  .active-range-boundary {
+    max-width: 58%;
+    font-size: 0.55rem;
   }
 }
 

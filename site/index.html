@@ -178,6 +178,12 @@
     </div>
 
     <div id="chart-container" class="chart-container">
+      <div id="chart-live-ticker" class="chart-live-ticker is-connecting">
+        <span class="chart-live-dot" aria-hidden="true"></span>
+        <span id="chart-live-asset" class="chart-live-asset">BTC</span>
+        <strong id="chart-live-price" aria-live="polite" aria-atomic="true">—</strong>
+        <small id="chart-live-age" aria-hidden="true">Connecting…</small>
+      </div>
       <div id="chart-focus-status" class="chart-focus-status" aria-live="polite">Active range · live focus</div>
       <div id="chart-loading-overlay" class="chart-loading-overlay" hidden>Loading…</div>
     </div>
@@ -237,7 +243,7 @@
       <strong>Estimated liquidation risk · daily model.</strong> Only the
       strongest clusters are shown. They project real traded volume through
       assumed 10x/25x/50x/100x leverage — not actual trader positions. Use
-      the 15-second order-book walls and price reaction as live confirmation;
+      the 10-second order-book walls and price reaction as live confirmation;
       never use this background alone as an entry signal.
     </p>
     <p class="liquidation-note" id="spy-chart-note" hidden>
