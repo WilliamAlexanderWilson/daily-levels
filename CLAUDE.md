@@ -5,6 +5,12 @@ static site with a live candlestick chart, a daily-computed set of key
 price levels, a historical hold-rate scorecard, and a day-over-day diff —
 all informational, no trade signals.
 
+The default BTC/ETH chart is the primary range surface: it marks the active
+nearest-support/resistance bracket behind the candles, labels RANGE HIGH and
+RANGE LOW, and exposes the latest Kraken price plus fetch age in the chart.
+Candles and live price poll every 10 seconds. The range boundaries still come
+from the daily snapshot and must not move merely because the live price ticks.
+
 Live: https://williamalexanderwilson.github.io/daily-levels/
 Repo: https://github.com/WilliamAlexanderWilson/daily-levels (public)
 
@@ -170,7 +176,7 @@ even across refreshes. Visible tabs get an in-page toast; hidden tabs can
 also receive a browser notification after the user explicitly enables and
 permits it. Preference and the last 20 fingerprints live only in browser
 localStorage. This is intentionally not Telegram/background infrastructure:
-the static page must remain open for its 15-second poll to evaluate a setup.
+the static page must remain open for its 10-second poll to evaluate a setup.
 
 Final visual acceptance caught that the default chart still contradicted
 the simplified brief: every level, order-book wall, proximity band, and
@@ -185,7 +191,7 @@ Noise follow-up: Full analysis is now a live **level radar**, not an all-labels
 dump. Every calculated level remains as a faint line for context, while only
 the nearest support/resistance bracket, the 60-day range edges, the tightest
 round-number band, and the nearest bid/ask wall receive strong styling and
-labels. The emphasis is re-ranked on each 15-second price poll. Do not move
+labels. The emphasis is re-ranked on each 10-second price poll. Do not move
 the actual level calculations to that cadence: the stable daily map is the
 reference; live price changes which parts deserve attention.
 
@@ -219,7 +225,7 @@ GitHub Action, Pages deployment.
 
 Also built, beyond the original Phase 1/2 spec, in response to live usage:
 - **Live chart**, independent of the daily snapshot — 1m/5m/15m/30m/1h/4h/Daily
-  timeframes, all polling Kraken directly every 15s, with retry+backoff.
+  timeframes, all polling Kraken directly every 10s, with retry+backoff.
 - **Nearest-level cards** — nearest resistance/support/round-number to the
   live price, each with its aggregated historical hold rate, right next
   to the price. This came from the user repeatedly asking for an entry
@@ -255,7 +261,7 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   (`/0/public/Depth`, CORS-friendly, confirmed live) shows actual resting
   bids/asks right now. `fetchOrderBookWalls` in `site/app.js` takes the
   top 3 per side that are at least 2x the book's median size, polled on
-  the same 15s cadence as the live candle, rendered as thin teal lines
+  the same 10s cadence as the live candle, rendered as thin teal lines
   with size labels. Kraken Futures' open-interest/funding endpoint
   (`futures.kraken.com/derivatives/api/v3/tickers`) has **no CORS header
   at all** (checked the raw response headers directly) - not fetchable
@@ -614,10 +620,10 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   Closing a trade (the "Close" button, `closingTradeId` state +
   `confirmCloseTrade()`) freezes `tradePnl()`'s reference price at
   `trade.exitPrice` instead of the live price, permanently - confirmed
-  directly by closing a trade, then waiting through a real 15s live poll
+  directly by closing a trade, then waiting through a real 10s live poll
   tick and checking the P&L string was byte-identical before and after,
   not just inspecting the code. `closingTradeId` exists specifically so
-  the inline exit-price input survives that same 15s re-render instead
+  the inline exit-price input survives that same 10s re-render instead
   of vanishing out from under the user mid-entry (the table fully
   rebuilds its DOM on every render, same as every other table on this
   site). A closed trade also gets a second chart marker (a colored
@@ -906,7 +912,7 @@ Backtest/scorecard, Daily diff.
   SPY view), styled bullish/bearish via the existing `--support`/`--resistance` CSS
   variables. Explicitly worded to avoid call-to-action framing ("not a signal, read the
   odds yourself") and never says "buy"/"sell"/"enter." This is still a once-a-day-cadence
-  feature like every other level, not live-ticking every 15s like price/order-book - said
+  feature like every other level, not live-ticking every 10s like price/order-book - said
   plainly to the user rather than oversold as "live."
   `tests/test_exhaustion_pattern.py` mirrors the SPY test file's structure (hand-built HA
   rows for the core logic, bypassing the recursive real-OHLC conversion) but needed one

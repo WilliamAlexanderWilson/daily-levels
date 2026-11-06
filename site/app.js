@@ -2,7 +2,7 @@
   "use strict";
 
   const STALE_HOURS = 26;
-  const LIVE_POLL_MS = 15000;
+  const LIVE_POLL_MS = 10000;
   const KRAKEN_OHLC_URL = "https://api.kraken.com/0/public/OHLC";
   const KRAKEN_DEPTH_URL = "https://api.kraken.com/0/public/Depth";
   const ASSET_PAIRS = { btc: "BTC/USD", eth: "ETH/USD" };
@@ -285,7 +285,10 @@
   let markingMode = false;
   let pendingTrade = null; // {time, price} captured from a chart click, awaiting form submission
   let lastLivePrice = null; // most recent known price, for live P&L on sized/leveraged trades
-  let closingTradeId = null; // trade mid-close (exit-price input showing in its row), survives the 15s re-render from the live poll
+  let previousLivePrice = null; // gives the on-chart ticker a quiet up/down cue without implying a signal
+  let lastLiveTickAt = null; // successful browser fetch time, used to expose freshness instead of just saying "Live"
+  let activeRangeDecision = null; // nearest live support/resistance bracket drawn directly behind the candles
+  let closingTradeId = null; // trade mid-close (exit-price input showing in its row), survives the 10s re-render from the live poll
   let deletingTradeId = null; // trade awaiting delete confirmation (same survive-the-re-render need as closingTradeId) - deleting is permanent, localStorage-only, no undo
   let snappedMarkerKey = null; // key of whichever marker (table row, dropdown pick, or on-chart label) the price scale is currently locked to, if any
   let activeLevelsWindowDays = null; // RANGE_DAYS from the levels JSON, for the 4H default-zoom calc
@@ -349,7 +352,7 @@
       // solid support / dashed resistance / large-dashed flip lines.
       priceLineVisible: true,
       priceLineColor: cssVar("--accent"),
-      priceLineWidth: 1,
+      priceLineWidth: 2,
       priceLineStyle: LightweightCharts.LineStyle.Dotted,
     });
 
@@ -477,7 +480,7 @@
     } else if (fullAnalysisIsOpen()) {
       message = `Level radar · importance refreshes every ${LIVE_POLL_MS / 1000}s`;
     } else {
-      message = "Active range · nearest support and resistance";
+      message = `Active range · live price refreshes every ${LIVE_POLL_MS / 1000}s`;
     }
     if (status.textContent !== message) status.textContent = message;
   }
@@ -735,6 +738,66 @@
     }
   }
 
+  function appendActiveRangeOverlay(container) {
+    const decision = activeRangeDecision;
+    if (snappedMarkerKey || state.asset === "spy" || !decision || !decision.support || !decision.resistance) return;
+
+    const zonePrices = RangeDecision.rangeZonePrices(decision);
+    if (!zonePrices) return;
+    const { low: rangeLow, high: rangeHigh, longThreshold, shortThreshold } = zonePrices;
+
+    const yTop = candleSeries.priceToCoordinate(rangeHigh);
+    const yBottom = candleSeries.priceToCoordinate(rangeLow);
+    if (yTop === null || yBottom === null || yBottom < 0 || yTop > container.clientHeight) return;
+
+    const clippedTop = Math.max(0, yTop);
+    const clippedBottom = Math.min(container.clientHeight, yBottom);
+    const axisWidth = candleSeries.priceScale().width();
+    const yShortThreshold = candleSeries.priceToCoordinate(shortThreshold);
+    const yLongThreshold = candleSeries.priceToCoordinate(longThreshold);
+    if (yShortThreshold === null || yLongThreshold === null) return;
+
+    const band = document.createElement("div");
+    band.className = "active-range-overlay";
+    const visibleHeight = Math.max(1, clippedBottom - clippedTop);
+    band.style.top = `${clippedTop}px`;
+    band.style.height = `${visibleHeight}px`;
+    band.style.right = `${axisWidth}px`;
+    band.classList.toggle("is-compact", visibleHeight < 90);
+    const clampY = (coordinate) => Math.max(clippedTop, Math.min(clippedBottom, coordinate));
+    const zones = [
+      { className: "active-range-short", label: "SHORT WATCH", top: clippedTop, bottom: clampY(yShortThreshold) },
+      { className: "active-range-wait", label: "WAIT", top: clampY(yShortThreshold), bottom: clampY(yLongThreshold) },
+      { className: "active-range-long", label: "LONG WATCH", top: clampY(yLongThreshold), bottom: clippedBottom },
+    ];
+    for (const zone of zones) {
+      const zoneElement = document.createElement("span");
+      zoneElement.className = `active-range-zone ${zone.className}`;
+      zoneElement.style.top = `${zone.top - clippedTop}px`;
+      zoneElement.style.height = `${Math.max(0, zone.bottom - zone.top)}px`;
+      zoneElement.textContent = zone.label;
+      band.appendChild(zoneElement);
+    }
+    container.appendChild(band);
+    overlayEls.push(band);
+
+    const boundaries = [
+      { y: yTop, side: "high", price: rangeHigh, name: decision.resistance.name },
+      { y: yBottom, side: "low", price: rangeLow, name: decision.support.name },
+    ];
+    for (const boundary of boundaries) {
+      if (boundary.y < 0 || boundary.y > container.clientHeight) continue;
+      const label = document.createElement("div");
+      label.className = `active-range-boundary active-range-boundary-${boundary.side}`;
+      label.style.top = `${boundary.y}px`;
+      label.style.right = `${axisWidth + 8}px`;
+      label.textContent = `RANGE ${boundary.side.toUpperCase()} · ${formatPriceRange(boundary.price, boundary.price)}`;
+      label.title = boundary.name;
+      container.appendChild(label);
+      overlayEls.push(label);
+    }
+  }
+
   function renderOverlays() {
     const container = document.getElementById("chart-container");
     for (const el of overlayEls) el.remove();
@@ -744,6 +807,7 @@
     lastOverlayPriceRange = candleSeries.priceScale().getVisibleRange();
     applyLineIsolation();
     renderLiquidationHeatmap(container);
+    appendActiveRangeOverlay(container);
 
     // zone shading draws at its exact price - only the text tags get
     // decluttered below.
@@ -933,7 +997,7 @@
   // Only the last 1-2 candles get updated in place - the historical
   // candles and every level line stay exactly as of the daily run.
 
-  const LIVE_STALE_AFTER_MISSES = 2; // ~30s of failed polls before flagging the badge
+  const LIVE_STALE_AFTER_MISSES = 2; // ~20s of failed polls before flagging the badge
 
   let consecutiveMisses = 0;
 
@@ -943,6 +1007,31 @@
     badge.hidden = false;
     badge.classList.toggle("is-stale", status === "reconnecting");
     badge.querySelector(".live-label").textContent = status === "reconnecting" ? "Reconnecting" : "Live";
+    renderChartLiveTicker(status);
+  }
+
+  function liveAgeLabel() {
+    if (!lastLiveTickAt) return "Connecting…";
+    const ageSeconds = Math.max(0, Math.round((Date.now() - lastLiveTickAt) / 1000));
+    if (ageSeconds < 2) return "Updated now";
+    if (ageSeconds < 60) return `Updated ${ageSeconds}s ago`;
+    return `Updated ${Math.floor(ageSeconds / 60)}m ago`;
+  }
+
+  function renderChartLiveTicker(status = consecutiveMisses >= LIVE_STALE_AFTER_MISSES ? "reconnecting" : "live") {
+    const ticker = document.getElementById("chart-live-ticker");
+    if (!ticker) return;
+    ticker.classList.toggle("is-reconnecting", status === "reconnecting");
+    ticker.classList.toggle("is-connecting", !Number.isFinite(lastLivePrice));
+    ticker.classList.toggle("is-up", Number.isFinite(previousLivePrice) && lastLivePrice > previousLivePrice);
+    ticker.classList.toggle("is-down", Number.isFinite(previousLivePrice) && lastLivePrice < previousLivePrice);
+    document.getElementById("chart-live-asset").textContent = state.asset.toUpperCase();
+    document.getElementById("chart-live-price").textContent = Number.isFinite(lastLivePrice)
+      ? lastLivePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })
+      : "—";
+    document.getElementById("chart-live-age").textContent = status === "reconnecting"
+      ? `${liveAgeLabel()} · reconnecting`
+      : liveAgeLabel();
   }
 
   function noteLiveMiss() {
@@ -1003,7 +1092,10 @@
         document.getElementById("price-label").textContent = lastClose.toLocaleString(undefined, {
           maximumFractionDigits: 2,
         });
+        previousLivePrice = lastLivePrice;
         lastLivePrice = lastClose;
+        lastLiveTickAt = Date.now();
+        renderChartLiveTicker("live");
         renderLevels(activeLevels);
         renderNearestLevels(activeLevels, activeScorecard, lastClose);
         renderRangeDecision(activeLevels, activeScorecard, lastClose);
@@ -1034,6 +1126,7 @@
   function startLivePolling() {
     pollLiveCandle();
     setInterval(pollLiveCandle, LIVE_POLL_MS);
+    setInterval(renderChartLiveTicker, 1000);
   }
 
   // --- table ---
@@ -1188,6 +1281,7 @@
   }
 
   function renderDecisionUnavailable(message) {
+    activeRangeDecision = null;
     setDecisionClass("wait");
     document.getElementById("decision-badge").textContent = "DATA UNAVAILABLE";
     document.getElementById("decision-method").textContent = "No decision from partial data";
@@ -1198,6 +1292,7 @@
     document.getElementById("decision-metrics").hidden = true;
     document.getElementById("decision-caveat").textContent =
       "A fetch failure is not a trading signal. Retry later rather than filling the gap with an assumption.";
+    renderOverlays();
   }
 
   function setPatienceCondition(id, ready, detail) {
@@ -1346,6 +1441,7 @@
 
   function renderRangeDecision(levels, scorecard, currentPrice) {
     const decision = RangeDecision.build(levels, scorecard, currentPrice);
+    activeRangeDecision = decision;
     setDecisionClass(decision.status);
     document.getElementById("decision-badge").textContent = decision.label;
     document.getElementById("decision-title").textContent = decision.title;
@@ -1365,6 +1461,7 @@
       fillDecisionScore("resistance", null);
       document.getElementById("decision-caveat").textContent =
         "Do not manufacture an entry outside the known map. Refresh the data or wait for price to return inside a bracket.";
+      renderOverlays();
       return;
     }
 
@@ -1398,6 +1495,7 @@
 
     fillDecisionScore("support", decision.supportScore);
     fillDecisionScore("resistance", decision.resistanceScore);
+    renderOverlays();
   }
 
   function renderSpyDecision(chartData, trades, backtest) {
@@ -2304,7 +2402,7 @@
   // what that pattern has historically done, never a call to go long/short.
   // Computed once a day in the same engine run as every other level
   // (src/levels/exhaustion_pattern.py via src/levels/engine.py), not polled
-  // live - same cadence as POC/VAH/VAL/golden pocket, not the 15s-live
+  // live - same cadence as POC/VAH/VAL/golden pocket, not the 10s-live
   // price/order-book path.
 
   function renderExhaustionBanner(detected, scorecardEntry) {
@@ -2409,6 +2507,7 @@
     document.getElementById("spy-signals-section").hidden = !isSpy;
     document.getElementById("crypto-explainer").hidden = isSpy;
     document.getElementById("spy-explainer").hidden = !isSpy;
+    document.getElementById("chart-live-ticker").hidden = isSpy;
     if (isSpy) document.getElementById("live-badge").hidden = true;
   }
 
@@ -2463,6 +2562,7 @@
     // over a chart they no longer describe.
     clearPriceLines();
     clearOverlays();
+    activeRangeDecision = null;
     activeLiquidationBins = [];
     // Order book walls are drawn separately from activePriceLines (they
     // redraw on every live poll tick, not just on load) and SPY has no live
@@ -2624,7 +2724,12 @@
     document.querySelectorAll("#asset-toggle .toggle-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         state.asset = btn.dataset.asset;
+        previousLivePrice = null;
+        lastLivePrice = null;
+        lastLiveTickAt = null;
+        activeRangeDecision = null;
         setActiveButtons();
+        renderChartLiveTicker("reconnecting");
         writeHash();
         // a pending trade's price/time belong to whatever asset was
         // active when the chart was clicked - switching assets mid-entry
@@ -2737,7 +2842,10 @@
         // heatmap), and that would otherwise run once against the previous
         // asset's bins before renderLevels() below gets a chance to update it.
         activeLiquidationBins = levelsData.liquidation_estimate || [];
+        previousLivePrice = null;
         lastLivePrice = initialLivePrice;
+        lastLiveTickAt = latestCandle ? Date.now() : null;
+        renderChartLiveTicker(latestCandle ? "live" : "reconnecting");
         // Publish the core asset state before any supplemental scorecard or
         // proximity requests. The interval poll can fire while those are in
         // flight and must never redraw the previous asset's levels.
@@ -2752,6 +2860,7 @@
         renderOrderBookWalls(null);
 
         activeCandles = candles;
+        renderRangeDecision(activeLevels, null, initialLivePrice);
         renderTradeMarkers(asset, range, candles);
         renderTradesTable(asset, lastLivePrice);
 
