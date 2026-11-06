@@ -748,6 +748,33 @@ summary:focus-visible {
   box-shadow: var(--shadow);
 }
 
+.chart-focus-status {
+  position: absolute;
+  z-index: 9;
+  top: 12px;
+  right: 72px;
+  max-width: calc(100% - 96px);
+  padding: 7px 11px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
+@media (max-width: 640px) {
+  .chart-focus-status {
+    top: 8px;
+    right: 52px;
+    padding: 6px 9px;
+    font-size: 0.68rem;
+  }
+}
+
 .zone-overlay {
   position: absolute;
   left: 0;

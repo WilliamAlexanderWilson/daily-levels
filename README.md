@@ -45,10 +45,13 @@ trader's own confirmation remain separate decisions.
 
 The chart follows the same progressive-disclosure rule as the page: with
 **Full analysis** closed, it draws only the two boundaries of the active
-support/resistance bracket. The liquidation heatmap, order-book walls,
-round-number bands, and every other level are restored only when Full
-analysis is opened. This keeps the default chart aligned with the one range
-the decision brief is actually discussing.
+support/resistance bracket. Opening Full analysis switches to a **level
+radar**: the full map remains visible, but background levels become faint
+and unlabeled. Only the live bracket, the 60-day range edges, the tightest
+round-number band, and the nearest bid/ask walls earn labels. Importance is
+re-ranked with the 15-second live-price poll; the underlying calculated
+levels still change only with the daily data run. This keeps attention on
+the range price can actually trade from without hiding the larger map.
 
 The displayed ratio is explicitly **range geometry**, not position `R`:
 distance to the opposite boundary divided by distance to the nearby

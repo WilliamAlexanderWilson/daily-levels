@@ -171,6 +171,14 @@ support and resistance that form the active bracket; walls, round-number
 bands, and the liquidation heatmap are suppressed. Opening Full analysis
 restores them, and closing it collapses the chart back to the active range.
 
+Noise follow-up: Full analysis is now a live **level radar**, not an all-labels
+dump. Every calculated level remains as a faint line for context, while only
+the nearest support/resistance bracket, the 60-day range edges, the tightest
+round-number band, and the nearest bid/ask wall receive strong styling and
+labels. The emphasis is re-ranked on each 15-second price poll. Do not move
+the actual level calculations to that cadence: the stable daily map is the
+reference; live price changes which parts deserve attention.
+
 Visual review also caught the brief labeling boundary-distance geometry as
 `R`, which overstates what is known because there is no mechanically defined
 stop buffer. Relabeled it `X:1 long/short geometry` with “not position R”

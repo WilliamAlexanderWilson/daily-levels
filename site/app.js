@@ -388,7 +388,16 @@
     for (const map of [levelLinesByKey, wallLinesByKey]) {
       for (const [key, lines] of map) {
         const visible = !snappedMarkerKey || key === snappedMarkerKey;
-        for (const line of lines) line.applyOptions({ lineVisible: visible, axisLabelVisible: visible });
+        const marker = currentMarkers.find((candidate) => candidate.key === key);
+        const labelVisible = !marker || marker.showLabel !== false || key === snappedMarkerKey;
+        const selectedColor = marker && key === snappedMarkerKey ? marker.focusColor || marker.color : marker && marker.color;
+        for (const line of lines) {
+          line.applyOptions({
+            lineVisible: visible,
+            axisLabelVisible: visible && labelVisible,
+            ...(selectedColor ? { color: selectedColor } : {}),
+          });
+        }
       }
     }
   }
@@ -417,7 +426,36 @@
   function levelsForCurrentView(levels) {
     if (fullAnalysisIsOpen() || !Number.isFinite(lastLivePrice)) return levels;
     const { nearestAbove, nearestBelow } = findNearestAboveBelow(levels, lastLivePrice);
-    return [nearestBelow, nearestAbove].filter(Boolean);
+    const touching = levels.filter((level) => lastLivePrice >= level.price_low && lastLivePrice <= level.price_high);
+    return [...new Map([nearestBelow, ...touching, nearestAbove].filter(Boolean).map((level) => [levelKey(level), level])).values()];
+  }
+
+  function colorWithAlpha(color, alpha) {
+    const match = String(color || "").trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (!match) return color;
+    const hex = match[1].length === 3
+      ? match[1].split("").map((character) => character + character).join("")
+      : match[1];
+    const value = Number.parseInt(hex, 16);
+    return `rgba(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`;
+  }
+
+  function isRangeEdge(level) {
+    return level.name.split(" + ").some((name) => /^Range (low|high)/i.test(name.trim()));
+  }
+
+  function updateChartFocusStatus() {
+    const status = document.getElementById("chart-focus-status");
+    if (!status) return;
+    let message;
+    if (state.asset === "spy") {
+      message = "SPY setup view · historical data";
+    } else if (fullAnalysisIsOpen()) {
+      message = `Level radar · importance refreshes every ${LIVE_POLL_MS / 1000}s`;
+    } else {
+      message = "Active range · nearest support and resistance";
+    }
+    if (status.textContent !== message) status.textContent = message;
   }
 
   // Every label embeds its own price, not just the compact axis tag -
@@ -433,11 +471,28 @@
     clearPriceLines();
     clearOverlays();
 
-    for (const level of levelsForCurrentView(levels)) {
-      const style = styleForLevel(level);
+    const visibleLevels = levelsForCurrentView(levels);
+    const fullAnalysis = fullAnalysisIsOpen();
+    const { nearestAbove, nearestBelow } = Number.isFinite(lastLivePrice)
+      ? findNearestAboveBelow(levels, lastLivePrice)
+      : { nearestAbove: null, nearestBelow: null };
+    const touching = levels.filter((level) => lastLivePrice >= level.price_low && lastLivePrice <= level.price_high);
+    const activeKeys = new Set([nearestBelow, ...touching, nearestAbove].filter(Boolean).map(levelKey));
+
+    for (const level of visibleLevels) {
+      const baseStyle = styleForLevel(level);
       const isZone = level.price_high > level.price_low;
       const label = `${level.name} (${level.strength}) — ${formatPriceRange(level.price_low, level.price_high)}`;
       const key = levelKey(level);
+      const isActive = activeKeys.has(key);
+      const isMajorRangeEdge = isRangeEdge(level);
+      const emphasized = !fullAnalysis || isActive || isMajorRangeEdge;
+      const style = {
+        ...baseStyle,
+        color: emphasized ? baseStyle.color : colorWithAlpha(baseStyle.color, 0.18),
+        lineWidth: isActive ? Math.max(baseStyle.lineWidth, 3) : (isMajorRangeEdge ? 2 : 1),
+      };
+      const showLabel = emphasized;
 
       // No inline title on the price line itself - that label renders
       // wherever the line is, which is usually right where the latest
@@ -452,7 +507,7 @@
           color: style.color,
           lineWidth: style.lineWidth,
           lineStyle: style.lineStyle,
-          axisLabelVisible: true,
+          axisLabelVisible: showLabel,
           title: "",
         });
         const bottom = candleSeries.createPriceLine({
@@ -460,7 +515,7 @@
           color: style.color,
           lineWidth: style.lineWidth,
           lineStyle: style.lineStyle,
-          axisLabelVisible: true,
+          axisLabelVisible: showLabel,
           title: "",
         });
         activePriceLines.push(top, bottom);
@@ -471,7 +526,7 @@
           color: style.color,
           lineWidth: style.lineWidth,
           lineStyle: style.lineStyle,
-          axisLabelVisible: true,
+          axisLabelVisible: showLabel,
           title: "",
         });
         activePriceLines.push(line);
@@ -484,10 +539,14 @@
         high: level.price_high,
         mid: (level.price_low + level.price_high) / 2,
         color: style.color,
+        focusColor: baseStyle.color,
         label,
         isZone,
+        emphasized,
+        showLabel,
       });
     }
+    updateChartFocusStatus();
 
     renderOverlays();
   }
@@ -698,6 +757,7 @@
     // decluttered below.
     for (const marker of currentMarkers) {
       if (!marker.isZone) continue;
+      if (marker.emphasized === false && marker.key !== snappedMarkerKey) continue;
       if (snappedMarkerKey && marker.key !== snappedMarkerKey) continue; // isolated: only the selected marker's own zone shows
       const yTop = candleSeries.priceToCoordinate(marker.high);
       const yBottom = candleSeries.priceToCoordinate(marker.low);
@@ -707,7 +767,7 @@
       band.className = "zone-overlay";
       band.style.top = `${yTop}px`;
       band.style.height = `${Math.max(1, yBottom - yTop)}px`;
-      band.style.background = marker.color;
+      band.style.background = marker.key === snappedMarkerKey ? marker.focusColor || marker.color : marker.color;
       band.style.opacity = marker.opacity !== undefined ? marker.opacity : "0.12";
       container.appendChild(band);
       overlayEls.push(band);
@@ -732,6 +792,7 @@
     // its tag either, full stop.
     const rawPositions = currentMarkers
       .filter((marker) => !snappedMarkerKey || marker.key === snappedMarkerKey)
+      .filter((marker) => marker.showLabel !== false || marker.key === snappedMarkerKey)
       .filter((marker) => markerIsVisible(marker, containerHeight))
       .map((marker) => ({ marker, y: candleSeries.priceToCoordinate(marker.mid) }))
       .filter((p) => p.y !== null);
@@ -757,7 +818,7 @@
         leader.className = "level-label-leader";
         leader.style.top = `${Math.min(y, clampedTrueY)}px`;
         leader.style.height = `${Math.abs(y - clampedTrueY)}px`;
-        leader.style.background = marker.color;
+        leader.style.background = marker.key === snappedMarkerKey ? marker.focusColor || marker.color : marker.color;
         container.appendChild(leader);
         overlayEls.push(leader);
       }
@@ -765,7 +826,7 @@
       const tick = document.createElement("div");
       tick.className = "level-label-leader-tick";
       tick.style.top = `${clampedTrueY}px`;
-      tick.style.background = marker.color;
+      tick.style.background = marker.key === snappedMarkerKey ? marker.focusColor || marker.color : marker.color;
       container.appendChild(tick);
       overlayEls.push(tick);
 
@@ -773,7 +834,7 @@
       const tag = document.createElement("div");
       tag.className = `level-label${isSelected ? " level-label-selected" : ""}`;
       tag.style.top = `${y}px`;
-      tag.style.background = marker.color;
+      tag.style.background = isSelected ? marker.focusColor || marker.color : marker.color;
       tag.textContent = marker.label;
       const clickHint = isSelected ? "click again to show everything" : "click to isolate this line";
       tag.title = `${marker.label} (${clickHint})`;
@@ -951,10 +1012,11 @@
           maximumFractionDigits: 2,
         });
         lastLivePrice = lastClose;
-        if (!fullAnalysisIsOpen()) renderLevels(activeLevels);
+        renderLevels(activeLevels);
         renderNearestLevels(activeLevels, activeScorecard, lastClose);
         renderRangeDecision(activeLevels, activeScorecard, lastClose);
         renderRoundProximityBands(lastClose, activeProximity);
+        renderOrderBookWalls(activeOrderBookWalls);
         renderLevelJumpSelect(activeLevels, lastClose);
         renderTradesTable(asset, lastClose);
       }
@@ -1340,6 +1402,7 @@
           isZone: true,
           isRoundProximity: true,
           opacity,
+          showLabel: fraction === 0.02,
         });
       }
     }
@@ -1355,14 +1418,22 @@
     currentMarkers = currentMarkers.filter((m) => !m.isOrderBookWall);
 
     if (fullAnalysisIsOpen() && walls) {
+      const nearestBid = walls.bids.reduce((nearest, wall) => (
+        !nearest || Math.abs(wall.price - lastLivePrice) < Math.abs(nearest.price - lastLivePrice) ? wall : nearest
+      ), null);
+      const nearestAsk = walls.asks.reduce((nearest, wall) => (
+        !nearest || Math.abs(wall.price - lastLivePrice) < Math.abs(nearest.price - lastLivePrice) ? wall : nearest
+      ), null);
       for (const wall of [...walls.bids, ...walls.asks]) {
         const wallKey = `wall|${wall.side}|${wall.price}`;
+        const isNearest = wall === nearestBid || wall === nearestAsk;
+        const wallColor = isNearest ? cssVar("--liquidity") : colorWithAlpha(cssVar("--liquidity"), 0.18);
         const line = candleSeries.createPriceLine({
           price: wall.price,
-          color: cssVar("--liquidity"),
-          lineWidth: 1,
+          color: wallColor,
+          lineWidth: isNearest ? 2 : 1,
           lineStyle: LightweightCharts.LineStyle.SparseDotted,
-          axisLabelVisible: true,
+          axisLabelVisible: isNearest,
           title: "",
         });
         orderBookPriceLines.push(line);
@@ -1373,10 +1444,13 @@
           low: wall.price,
           high: wall.price,
           mid: wall.price,
-          color: cssVar("--liquidity"),
+          color: wallColor,
+          focusColor: cssVar("--liquidity"),
           label: `${wall.side === "bid" ? "Bid" : "Ask"} wall: ${wall.volume.toFixed(2)} ${state.asset.toUpperCase()} @ ${formatPriceRange(wall.price, wall.price)}`,
           isZone: false,
           isOrderBookWall: true,
+          emphasized: isNearest,
+          showLabel: isNearest,
         });
       }
     }
@@ -2291,6 +2365,7 @@
   function renderSpyChart(bars) {
     ensureChart();
     clearPriceSnapState();
+    updateChartFocusStatus();
     // SPY has no levels/heatmap of its own - strip any leftover crypto
     // price lines/labels/liquidation rows rather than leaving them drawn
     // over a chart they no longer describe.
@@ -2567,8 +2642,18 @@
         // asset's bins before renderLevels() below gets a chance to update it.
         activeLiquidationBins = levelsData.liquidation_estimate || [];
         lastLivePrice = levelsData.price;
+        // Publish the core asset state before any supplemental scorecard or
+        // proximity requests. The interval poll can fire while those are in
+        // flight and must never redraw the previous asset's levels.
+        activeLevels = levelsData.levels;
+        activeScorecard = null;
+        activeProximity = null;
         renderChart(candles, range, levelsData.config.range_days);
-        renderLevels(levelsData.levels);
+        renderLevels(activeLevels);
+        // Walls are asset-specific live data. Never carry the previous
+        // asset's cache across a BTC/ETH switch while the fresh request is
+        // still in flight (or if it fails).
+        renderOrderBookWalls(null);
 
         activeCandles = candles;
         renderTradeMarkers(asset, range, candles);
@@ -2605,7 +2690,6 @@
         renderTable(levelsData.levels, levelsData.price, scorecard, levelsData.diff);
         renderScorecardTable(scorecard);
 
-        activeLevels = levelsData.levels;
         activeScorecard = scorecard;
         activeProximity = proximity;
         renderNearestLevels(activeLevels, activeScorecard, levelsData.price);
