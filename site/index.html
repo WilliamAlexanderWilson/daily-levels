@@ -41,6 +41,25 @@
       </select>
     </div>
 
+    <section id="market-clock" class="market-clock" aria-labelledby="market-clock-title">
+      <div class="market-clock-primary">
+        <div>
+          <span class="market-clock-kicker">GLOBAL MARKET CLOCK · DALLAS TIME</span>
+          <h2 id="market-clock-title"><span id="market-next-name">Calculating next open…</span> <strong id="market-next-countdown" role="timer" aria-live="off">—</strong></h2>
+          <p id="market-next-time">Checking regular exchange hours…</p>
+        </div>
+        <div class="market-clock-context">
+          <strong id="market-open-count">—</strong>
+          <span id="market-clock-context">BTC trades 24/7 · cash opens can still change liquidity and volatility.</span>
+        </div>
+      </div>
+      <details class="market-clock-details">
+        <summary><span><strong>All seven major market opens</strong><small>Cash sessions plus CME U.S. index futures · ranked by practical influence</small></span><b>Show</b></summary>
+        <div id="market-session-list" class="market-session-list"></div>
+        <p>Regular sessions only. Exchange holidays, half-days, severe weather, or emergency closures can override these clocks; use each exchange’s linked calendar before relying on an open.</p>
+      </details>
+    </section>
+
     <div class="meta-row">
       <span class="generated-wrap">
         <span id="generated-label">Levels calculated —</span>
@@ -608,6 +627,7 @@
   <script src="range-lab.js"></script>
   <script src="liquidation-risk.js"></script>
   <script src="live-stream.js"></script>
+  <script src="market-sessions.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
