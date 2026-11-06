@@ -43,6 +43,18 @@ The still-forming candle is always excluded. All three conditions produce
 “setup to assess,” never an automatic order; stop placement, size, and the
 trader's own confirmation remain separate decisions.
 
+The chart follows the same progressive-disclosure rule as the page: with
+**Full analysis** closed, it draws only the two boundaries of the active
+support/resistance bracket. The liquidation heatmap, order-book walls,
+round-number bands, and every other level are restored only when Full
+analysis is opened. This keeps the default chart aligned with the one range
+the decision brief is actually discussing.
+
+The displayed ratio is explicitly **range geometry**, not position `R`:
+distance to the opposite boundary divided by distance to the nearby
+boundary. It cannot become true reward/risk until the trader defines an
+actual stop beyond that boundary.
+
 ## How it works
 
 1. A GitHub Action runs `src/run.py` twice a day (10:00 and 11:00 UTC); the

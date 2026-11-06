@@ -252,6 +252,7 @@
   let activeLevels = [];
   let activeScorecard = null;
   let activeProximity = null;
+  let activeOrderBookWalls = null;
   let activeLiquidationBins = []; // {price_low, price_high, long_intensity, short_intensity} - a model, not real position data, see renderLiquidationHeatmap()
   const liquidationEls = []; // kept separate from overlayEls - purely visual, never clickable/decluttered/part of currentMarkers
   let liquidationLayerEl = null; // the blurred wrapper all liquidation rows render into, created once and reused
@@ -408,6 +409,17 @@
     return { color: cssVar("--resistance"), lineStyle: LightweightCharts.LineStyle.Dashed, lineWidth: 2 };
   }
 
+  function fullAnalysisIsOpen() {
+    const details = document.getElementById("advanced-analysis");
+    return Boolean(details && details.open);
+  }
+
+  function levelsForCurrentView(levels) {
+    if (fullAnalysisIsOpen() || !Number.isFinite(lastLivePrice)) return levels;
+    const { nearestAbove, nearestBelow } = findNearestAboveBelow(levels, lastLivePrice);
+    return [nearestBelow, nearestAbove].filter(Boolean);
+  }
+
   // Every label embeds its own price, not just the compact axis tag -
   // at high density a label can get pushed well away from its true line
   // (see the bounds-clamping note in declutter() below), so the price
@@ -421,7 +433,7 @@
     clearPriceLines();
     clearOverlays();
 
-    for (const level of levels) {
+    for (const level of levelsForCurrentView(levels)) {
       const style = styleForLevel(level);
       const isZone = level.price_high > level.price_low;
       const label = `${level.name} (${level.strength}) — ${formatPriceRange(level.price_low, level.price_high)}`;
@@ -621,6 +633,7 @@
     }
     for (const el of liquidationEls) el.remove();
     liquidationEls.length = 0;
+    if (!fullAnalysisIsOpen()) return;
     if (!activeLiquidationBins.length || !candleSeries) return;
 
     const containerHeight = container.clientHeight;
@@ -938,6 +951,7 @@
           maximumFractionDigits: 2,
         });
         lastLivePrice = lastClose;
+        if (!fullAnalysisIsOpen()) renderLevels(activeLevels);
         renderNearestLevels(activeLevels, activeScorecard, lastClose);
         renderRangeDecision(activeLevels, activeScorecard, lastClose);
         renderRoundProximityBands(lastClose, activeProximity);
@@ -1211,18 +1225,18 @@
     document.getElementById("decision-marker").style.left = `${bracketPct}%`;
 
     if (decision.status === "long-watch") {
-      document.getElementById("decision-rr").textContent = `${decision.longRewardRisk.toFixed(2)}R long`;
-      document.getElementById("decision-rr-note").textContent = "to resistance vs. support risk";
+      document.getElementById("decision-rr").textContent = `${decision.longRewardRisk.toFixed(2)}:1 long geometry`;
+      document.getElementById("decision-rr-note").textContent = "target distance vs. boundary; not position R";
       document.getElementById("decision-caveat").textContent =
         `Invalidation: sustained trade below ${decision.support.name}. First range target: ${decision.resistance.name}. Transcript risk frame: isolated margin, a real stop, and 1–5% risk (5% called aggressive).`;
     } else if (decision.status === "short-watch") {
-      document.getElementById("decision-rr").textContent = `${decision.shortRewardRisk.toFixed(2)}R short`;
-      document.getElementById("decision-rr-note").textContent = "to support vs. resistance risk";
+      document.getElementById("decision-rr").textContent = `${decision.shortRewardRisk.toFixed(2)}:1 short geometry`;
+      document.getElementById("decision-rr-note").textContent = "target distance vs. boundary; not position R";
       document.getElementById("decision-caveat").textContent =
         `Invalidation: sustained trade above ${decision.resistance.name}. First range target: ${decision.support.name}. Transcript risk frame: isolated margin, a real stop, and 1–5% risk (5% called aggressive).`;
     } else {
       document.getElementById("decision-rr").textContent =
-        `${decision.longRewardRisk.toFixed(2)}R L · ${decision.shortRewardRisk.toFixed(2)}R S`;
+        `${decision.longRewardRisk.toFixed(2)}:1 L · ${decision.shortRewardRisk.toFixed(2)}:1 S`;
       document.getElementById("decision-rr-note").textContent = "neither side is at the range edge";
       document.getElementById("decision-caveat").textContent =
         "The middle 30% is intentionally a no-trade area in this UI. This threshold is a transparent geometry filter, not a backtested signal.";
@@ -1303,7 +1317,7 @@
   function renderRoundProximityBands(currentPrice, proximityCurve) {
     currentMarkers = currentMarkers.filter((m) => !m.isRoundProximity);
 
-    if (currentPrice !== null && currentPrice !== undefined && proximityCurve) {
+    if (fullAnalysisIsOpen() && currentPrice !== null && currentPrice !== undefined && proximityCurve) {
       const step = roundNumberStep(currentPrice);
       const { below, above } = nearestRoundNumbers(currentPrice);
       const nearestRoundPrice = currentPrice - below <= above - currentPrice ? below : above;
@@ -1334,12 +1348,13 @@
   }
 
   function renderOrderBookWalls(walls) {
+    activeOrderBookWalls = walls;
     for (const line of orderBookPriceLines) candleSeries.removePriceLine(line);
     orderBookPriceLines.length = 0;
     wallLinesByKey.clear();
     currentMarkers = currentMarkers.filter((m) => !m.isOrderBookWall);
 
-    if (walls) {
+    if (fullAnalysisIsOpen() && walls) {
       for (const wall of [...walls.bids, ...walls.asks]) {
         const wallKey = `wall|${wall.side}|${wall.price}`;
         const line = candleSeries.createPriceLine({
@@ -2208,7 +2223,7 @@
     const isSpy = asset === "spy";
     document.getElementById("subtitle").textContent = isSpy
       ? "One intraday SPY options setup, backtested against ~2 years of real data."
-      : "Key price levels for BTC & ETH, recalculated once a day.";
+      : "One active range, its boundaries, and a patience gate.";
 
     document.getElementById("range-select").hidden = isSpy;
     document.getElementById("spy-timeframe-select").hidden = !isSpy;
@@ -2257,6 +2272,20 @@
       const element = document.getElementById(id);
       if (element) destination.appendChild(element);
     }
+  }
+
+  function wireAdvancedAnalysis() {
+    const details = document.getElementById("advanced-analysis");
+    if (!details) return;
+    details.addEventListener("toggle", () => {
+      clearPriceSnapState();
+      if (state.asset !== "spy") {
+        renderLevels(activeLevels);
+        renderRoundProximityBands(lastLivePrice, activeProximity);
+        renderOrderBookWalls(activeOrderBookWalls);
+      }
+      renderOverlays();
+    });
   }
 
   function renderSpyChart(bars) {
@@ -2537,11 +2566,11 @@
         // heatmap), and that would otherwise run once against the previous
         // asset's bins before renderLevels() below gets a chance to update it.
         activeLiquidationBins = levelsData.liquidation_estimate || [];
+        lastLivePrice = levelsData.price;
         renderChart(candles, range, levelsData.config.range_days);
         renderLevels(levelsData.levels);
 
         activeCandles = candles;
-        lastLivePrice = levelsData.price;
         renderTradeMarkers(asset, range, candles);
         renderTradesTable(asset, lastLivePrice);
 
@@ -2598,6 +2627,7 @@
   }
 
   organizeAdvancedAnalysis();
+  wireAdvancedAnalysis();
   readHash();
   setActiveButtons();
   wireToggles();

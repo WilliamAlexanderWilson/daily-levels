@@ -162,6 +162,21 @@ candle before checking, so an intrabar wick cannot flash a false completed
 confirmation. This is a transparent confirmation proxy, not a backtested
 edge; 3/3 says “setup to assess,” never “place the trade.”
 
+Final visual acceptance caught that the default chart still contradicted
+the simplified brief: every level, order-book wall, proximity band, and
+liquidation row was still visible even though their explanatory controls
+had moved under Full analysis. Fixed the actual chart, not just the cards.
+When the details panel is closed, `renderLevels()` draws only the nearest
+support and resistance that form the active bracket; walls, round-number
+bands, and the liquidation heatmap are suppressed. Opening Full analysis
+restores them, and closing it collapses the chart back to the active range.
+
+Visual review also caught the brief labeling boundary-distance geometry as
+`R`, which overstates what is known because there is no mechanically defined
+stop buffer. Relabeled it `X:1 long/short geometry` with “not position R”
+next to it. Never switch that back to `R` unless an actual stop rule is
+implemented and validated.
+
 SPY stays separate. The 2026-10-11 holdout result remains controlling:
 every one of 24 parameter combinations was profitable in the first half
 and unprofitable in the untouched second half. The default SPY brief says
