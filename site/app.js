@@ -637,10 +637,10 @@
     return yLow >= 0 && yHigh <= containerHeight;
   }
 
-  const LIQUIDATION_MAX_OPACITY = 0.32; // dialed down from 0.55 - at full saturation every row looked equally "hot", not a heatmap
-  const LIQUIDATION_MIN_OPACITY = 0.035; // a real heatmap colors its coldest areas too, not just the hot spots - but faintly
-  const LIQUIDATION_CONTRAST_EXPONENT = 2.2; // relative^this before scaling - pushes mid/low intensity down further so true hotspots stand out instead of the whole range looking uniformly loud
-  const LIQUIDATION_SMOOTHING_RADIUS = 4; // bins averaged on each side - does the "continuous gradient" work CSS blur was doing badly
+  const LIQUIDATION_MAX_OPACITY = 0.32;
+  const LIQUIDATION_DISPLAY_THRESHOLD = 0.8;
+  const LIQUIDATION_CONTRAST_EXPONENT = 2.2;
+  const LIQUIDATION_SMOOTHING_RADIUS = 4;
 
   // A real background heatmap, not a side gutter - the user pointed at a
   // Coinglass-style screenshot (full-width horizontal bands sitting
@@ -656,34 +656,6 @@
   // are would wreck that system and the table/dropdown. Purely a
   // background visual, same as the always-on current-price line -
   // unaffected by isolate.
-  // Simple box-average smoothing over an array of numbers, by index -
-  // used so neighboring price bins blend into a continuous gradient
-  // instead of relying on CSS `filter: blur()` to do that spatial
-  // averaging. Tried the CSS-blur approach first and it actively made
-  // things worse: a bin is only ~4px tall, mostly surrounded by fully
-  // transparent neighbors, and blurring a thin, already-low-opacity
-  // strip spreads its color over a much wider band - diluting the peak
-  // opacity at any single row to a small fraction of what it started
-  // at (confirmed directly: sampled actual rendered pixel RGB values at
-  // a dozen points across a real screenshot and found the heatmap
-  // contributed no measurable color at any of them). Smoothing the
-  // underlying intensity values first means the opacity you compute is
-  // the opacity that actually reaches the screen.
-  function smoothValues(values, windowRadius) {
-    const n = values.length;
-    const out = new Array(n);
-    for (let i = 0; i < n; i++) {
-      let sum = 0;
-      let count = 0;
-      for (let j = Math.max(0, i - windowRadius); j <= Math.min(n - 1, i + windowRadius); j++) {
-        sum += values[j];
-        count++;
-      }
-      out[i] = sum / count;
-    }
-    return out;
-  }
-
   function renderLiquidationHeatmap(container) {
     if (!liquidationLayerEl) {
       liquidationLayerEl = document.createElement("div");
@@ -697,47 +669,43 @@
 
     const containerHeight = container.clientHeight;
 
-    const smoothedLong = smoothValues(activeLiquidationBins.map((b) => b.long_intensity), LIQUIDATION_SMOOTHING_RADIUS);
-    const smoothedShort = smoothValues(activeLiquidationBins.map((b) => b.short_intensity), LIQUIDATION_SMOOTHING_RADIUS);
+    const riskRows = LiquidationRisk.buildRiskRows(activeLiquidationBins, {
+      smoothingRadius: LIQUIDATION_SMOOTHING_RADIUS,
+      threshold: LIQUIDATION_DISPLAY_THRESHOLD,
+    });
 
-    // Bin intensities are normalized server-side against the single
-    // hottest bin across the WHOLE +/-25% window - correct for comparing
-    // bins to each other, but it means whatever's on screen right now can
-    // look almost invisible if the all-time hottest spot happens to be
-    // scrolled off elsewhere. Rescale again here against just what's
-    // actually visible, so the chart always shows its own relative
-    // hotspots at full strength instead of a global ranking that dims
-    // everything whenever the single hottest zone isn't in view.
+    // Preserve the model's global ranking. Previously, the visible slice
+    // was rescaled to its own peak, which could make a weak local patch look
+    // maximally hot whenever the true hotspot was off-screen.
     const visible = [];
-    for (let i = 0; i < activeLiquidationBins.length; i++) {
-      const bin = activeLiquidationBins[i];
+    for (const risk of riskRows) {
+      if (!risk.significant) continue;
+      const bin = risk.bin;
       const yTop = candleSeries.priceToCoordinate(bin.price_high);
       const yBottom = candleSeries.priceToCoordinate(bin.price_low);
       if (yTop === null || yBottom === null) continue;
       if (yBottom < 0 || yTop > containerHeight) continue;
-      visible.push({ bin, yTop, yBottom, long: smoothedLong[i], short: smoothedShort[i] });
+      visible.push({ risk, yTop, yBottom });
     }
     if (!visible.length) return;
 
-    const visiblePeak = Math.max(...visible.flatMap((v) => [v.long, v.short])) || 1;
-
     const axisWidth = candleSeries.priceScale().width();
 
-    for (const { bin, yTop, yBottom, long, short } of visible) {
+    for (const { risk, yTop, yBottom } of visible) {
+      const { bin, side, relative } = risk;
       const height = Math.max(1, yBottom - yTop);
-      const isLong = long >= short;
-      const magnitude = isLong ? long : short;
-      if (magnitude <= 0) continue;
 
       const row = document.createElement("div");
-      row.className = `liquidation-row ${isLong ? "long" : "short"}`;
+      row.className = `liquidation-row ${side}`;
       row.style.top = `${yTop}px`;
       row.style.height = `${height}px`;
       row.style.right = `${axisWidth}px`;
-      const relative = Math.min(1, magnitude / visiblePeak);
-      const shaped = Math.pow(relative, LIQUIDATION_CONTRAST_EXPONENT);
-      row.style.opacity = LIQUIDATION_MIN_OPACITY + shaped * (LIQUIDATION_MAX_OPACITY - LIQUIDATION_MIN_OPACITY);
-      row.title = `Est. ${isLong ? "long" : "short"} liquidations near ${formatPriceRange(bin.price_low, bin.price_high)} (modeled, not real position data)`;
+      row.style.opacity = LiquidationRisk.opacityForRelative(relative, {
+        threshold: LIQUIDATION_DISPLAY_THRESHOLD,
+        maxOpacity: LIQUIDATION_MAX_OPACITY,
+        exponent: LIQUIDATION_CONTRAST_EXPONENT,
+      });
+      row.title = `Modeled ${side}-liquidation risk near ${formatPriceRange(bin.price_low, bin.price_high)} · ${Math.round(relative * 100)}% of model peak · not real position data`;
       liquidationLayerEl.appendChild(row);
       liquidationEls.push(row);
     }

@@ -580,6 +580,16 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   visible peak renders far dimmer than linear would (0.5^2.2 ≈ 0.22 of
   the way to max, not 50%) - true hotspots stand out against a quiet
   background instead of the whole view looking equally hot.
+- **Reframed as a sparse risk model, not a literal heatmap.** Rescaling
+  against only the visible bins made the display legible, but it also
+  promoted a weak local patch to maximum intensity whenever the real
+  model peak was off-screen. `site/liquidation-risk.js` now smooths and
+  ranks the complete model once, preserves that global ranking at every
+  zoom level, and suppresses bins below 80% of the peak. The chart and
+  legend explicitly call the result "modeled liquidation risk" and tell
+  the user to require the live order-book wall plus price reaction as
+  confirmation. Keep the pure functions in this module so the important
+  no-fake-hotspot behavior remains covered by Node tests.
 - **Position tracking: size, leverage, live P&L, and closing a trade.**
   The trade form gained two optional fields (`trade-form-size`,
   `trade-form-leverage`); a trade with both set gets a live P&L column in
