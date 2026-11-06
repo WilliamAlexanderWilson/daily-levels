@@ -214,6 +214,7 @@ def _run_trade(
     max_hold_bars: int,
     fee_per_side: float = FEE_PER_SIDE,
     slippage_per_side: float = SLIPPAGE_PER_SIDE,
+    include_exact_return: bool = False,
 ) -> tuple[dict, int]:
     raw_entry = float(candles.iloc[entry_index]["open"])
     entry = raw_entry * (
@@ -260,7 +261,7 @@ def _run_trade(
 
     net_return = _trade_return(direction, entry, exit_price, fee_per_side)
     risk_fraction = abs(entry - stop) / entry + (2 * fee_per_side)
-    return {
+    trade = {
         "direction": direction,
         "signal_time": candles.index[entry_index - 1].isoformat(),
         "entry_time": candles.index[entry_index].isoformat(),
@@ -274,7 +275,10 @@ def _run_trade(
         "reason": reason,
         "return_pct": round(net_return * 100, 4),
         "r_multiple": round(net_return / risk_fraction, 4) if risk_fraction else 0.0,
-    }, exit_index
+    }
+    if include_exact_return:
+        trade["_return_pct_exact"] = net_return * 100
+    return trade, exit_index
 
 
 def _run_runner_trade(
@@ -481,6 +485,7 @@ def backtest_cost_cohort(
             spec.lookback_bars,
             fee_per_side,
             slippage_per_side,
+            True,
         )
         identity = ("signal_time", "entry_time", "exit_time", "direction", "reason")
         if not trade or any(trade[field] != baseline[field] for field in identity):
@@ -544,6 +549,7 @@ def _paper_trade(
             "range_high": round(range_state["high"], 2),
             "reason": reason,
             "return_pct": round(net_return * 100, 4),
+            "_return_pct_exact": net_return * 100,
             "r_multiple": round(net_return / risk_fraction, 4) if risk_fraction else 0.0,
         }, cursor, True
 
@@ -566,6 +572,7 @@ def _paper_trade(
             "range_high": round(range_state["high"], 2),
             "reason": "time",
             "return_pct": round(net_return * 100, 4),
+            "_return_pct_exact": net_return * 100,
             "r_multiple": round(net_return / risk_fraction, 4) if risk_fraction else 0.0,
         }, final_required_index, True
 
@@ -625,6 +632,17 @@ def forward_paper_track(candles: pd.DataFrame, spec: RangeSpec, start: pd.Timest
         "closed_trades": closed,
         "open_trade": open_trade,
         "pending_entry": pending_entry,
+    }
+
+
+def _public_forward_paper(forward_paper: dict) -> dict:
+    """Strip precision-only fields before the paper record is serialized."""
+    return {
+        **forward_paper,
+        "closed_trades": [
+            {key: value for key, value in trade.items() if not key.startswith("_")}
+            for trade in forward_paper["closed_trades"]
+        ],
     }
 
 
@@ -762,7 +780,7 @@ def _gate_decision_metrics(trades: list[dict]) -> dict:
             "profit_factor_infinite": False,
             "max_drawdown_pct": None,
         }
-    returns = [trade["return_pct"] / 100 for trade in trades]
+    returns = [trade.get("_return_pct_exact", trade["return_pct"]) / 100 for trade in trades]
     wins = [value for value in returns if value > 0]
     losses = [value for value in returns if value <= 0]
     equity = 1.0
@@ -1167,6 +1185,7 @@ def build_range_lab(
         robustness = robustness_analysis(candles, spec, walk_forward)
         forward_paper = forward_paper_track(candles, spec, holdout_end)
         forward_gate = forward_qualification_gate(candles, spec, forward_paper)
+        public_forward_paper = _public_forward_paper(forward_paper)
         result = {
             "spec": asdict(spec),
             "latest_range": _latest_range_snapshot(candles, spec),
@@ -1179,7 +1198,7 @@ def build_range_lab(
             },
             "walk_forward": walk_forward,
             "robustness": robustness,
-            "forward_paper": forward_paper,
+            "forward_paper": public_forward_paper,
             "forward_gate": forward_gate,
         }
         candidates.append(result)

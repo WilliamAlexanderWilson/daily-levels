@@ -5,6 +5,7 @@ import pytest
 
 from src.range_lab.engine import (
     _gate_positive,
+    _public_forward_paper,
     RangeSpec,
     _metrics,
     _drawdown_duration,
@@ -536,7 +537,8 @@ def test_forward_gate_does_not_round_profit_factor_into_a_pass(monkeypatch):
             "exit_time": (entry + pd.Timedelta(hours=4)).isoformat(),
             "direction": "long" if offset % 2 == 0 else "short",
             "reason": "target" if return_pct > 0 else "stop",
-            "return_pct": return_pct,
+            "return_pct": round(return_pct, 4),
+            "_return_pct_exact": return_pct,
         })
     assert _metrics(trades)["profit_factor"] == 1.2
     monkeypatch.setattr(
@@ -567,7 +569,8 @@ def test_forward_gate_does_not_round_drawdown_into_a_pass(monkeypatch):
             "exit_time": (entry + pd.Timedelta(hours=4)).isoformat(),
             "direction": "long" if offset % 2 == 0 else "short",
             "reason": "target" if return_pct > 0 else "stop",
-            "return_pct": return_pct,
+            "return_pct": round(return_pct, 4),
+            "_return_pct_exact": return_pct,
         })
     assert _metrics(trades)["max_drawdown_pct"] == 20.0
     monkeypatch.setattr(
@@ -582,6 +585,18 @@ def test_forward_gate_does_not_round_drawdown_into_a_pass(monkeypatch):
     assert result["checks"]["directions"]["passed"] is True
     assert result["checks"]["drawdown"]["passed"] is False
     assert result["qualified"] is False
+
+
+def test_exact_forward_returns_are_not_serialized():
+    paper = {
+        "metrics": _metrics([]),
+        "closed_trades": [{"return_pct": 1.0, "_return_pct_exact": 0.99995}],
+        "open_trade": None,
+        "pending_entry": None,
+    }
+    public = _public_forward_paper(paper)
+    assert public["closed_trades"] == [{"return_pct": 1.0}]
+    assert paper["closed_trades"][0]["_return_pct_exact"] == 0.99995
 
 
 def test_forward_gate_exact_thresholds_and_later_half_extra_trade(monkeypatch):
