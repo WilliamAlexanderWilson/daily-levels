@@ -242,6 +242,53 @@ positive; the frozen rules deliberately prevent those cells from being
 promoted. The dashboard keeps all seven windows available inside a collapsed
 diagnostic and labels under-10-trade windows `LOW SAMPLE`.
 
+## Frozen direction, cost, and drawdown robustness screen
+
+Frozen 2026-11-06 before any robustness results were computed. Version:
+`range-robustness-v1`.
+
+This screen reuses each definition's exact `range-walk-forward-v1` baseline
+cohort: one continuous simulation with entries from 2023-01-01 through
+2026-06-30. It does not search for a new range, holding period, exit, direction
+filter, cost assumption, or sample threshold.
+
+The pre-registered design is:
+
+1. Split the exact completed baseline cohort into long and short trades. A
+   direction is sample-adequate only with at least 30 trades. The candidate is
+   direction-balanced only when both directions meet that sample floor and
+   each has expectancy above zero and profit factor above 1 after base costs.
+2. Require at least 60 completed baseline trades for the overall robustness
+   sample. Smaller cohorts remain visible and receive an explicit warning.
+3. Replay the exact same signal, direction, next-bar entry timestamp, exit
+   reason, and exit timestamp under three frozen per-side execution scenarios:
+
+   | Scenario | Fee per side | Slippage per side |
+   |---|---:|---:|
+   | Base | 0.20% | 0.05% |
+   | Stressed | 0.30% | 0.10% |
+   | Severe | 0.40% | 0.15% |
+
+   The scenarios change only the entry/exit fill adjustment and fee charge;
+   they may not change which observations are compared. A candidate is
+   cost-resilient only when the overall sample is adequate and all three
+   scenarios retain positive expectancy and profit factor above 1.
+4. Measure drawdown duration on the base-cost cohort as the largest number of
+   consecutive completed trades whose compounded equity remained below its
+   previous peak. Also report calendar days from that peak to recovery, or to
+   the final observed exit when the spell remained unrecovered. Drawdown
+   duration is descriptive; no post-result cutoff will be invented.
+5. A candidate receives the historical `robust` label only when it already
+   passed the frozen walk-forward stability screen, is direction-balanced,
+   and is cost-resilient. This is deliberately stricter than any one positive
+   subgroup or cost cell.
+6. Do not change the 60/30 trade floors, cost scenarios, paired-cohort rule,
+   or robustness definition after viewing results. The screen cannot change
+   validation, selection, holdout, forward-paper, or real-order status.
+
+These are already-viewed historical prices. This is a fragility diagnostic,
+not an untouched holdout, proof of profitability, or financial advice.
+
 ## Tomorrow's plan
 
 1. ~~Reconcile the futures candles against Kraken spot over their overlapping
