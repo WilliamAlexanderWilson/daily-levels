@@ -252,6 +252,7 @@
   let activeLevels = [];
   let activeScorecard = null;
   let activeProximity = null;
+  let activeOrderBookWalls = null;
   let activeLiquidationBins = []; // {price_low, price_high, long_intensity, short_intensity} - a model, not real position data, see renderLiquidationHeatmap()
   const liquidationEls = []; // kept separate from overlayEls - purely visual, never clickable/decluttered/part of currentMarkers
   let liquidationLayerEl = null; // the blurred wrapper all liquidation rows render into, created once and reused
@@ -387,7 +388,16 @@
     for (const map of [levelLinesByKey, wallLinesByKey]) {
       for (const [key, lines] of map) {
         const visible = !snappedMarkerKey || key === snappedMarkerKey;
-        for (const line of lines) line.applyOptions({ lineVisible: visible, axisLabelVisible: visible });
+        const marker = currentMarkers.find((candidate) => candidate.key === key);
+        const labelVisible = !marker || marker.showLabel !== false || key === snappedMarkerKey;
+        const selectedColor = marker && key === snappedMarkerKey ? marker.focusColor || marker.color : marker && marker.color;
+        for (const line of lines) {
+          line.applyOptions({
+            lineVisible: visible,
+            axisLabelVisible: visible && labelVisible,
+            ...(selectedColor ? { color: selectedColor } : {}),
+          });
+        }
       }
     }
   }
@@ -408,6 +418,46 @@
     return { color: cssVar("--resistance"), lineStyle: LightweightCharts.LineStyle.Dashed, lineWidth: 2 };
   }
 
+  function fullAnalysisIsOpen() {
+    const details = document.getElementById("advanced-analysis");
+    return Boolean(details && details.open);
+  }
+
+  function levelsForCurrentView(levels) {
+    if (fullAnalysisIsOpen() || !Number.isFinite(lastLivePrice)) return levels;
+    const { nearestAbove, nearestBelow } = findNearestAboveBelow(levels, lastLivePrice);
+    const touching = levels.filter((level) => lastLivePrice >= level.price_low && lastLivePrice <= level.price_high);
+    return [...new Map([nearestBelow, ...touching, nearestAbove].filter(Boolean).map((level) => [levelKey(level), level])).values()];
+  }
+
+  function colorWithAlpha(color, alpha) {
+    const match = String(color || "").trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (!match) return color;
+    const hex = match[1].length === 3
+      ? match[1].split("").map((character) => character + character).join("")
+      : match[1];
+    const value = Number.parseInt(hex, 16);
+    return `rgba(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`;
+  }
+
+  function isRangeEdge(level) {
+    return level.name.split(" + ").some((name) => /^Range (low|high)/i.test(name.trim()));
+  }
+
+  function updateChartFocusStatus() {
+    const status = document.getElementById("chart-focus-status");
+    if (!status) return;
+    let message;
+    if (state.asset === "spy") {
+      message = "SPY setup view · historical data";
+    } else if (fullAnalysisIsOpen()) {
+      message = `Level radar · importance refreshes every ${LIVE_POLL_MS / 1000}s`;
+    } else {
+      message = "Active range · nearest support and resistance";
+    }
+    if (status.textContent !== message) status.textContent = message;
+  }
+
   // Every label embeds its own price, not just the compact axis tag -
   // at high density a label can get pushed well away from its true line
   // (see the bounds-clamping note in declutter() below), so the price
@@ -421,11 +471,28 @@
     clearPriceLines();
     clearOverlays();
 
-    for (const level of levels) {
-      const style = styleForLevel(level);
+    const visibleLevels = levelsForCurrentView(levels);
+    const fullAnalysis = fullAnalysisIsOpen();
+    const { nearestAbove, nearestBelow } = Number.isFinite(lastLivePrice)
+      ? findNearestAboveBelow(levels, lastLivePrice)
+      : { nearestAbove: null, nearestBelow: null };
+    const touching = levels.filter((level) => lastLivePrice >= level.price_low && lastLivePrice <= level.price_high);
+    const activeKeys = new Set([nearestBelow, ...touching, nearestAbove].filter(Boolean).map(levelKey));
+
+    for (const level of visibleLevels) {
+      const baseStyle = styleForLevel(level);
       const isZone = level.price_high > level.price_low;
       const label = `${level.name} (${level.strength}) — ${formatPriceRange(level.price_low, level.price_high)}`;
       const key = levelKey(level);
+      const isActive = activeKeys.has(key);
+      const isMajorRangeEdge = isRangeEdge(level);
+      const emphasized = !fullAnalysis || isActive || isMajorRangeEdge;
+      const style = {
+        ...baseStyle,
+        color: emphasized ? baseStyle.color : colorWithAlpha(baseStyle.color, 0.18),
+        lineWidth: isActive ? Math.max(baseStyle.lineWidth, 3) : (isMajorRangeEdge ? 2 : 1),
+      };
+      const showLabel = emphasized;
 
       // No inline title on the price line itself - that label renders
       // wherever the line is, which is usually right where the latest
@@ -440,7 +507,7 @@
           color: style.color,
           lineWidth: style.lineWidth,
           lineStyle: style.lineStyle,
-          axisLabelVisible: true,
+          axisLabelVisible: showLabel,
           title: "",
         });
         const bottom = candleSeries.createPriceLine({
@@ -448,7 +515,7 @@
           color: style.color,
           lineWidth: style.lineWidth,
           lineStyle: style.lineStyle,
-          axisLabelVisible: true,
+          axisLabelVisible: showLabel,
           title: "",
         });
         activePriceLines.push(top, bottom);
@@ -459,7 +526,7 @@
           color: style.color,
           lineWidth: style.lineWidth,
           lineStyle: style.lineStyle,
-          axisLabelVisible: true,
+          axisLabelVisible: showLabel,
           title: "",
         });
         activePriceLines.push(line);
@@ -472,10 +539,14 @@
         high: level.price_high,
         mid: (level.price_low + level.price_high) / 2,
         color: style.color,
+        focusColor: baseStyle.color,
         label,
         isZone,
+        emphasized,
+        showLabel,
       });
     }
+    updateChartFocusStatus();
 
     renderOverlays();
   }
@@ -621,6 +692,7 @@
     }
     for (const el of liquidationEls) el.remove();
     liquidationEls.length = 0;
+    if (!fullAnalysisIsOpen()) return;
     if (!activeLiquidationBins.length || !candleSeries) return;
 
     const containerHeight = container.clientHeight;
@@ -685,6 +757,7 @@
     // decluttered below.
     for (const marker of currentMarkers) {
       if (!marker.isZone) continue;
+      if (marker.emphasized === false && marker.key !== snappedMarkerKey) continue;
       if (snappedMarkerKey && marker.key !== snappedMarkerKey) continue; // isolated: only the selected marker's own zone shows
       const yTop = candleSeries.priceToCoordinate(marker.high);
       const yBottom = candleSeries.priceToCoordinate(marker.low);
@@ -694,7 +767,7 @@
       band.className = "zone-overlay";
       band.style.top = `${yTop}px`;
       band.style.height = `${Math.max(1, yBottom - yTop)}px`;
-      band.style.background = marker.color;
+      band.style.background = marker.key === snappedMarkerKey ? marker.focusColor || marker.color : marker.color;
       band.style.opacity = marker.opacity !== undefined ? marker.opacity : "0.12";
       container.appendChild(band);
       overlayEls.push(band);
@@ -719,6 +792,7 @@
     // its tag either, full stop.
     const rawPositions = currentMarkers
       .filter((marker) => !snappedMarkerKey || marker.key === snappedMarkerKey)
+      .filter((marker) => marker.showLabel !== false || marker.key === snappedMarkerKey)
       .filter((marker) => markerIsVisible(marker, containerHeight))
       .map((marker) => ({ marker, y: candleSeries.priceToCoordinate(marker.mid) }))
       .filter((p) => p.y !== null);
@@ -744,7 +818,7 @@
         leader.className = "level-label-leader";
         leader.style.top = `${Math.min(y, clampedTrueY)}px`;
         leader.style.height = `${Math.abs(y - clampedTrueY)}px`;
-        leader.style.background = marker.color;
+        leader.style.background = marker.key === snappedMarkerKey ? marker.focusColor || marker.color : marker.color;
         container.appendChild(leader);
         overlayEls.push(leader);
       }
@@ -752,7 +826,7 @@
       const tick = document.createElement("div");
       tick.className = "level-label-leader-tick";
       tick.style.top = `${clampedTrueY}px`;
-      tick.style.background = marker.color;
+      tick.style.background = marker.key === snappedMarkerKey ? marker.focusColor || marker.color : marker.color;
       container.appendChild(tick);
       overlayEls.push(tick);
 
@@ -760,7 +834,7 @@
       const tag = document.createElement("div");
       tag.className = `level-label${isSelected ? " level-label-selected" : ""}`;
       tag.style.top = `${y}px`;
-      tag.style.background = marker.color;
+      tag.style.background = isSelected ? marker.focusColor || marker.color : marker.color;
       tag.textContent = marker.label;
       const clickHint = isSelected ? "click again to show everything" : "click to isolate this line";
       tag.title = `${marker.label} (${clickHint})`;
@@ -926,6 +1000,9 @@
           value: candle.volume,
           color: candle.close >= candle.open ? cssVar("--support") : cssVar("--resistance"),
         });
+        const activeIndex = activeCandles.findIndex((item) => item.time === candle.time);
+        if (activeIndex >= 0) activeCandles[activeIndex] = candle;
+        else activeCandles.push(candle);
         lastLiveUnixTime = candle.time;
         lastClose = candle.close;
       }
@@ -935,8 +1012,11 @@
           maximumFractionDigits: 2,
         });
         lastLivePrice = lastClose;
+        renderLevels(activeLevels);
         renderNearestLevels(activeLevels, activeScorecard, lastClose);
+        renderRangeDecision(activeLevels, activeScorecard, lastClose);
         renderRoundProximityBands(lastClose, activeProximity);
+        renderOrderBookWalls(activeOrderBookWalls);
         renderLevelJumpSelect(activeLevels, lastClose);
         renderTradesTable(asset, lastClose);
       }
@@ -1065,6 +1145,201 @@
     return { nearestAbove, nearestBelow };
   }
 
+  // --- range decision brief ---
+  //
+  // The linked video gives a useful risk frame (trade the edge of a range,
+  // define a stop, use isolated margin) but no objective entry algorithm.
+  // RangeDecision makes the one missing UI assumption explicit: the outer
+  // 35% of the nearest support/resistance bracket is a WATCH area and the
+  // middle 30% is WAIT. It does not detect confirmation or claim an edge.
+
+  function compactPrice(value) {
+    return value.toLocaleString(undefined, { maximumFractionDigits: value >= 1000 ? 0 : 2 });
+  }
+
+  function levelLabelWithPrice(level) {
+    if (!level) return "—";
+    const price = level.price_high > level.price_low
+      ? `${compactPrice(level.price_low)}–${compactPrice(level.price_high)}`
+      : compactPrice(level.price_low);
+    return `${level.name} · ${price}`;
+  }
+
+  function fillDecisionScore(prefix, score) {
+    const value = document.getElementById(`decision-${prefix}-odds`);
+    const note = document.getElementById(`decision-${prefix}-note`);
+    if (!score) {
+      value.textContent = "No read";
+      note.textContent = "historical score unavailable";
+      return;
+    }
+    value.textContent = score.low === score.high
+      ? `${score.low.toFixed(0)}% held`
+      : `${score.low.toFixed(0)}–${score.high.toFixed(0)}% held`;
+    note.textContent = `n=${score.resolved}${score.lowConfidence ? " · low confidence" : ""}`;
+  }
+
+  function setDecisionClass(status) {
+    const brief = document.getElementById("decision-brief");
+    brief.className = `decision-brief is-${status}`;
+  }
+
+  function renderDecisionLoading() {
+    setDecisionClass("loading");
+    document.getElementById("decision-badge").textContent = "CALCULATING";
+    document.getElementById("decision-method").textContent = "Nearest-level range";
+    document.getElementById("decision-title").textContent = "Building the current range read…";
+    document.getElementById("decision-summary").textContent = "Waiting for price, levels, and historical context.";
+    document.getElementById("decision-range").hidden = true;
+    document.getElementById("patience-gate").hidden = true;
+    document.getElementById("decision-metrics").hidden = true;
+  }
+
+  function renderDecisionUnavailable(message) {
+    setDecisionClass("wait");
+    document.getElementById("decision-badge").textContent = "DATA UNAVAILABLE";
+    document.getElementById("decision-method").textContent = "No decision from partial data";
+    document.getElementById("decision-title").textContent = "The range read could not be built";
+    document.getElementById("decision-summary").textContent = message;
+    document.getElementById("decision-range").hidden = true;
+    document.getElementById("patience-gate").hidden = true;
+    document.getElementById("decision-metrics").hidden = true;
+    document.getElementById("decision-caveat").textContent =
+      "A fetch failure is not a trading signal. Retry later rather than filling the gap with an assumption.";
+  }
+
+  function setPatienceCondition(id, ready, detail) {
+    const element = document.getElementById(id);
+    element.classList.toggle("is-ready", ready);
+    element.querySelector("b").textContent = detail;
+  }
+
+  function renderPatienceGate(decision) {
+    const gate = document.getElementById("patience-gate");
+    gate.hidden = false;
+    const hasLocation = decision.status === "long-watch" || decision.status === "short-watch";
+    const boundary = decision.status === "long-watch" ? decision.support : decision.resistance;
+    const side = decision.status === "long-watch" ? "support" : "resistance";
+    const boundaryTest = hasLocation
+      ? RangeDecision.recentBoundaryTest(activeCandles, boundary, side)
+      : null;
+    const hasTouch = Boolean(boundaryTest && boundaryTest.touched);
+    const hasConfirmation = Boolean(boundaryTest && boundaryTest.confirmed);
+    const readyCount = [hasLocation, hasTouch, hasConfirmation].filter(Boolean).length;
+    const timeframeLabel = state.range === "1d" ? "Daily" : state.range.toUpperCase();
+
+    setPatienceCondition(
+      "patience-location",
+      hasLocation,
+      hasLocation ? `${decision.label.toLowerCase()} area` : "Middle of range"
+    );
+    setPatienceCondition(
+      "patience-touch",
+      hasTouch,
+      hasTouch ? `${boundary.name} hit ${boundaryTest.barsAgo === 0 ? `last ${timeframeLabel} close` : `${boundaryTest.barsAgo} ${timeframeLabel} bars ago`}` : hasLocation ? `Waiting for ${boundary.name}` : "No edge selected"
+    );
+    setPatienceCondition(
+      "patience-confirmation",
+      hasConfirmation,
+      hasConfirmation ? "Closed back inside" : hasTouch ? "No confirming close" : "Boundary not tested"
+    );
+
+    document.getElementById("patience-count").textContent = `${readyCount} / 3 ready`;
+    let instruction = "Price is in the middle. Patience is the trade—wait for an edge.";
+    if (hasLocation && !hasTouch) instruction = `Do nothing until price actually tests ${boundary.name}.`;
+    if (hasTouch && !hasConfirmation) instruction = "The boundary was hit, but the candle did not close back inside. Do not front-run confirmation.";
+    if (hasConfirmation) instruction = "Location, test, and close are visible. Review the stop and size; this is a setup to assess, not an automatic order.";
+    document.getElementById("patience-instruction").textContent = instruction;
+  }
+
+  function renderRangeDecision(levels, scorecard, currentPrice) {
+    const decision = RangeDecision.build(levels, scorecard, currentPrice);
+    setDecisionClass(decision.status);
+    document.getElementById("decision-badge").textContent = decision.label;
+    document.getElementById("decision-title").textContent = decision.title;
+    document.getElementById("decision-summary").textContent = decision.summary;
+    document.getElementById("decision-range").hidden = !decision.support || !decision.resistance;
+    renderPatienceGate(decision);
+    document.getElementById("decision-metrics").hidden = false;
+    document.getElementById("decision-rr-label").textContent = "Range geometry";
+    document.getElementById("decision-support-label").textContent = "Support history";
+    document.getElementById("decision-resistance-label").textContent = "Resistance history";
+
+    if (!decision.support || !decision.resistance) {
+      document.getElementById("decision-method").textContent = "Insufficient bracket";
+      document.getElementById("decision-rr").textContent = "No setup";
+      document.getElementById("decision-rr-note").textContent = "wait for a complete range";
+      fillDecisionScore("support", null);
+      fillDecisionScore("resistance", null);
+      document.getElementById("decision-caveat").textContent =
+        "Do not manufacture an entry outside the known map. Refresh the data or wait for price to return inside a bracket.";
+      return;
+    }
+
+    const bracketPct = decision.bracketPosition * 100;
+    const macroText = decision.macroPosition === null
+      ? `Immediate support/resistance bracket · ${state.range.toUpperCase()} close gate`
+      : `Immediate bracket · ${Math.round(decision.macroPosition * 100)}% through 60-day range · ${state.range.toUpperCase()} close gate`;
+    document.getElementById("decision-method").textContent = macroText;
+    document.getElementById("decision-support").textContent = levelLabelWithPrice(decision.support);
+    document.getElementById("decision-resistance").textContent = levelLabelWithPrice(decision.resistance);
+    document.getElementById("decision-position").textContent = `${Math.round(bracketPct)}% through bracket`;
+    document.getElementById("decision-marker").style.left = `${bracketPct}%`;
+
+    if (decision.status === "long-watch") {
+      document.getElementById("decision-rr").textContent = `${decision.longRewardRisk.toFixed(2)}:1 long geometry`;
+      document.getElementById("decision-rr-note").textContent = "target distance vs. boundary; not position R";
+      document.getElementById("decision-caveat").textContent =
+        `Invalidation: sustained trade below ${decision.support.name}. First range target: ${decision.resistance.name}. Transcript risk frame: isolated margin, a real stop, and 1–5% risk (5% called aggressive).`;
+    } else if (decision.status === "short-watch") {
+      document.getElementById("decision-rr").textContent = `${decision.shortRewardRisk.toFixed(2)}:1 short geometry`;
+      document.getElementById("decision-rr-note").textContent = "target distance vs. boundary; not position R";
+      document.getElementById("decision-caveat").textContent =
+        `Invalidation: sustained trade above ${decision.resistance.name}. First range target: ${decision.support.name}. Transcript risk frame: isolated margin, a real stop, and 1–5% risk (5% called aggressive).`;
+    } else {
+      document.getElementById("decision-rr").textContent =
+        `${decision.longRewardRisk.toFixed(2)}:1 L · ${decision.shortRewardRisk.toFixed(2)}:1 S`;
+      document.getElementById("decision-rr-note").textContent = "neither side is at the range edge";
+      document.getElementById("decision-caveat").textContent =
+        "The middle 30% is intentionally a no-trade area in this UI. This threshold is a transparent geometry filter, not a backtested signal.";
+    }
+
+    fillDecisionScore("support", decision.supportScore);
+    fillDecisionScore("resistance", decision.resistanceScore);
+  }
+
+  function renderSpyDecision(chartData, trades, backtest) {
+    setDecisionClass("wait");
+    document.getElementById("decision-badge").textContent = "NO VALIDATED EDGE";
+    document.getElementById("decision-method").textContent = "Out-of-sample result · Oct 11, 2026";
+    document.getElementById("decision-title").textContent = "SPY setup failed its holdout test";
+    document.getElementById("decision-summary").textContent =
+      "Every tested trend/doji parameter was profitable on the first half and unprofitable on the untouched second half. The honest current read is observe, not buy or short.";
+    document.getElementById("decision-range").hidden = true;
+    document.getElementById("patience-gate").hidden = true;
+    document.getElementById("decision-metrics").hidden = false;
+    document.getElementById("decision-rr-label").textContent = "Latest pattern";
+    document.getElementById("decision-support-label").textContent = "Full sample";
+    document.getElementById("decision-resistance-label").textContent = "Holdout";
+
+    const latest = [...(trades || [])].sort((a, b) => b.signal_time - a.signal_time)[0];
+    const onePlus = backtest && backtest.by_min_confirmed && backtest.by_min_confirmed["1"];
+    document.getElementById("decision-rr").textContent = latest
+      ? `${latest.direction === "call" ? "Call" : "Put"} · historical`
+      : "No recent pattern";
+    document.getElementById("decision-rr-note").textContent = latest
+      ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "America/New_York" }).format(new Date(latest.signal_time * 1000))
+      : "nothing to review";
+    document.getElementById("decision-support-odds").textContent = onePlus && onePlus.avg_pct_return !== null
+      ? `${onePlus.avg_pct_return >= 0 ? "+" : ""}${onePlus.avg_pct_return.toFixed(2)}%`
+      : "—";
+    document.getElementById("decision-support-note").textContent = "full-sample modeled avg return";
+    document.getElementById("decision-resistance-odds").textContent = "Negative";
+    document.getElementById("decision-resistance-note").textContent = "all 24 holdout combinations";
+    document.getElementById("decision-caveat").textContent =
+      "SPY remains available for chart and backtest review under Full analysis. It is not presented as a current entry signal.";
+  }
+
   function renderNearestLevels(levels, scorecard, currentPrice) {
     if (!levels || !levels.length || currentPrice === null || currentPrice === undefined) {
       document.getElementById("nearest-resistance-card").hidden = true;
@@ -1104,7 +1379,7 @@
   function renderRoundProximityBands(currentPrice, proximityCurve) {
     currentMarkers = currentMarkers.filter((m) => !m.isRoundProximity);
 
-    if (currentPrice !== null && currentPrice !== undefined && proximityCurve) {
+    if (fullAnalysisIsOpen() && currentPrice !== null && currentPrice !== undefined && proximityCurve) {
       const step = roundNumberStep(currentPrice);
       const { below, above } = nearestRoundNumbers(currentPrice);
       const nearestRoundPrice = currentPrice - below <= above - currentPrice ? below : above;
@@ -1127,6 +1402,7 @@
           isZone: true,
           isRoundProximity: true,
           opacity,
+          showLabel: fraction === 0.02,
         });
       }
     }
@@ -1135,20 +1411,29 @@
   }
 
   function renderOrderBookWalls(walls) {
+    activeOrderBookWalls = walls;
     for (const line of orderBookPriceLines) candleSeries.removePriceLine(line);
     orderBookPriceLines.length = 0;
     wallLinesByKey.clear();
     currentMarkers = currentMarkers.filter((m) => !m.isOrderBookWall);
 
-    if (walls) {
+    if (fullAnalysisIsOpen() && walls) {
+      const nearestBid = walls.bids.reduce((nearest, wall) => (
+        !nearest || Math.abs(wall.price - lastLivePrice) < Math.abs(nearest.price - lastLivePrice) ? wall : nearest
+      ), null);
+      const nearestAsk = walls.asks.reduce((nearest, wall) => (
+        !nearest || Math.abs(wall.price - lastLivePrice) < Math.abs(nearest.price - lastLivePrice) ? wall : nearest
+      ), null);
       for (const wall of [...walls.bids, ...walls.asks]) {
         const wallKey = `wall|${wall.side}|${wall.price}`;
+        const isNearest = wall === nearestBid || wall === nearestAsk;
+        const wallColor = isNearest ? cssVar("--liquidity") : colorWithAlpha(cssVar("--liquidity"), 0.18);
         const line = candleSeries.createPriceLine({
           price: wall.price,
-          color: cssVar("--liquidity"),
-          lineWidth: 1,
+          color: wallColor,
+          lineWidth: isNearest ? 2 : 1,
           lineStyle: LightweightCharts.LineStyle.SparseDotted,
-          axisLabelVisible: true,
+          axisLabelVisible: isNearest,
           title: "",
         });
         orderBookPriceLines.push(line);
@@ -1159,10 +1444,13 @@
           low: wall.price,
           high: wall.price,
           mid: wall.price,
-          color: cssVar("--liquidity"),
+          color: wallColor,
+          focusColor: cssVar("--liquidity"),
           label: `${wall.side === "bid" ? "Bid" : "Ask"} wall: ${wall.volume.toFixed(2)} ${state.asset.toUpperCase()} @ ${formatPriceRange(wall.price, wall.price)}`,
           isZone: false,
           isOrderBookWall: true,
+          emphasized: isNearest,
+          showLabel: isNearest,
         });
       }
     }
@@ -2009,7 +2297,7 @@
     const isSpy = asset === "spy";
     document.getElementById("subtitle").textContent = isSpy
       ? "One intraday SPY options setup, backtested against ~2 years of real data."
-      : "Key price levels for BTC & ETH, recalculated once a day.";
+      : "One active range, its boundaries, and a patience gate.";
 
     document.getElementById("range-select").hidden = isSpy;
     document.getElementById("spy-timeframe-select").hidden = !isSpy;
@@ -2032,9 +2320,52 @@
     if (isSpy) document.getElementById("live-badge").hidden = true;
   }
 
+  function organizeAdvancedAnalysis() {
+    const destination = document.getElementById("advanced-analysis-content");
+    if (!destination) return;
+    const advancedIds = [
+      "futures-context",
+      "exhaustion-banner",
+      "nearest-levels",
+      "level-jump-wrap",
+      "trade-controls",
+      "trade-form",
+      "chart-legend",
+      "spy-legend",
+      "liquidation-note",
+      "spy-chart-note",
+      "trades-section",
+      "level-table-section",
+      "scorecard-section",
+      "spy-backtest-section",
+      "spy-signals-section",
+      "crypto-explainer",
+      "spy-explainer",
+    ];
+    for (const id of advancedIds) {
+      const element = document.getElementById(id);
+      if (element) destination.appendChild(element);
+    }
+  }
+
+  function wireAdvancedAnalysis() {
+    const details = document.getElementById("advanced-analysis");
+    if (!details) return;
+    details.addEventListener("toggle", () => {
+      clearPriceSnapState();
+      if (state.asset !== "spy") {
+        renderLevels(activeLevels);
+        renderRoundProximityBands(lastLivePrice, activeProximity);
+        renderOrderBookWalls(activeOrderBookWalls);
+      }
+      renderOverlays();
+    });
+  }
+
   function renderSpyChart(bars) {
     ensureChart();
     clearPriceSnapState();
+    updateChartFocusStatus();
     // SPY has no levels/heatmap of its own - strip any leftover crypto
     // price lines/labels/liquidation rows rather than leaving them drawn
     // over a chart they no longer describe.
@@ -2173,9 +2504,11 @@
       renderSpySignalMarkers(bars, activeSpyTrades);
       renderSpyBacktestTable(backtestData);
       renderSpySignalsTable(activeSpyTrades);
+      renderSpyDecision(chartData, activeSpyTrades, backtestData);
     } catch (err) {
       if (state.asset !== "spy") return;
       console.error(err);
+      renderDecisionUnavailable("SPY chart or backtest data is currently unavailable.");
       const banner = document.getElementById("stale-banner");
       banner.hidden = false;
       banner.textContent = "Could not load SPY data — either the daily workflow hasn't run yet, or Yahoo's API is unreachable right now.";
@@ -2279,6 +2612,7 @@
   // --- main load ---
 
   async function loadAndRender() {
+    renderDecisionLoading();
     setChartLoading(true);
     try {
       if (state.asset === "spy") {
@@ -2307,11 +2641,21 @@
         // heatmap), and that would otherwise run once against the previous
         // asset's bins before renderLevels() below gets a chance to update it.
         activeLiquidationBins = levelsData.liquidation_estimate || [];
+        lastLivePrice = levelsData.price;
+        // Publish the core asset state before any supplemental scorecard or
+        // proximity requests. The interval poll can fire while those are in
+        // flight and must never redraw the previous asset's levels.
+        activeLevels = levelsData.levels;
+        activeScorecard = null;
+        activeProximity = null;
         renderChart(candles, range, levelsData.config.range_days);
-        renderLevels(levelsData.levels);
+        renderLevels(activeLevels);
+        // Walls are asset-specific live data. Never carry the previous
+        // asset's cache across a BTC/ETH switch while the fresh request is
+        // still in flight (or if it fails).
+        renderOrderBookWalls(null);
 
         activeCandles = candles;
-        lastLivePrice = levelsData.price;
         renderTradeMarkers(asset, range, candles);
         renderTradesTable(asset, lastLivePrice);
 
@@ -2346,16 +2690,17 @@
         renderTable(levelsData.levels, levelsData.price, scorecard, levelsData.diff);
         renderScorecardTable(scorecard);
 
-        activeLevels = levelsData.levels;
         activeScorecard = scorecard;
         activeProximity = proximity;
         renderNearestLevels(activeLevels, activeScorecard, levelsData.price);
+        renderRangeDecision(activeLevels, activeScorecard, levelsData.price);
         renderRoundProximityBands(levelsData.price, activeProximity);
         renderLevelJumpSelect(activeLevels, levelsData.price);
         renderExhaustionBanner(levelsData.exhaustion_pattern, scorecard && scorecard["Exhaustion pattern"]);
       } catch (err) {
         if (state.asset !== asset || state.range !== range) return;
         console.error(err);
+        renderDecisionUnavailable("Price or level data is currently unavailable.");
         const banner = document.getElementById("stale-banner");
         banner.hidden = false;
         banner.textContent = "Could not load level or price data — either the daily workflow hasn't run yet, or Kraken's API is unreachable right now.";
@@ -2365,6 +2710,8 @@
     }
   }
 
+  organizeAdvancedAnalysis();
+  wireAdvancedAnalysis();
   readHash();
   setActiveButtons();
   wireToggles();

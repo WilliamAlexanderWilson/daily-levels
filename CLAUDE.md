@@ -131,6 +131,66 @@ repo — there's nothing server-side to list here for it.
 
 ## Where we are
 
+### Range Desk UI decision (2026-11-05)
+
+Source and scope: user request plus the auto-generated English transcript
+for `https://youtu.be/sj4rNQ2ytZw`, retrieved from YouTube on 2026-11-05.
+The linked video is mostly a BloFin leverage tutorial and affiliate pitch;
+it does not contain a complete, objective range strategy. Its useful rules
+are limited to trading from range edges, predefining target and stop,
+preferring isolated margin for bounded risk, and keeping portfolio risk in
+the 1-5% range while explicitly calling 5% aggressive.
+
+The UI was redesigned around one default decision brief plus the chart.
+The existing nearest-level cards, futures context, liquidity overlays,
+scorecards, explainers, and trade journal remain available under **Full
+analysis**, not deleted. `site/range-decision.js` owns the pure range
+geometry. Because the transcript never defines an entry threshold, the UI
+labels its added assumption: outer 35% of the nearest support/resistance
+bracket = `LONG WATCH` or `SHORT WATCH`; middle 30% = `WAIT`. “Watch” never
+means entry confirmation. The brief shows the exact bracket, boundary
+reward/risk, and existing historical hold-rate evidence. It refuses to
+create a setup outside a complete bracket.
+
+Follow-up the same day: the user specifically wanted the page to reinforce
+patience and show what happened at the exact range boundary. Added a
+three-condition **Patience gate**. It remains incomplete until (1) price is
+in the outer 35% watch area, (2) a completed candle intersects the selected
+support/resistance zone, and (3) that same candle closes back inside the
+bracket. `recentBoundaryTest()` deliberately drops the final still-forming
+candle before checking, so an intrabar wick cannot flash a false completed
+confirmation. This is a transparent confirmation proxy, not a backtested
+edge; 3/3 says “setup to assess,” never “place the trade.”
+
+Final visual acceptance caught that the default chart still contradicted
+the simplified brief: every level, order-book wall, proximity band, and
+liquidation row was still visible even though their explanatory controls
+had moved under Full analysis. Fixed the actual chart, not just the cards.
+When the details panel is closed, `renderLevels()` draws only the nearest
+support and resistance that form the active bracket; walls, round-number
+bands, and the liquidation heatmap are suppressed. Opening Full analysis
+restores them, and closing it collapses the chart back to the active range.
+
+Noise follow-up: Full analysis is now a live **level radar**, not an all-labels
+dump. Every calculated level remains as a faint line for context, while only
+the nearest support/resistance bracket, the 60-day range edges, the tightest
+round-number band, and the nearest bid/ask wall receive strong styling and
+labels. The emphasis is re-ranked on each 15-second price poll. Do not move
+the actual level calculations to that cadence: the stable daily map is the
+reference; live price changes which parts deserve attention.
+
+Visual review also caught the brief labeling boundary-distance geometry as
+`R`, which overstates what is known because there is no mechanically defined
+stop buffer. Relabeled it `X:1 long/short geometry` with “not position R”
+next to it. Never switch that back to `R` unless an actual stop rule is
+implemented and validated.
+
+SPY stays separate. The 2026-10-11 holdout result remains controlling:
+every one of 24 parameter combinations was profitable in the first half
+and unprofitable in the untouched second half. The default SPY brief says
+`NO VALIDATED EDGE`; it does not convert the retrospective markers into a
+current buy/short call.
+
 **Phase 1 (core engine + site): fully built and live.**
 Volume profile, range high/low, golden pocket, reference levels, flip
 levels, confluence merging, the static site, the live chart, the daily

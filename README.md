@@ -1,13 +1,62 @@
-# Daily Levels — BTC & ETH key-level dashboard
+# Range Desk — BTC, ETH & SPY decision dashboard
 
-A small site that shows a live candlestick chart for BTC and ETH with
-automatically calculated key price levels drawn and labeled on it. Levels
-are recalculated once a day at 5:00 AM US Central and held fixed until the
-next run; the chart itself ticks live, independent of that daily
-calculation. **This is a map of levels, not a signal service — no
-buy/sell calls.**
+A focused range-trading workspace. The default screen reduces the product
+to one evidence-labeled decision brief plus the chart: where price sits
+between the nearest support and resistance, whether location favors a
+long watch, short watch, or waiting, the boundary-to-boundary reward/risk
+geometry, and the historical behavior of each boundary. Levels are
+recalculated daily; BTC/ETH candles tick live. The full level map,
+liquidity model, scorecards, explanations, and local trade journal remain
+available under **Full analysis**.
+
+**A watch area is not an entry signal.** The UI never claims to detect the
+confirmation step that the source material leaves discretionary.
 
 Live: https://williamalexanderwilson.github.io/daily-levels/
+
+## Range method and source boundary
+
+The range brief was added from the user's November 5, 2026 request and the
+transcript of https://youtu.be/sj4rNQ2ytZw. Most of that video is a BloFin
+leverage-platform tutorial and affiliate promotion, not a mechanical range
+strategy. The usable rules are narrow: trade from a range edge rather than
+the middle, define take-profit and stop-loss before entry, prefer isolated
+margin for bounded risk, and treat 5% portfolio risk as aggressive.
+
+The video does **not** specify how to select a range, what confirms a hold
+or rejection, or an empirically validated entry threshold. The site makes
+its additional UI assumption visible and testable: the outer 35% of the
+nearest support/resistance bracket is a watch area; the middle 30% is
+`WAIT`. That is a geometry filter, not a backtested claim of edge. See
+`site/range-decision.js` and `tests/test_range_decision.js`.
+
+The **Patience gate** then requires three visible facts before calling the
+chart a setup worth reviewing:
+
+1. Price is in the outer watch area, not the middle.
+2. A completed candle actually traded through the selected support or
+   resistance boundary.
+3. That completed candle closed back inside the bracket (above support for
+   a long watch, below resistance for a short watch).
+
+The still-forming candle is always excluded. All three conditions produce
+“setup to assess,” never an automatic order; stop placement, size, and the
+trader's own confirmation remain separate decisions.
+
+The chart follows the same progressive-disclosure rule as the page: with
+**Full analysis** closed, it draws only the two boundaries of the active
+support/resistance bracket. Opening Full analysis switches to a **level
+radar**: the full map remains visible, but background levels become faint
+and unlabeled. Only the live bracket, the 60-day range edges, the tightest
+round-number band, and the nearest bid/ask walls earn labels. Importance is
+re-ranked with the 15-second live-price poll; the underlying calculated
+levels still change only with the daily data run. This keeps attention on
+the range price can actually trade from without hiding the larger map.
+
+The displayed ratio is explicitly **range geometry**, not position `R`:
+distance to the opposite boundary divided by distance to the nearby
+boundary. It cannot become true reward/risk until the trader defines an
+actual stop beyond that boundary.
 
 ## How it works
 
@@ -47,6 +96,7 @@ python -m src.backtest.cli
 
 # run the tests
 python -m pytest
+node --test tests/test_range_decision.js
 
 # view the site locally
 cd site && python3 -m http.server 8000

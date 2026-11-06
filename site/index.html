@@ -3,14 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Daily Levels — BTC &amp; ETH</title>
+  <title>Range Desk — BTC, ETH &amp; SPY</title>
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="site-header">
-    <h1>Daily Levels</h1>
-    <p class="subtitle" id="subtitle">Key price levels for BTC &amp; ETH, recalculated once a day.</p>
+    <p class="brand-kicker">PRICE LOCATION · RISK · EVIDENCE</p>
+    <h1>Range Desk</h1>
+    <p class="subtitle" id="subtitle">A clean range read for BTC &amp; ETH — without pretending location is certainty.</p>
   </header>
 
   <div id="stale-banner" class="stale-banner" hidden></div>
@@ -49,6 +50,77 @@
         <span id="live-badge" class="live-badge" hidden><i class="live-dot"></i><span class="live-label">Live</span></span>
       </span>
     </div>
+
+    <section id="decision-brief" class="decision-brief is-loading" aria-live="polite">
+      <div class="decision-copy-block">
+        <div class="decision-heading-row">
+          <span id="decision-badge" class="decision-badge">CALCULATING</span>
+          <span id="decision-method" class="decision-method">Nearest-level range</span>
+        </div>
+        <h2 id="decision-title">Building the current range read…</h2>
+        <p id="decision-summary">Waiting for price, levels, and historical context.</p>
+        <p class="decision-caveat" id="decision-caveat">
+          A watch area is not an entry. Confirm the boundary yourself and define the stop before sizing a position.
+        </p>
+      </div>
+
+      <div class="decision-range" id="decision-range">
+        <div class="range-label-row">
+          <span>
+            <small>Support / invalidation</small>
+            <strong id="decision-support">—</strong>
+          </span>
+          <span class="range-position-copy" id="decision-position">—</span>
+          <span class="range-label-right">
+            <small>Resistance / target</small>
+            <strong id="decision-resistance">—</strong>
+          </span>
+        </div>
+        <div class="range-track" aria-hidden="true">
+          <span class="range-zone range-zone-long"></span>
+          <span class="range-zone range-zone-wait"></span>
+          <span class="range-zone range-zone-short"></span>
+          <i id="decision-marker" class="range-marker"></i>
+        </div>
+      </div>
+
+      <div class="patience-gate" id="patience-gate">
+        <div class="patience-gate-copy">
+          <span class="metric-label">Patience gate</span>
+          <strong id="patience-count">0 / 3 ready</strong>
+          <p id="patience-instruction">Wait for the range data before considering a position.</p>
+        </div>
+        <ol class="patience-conditions">
+          <li id="patience-location">
+            <i>1</i><span><strong>Location</strong><small>Price is at a range edge</small></span><b>Waiting</b>
+          </li>
+          <li id="patience-touch">
+            <i>2</i><span><strong>Test</strong><small>The specific boundary was hit</small></span><b>Waiting</b>
+          </li>
+          <li id="patience-confirmation">
+            <i>3</i><span><strong>Close</strong><small>A completed candle closed back inside</small></span><b>Waiting</b>
+          </li>
+        </ol>
+      </div>
+
+      <div class="decision-metrics" id="decision-metrics">
+        <article>
+          <span class="metric-label" id="decision-rr-label">Range geometry</span>
+          <strong id="decision-rr">—</strong>
+          <small id="decision-rr-note">reward to boundary risk</small>
+        </article>
+        <article>
+          <span class="metric-label" id="decision-support-label">Support history</span>
+          <strong id="decision-support-odds">—</strong>
+          <small id="decision-support-note">resolved touches</small>
+        </article>
+        <article>
+          <span class="metric-label" id="decision-resistance-label">Resistance history</span>
+          <strong id="decision-resistance-odds">—</strong>
+          <small id="decision-resistance-note">resolved touches</small>
+        </article>
+      </div>
+    </section>
 
     <div id="futures-context" class="futures-context" hidden></div>
 
@@ -102,8 +174,20 @@
     </div>
 
     <div id="chart-container" class="chart-container">
+      <div id="chart-focus-status" class="chart-focus-status" aria-live="polite">Active range · live focus</div>
       <div id="chart-loading-overlay" class="chart-loading-overlay" hidden>Loading…</div>
     </div>
+
+    <details id="advanced-analysis" class="advanced-analysis">
+      <summary>
+        <span>
+          <strong>Full analysis &amp; trade journal</strong>
+          <small>Levels, liquidity, backtests, explanations, and saved trades</small>
+        </span>
+        <span class="advanced-summary-action">Open details</span>
+      </summary>
+      <div id="advanced-analysis-content" class="advanced-analysis-content"></div>
+    </details>
 
     <div id="trade-form" class="trade-form" hidden>
       <div class="trade-form-row">
@@ -375,6 +459,7 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="range-decision.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
