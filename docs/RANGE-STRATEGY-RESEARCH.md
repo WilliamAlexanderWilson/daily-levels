@@ -1,7 +1,7 @@
 # Range strategy research record
 
-Date: 2026-11-06  
-Owner: William Wilson  
+Date: 2026-11-06
+Owner: William Wilson
 Scope: BTC 4-hour range-rejection research for Range Desk
 
 ## Decision
@@ -117,4 +117,3 @@ holdout trades, positive holdout expectancy, and profit factor above 1.
 
 The next objective is not to force a profitable-looking answer. It is to find
 whether a repeatable edge survives realistic costs and genuinely unseen data.
-

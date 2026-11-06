@@ -189,3 +189,43 @@ def test_zero_loss_profit_factor_can_pass_only_with_required_sample_sizes(monkey
     assert result["selected_key"] == "only"
     assert result["holdout_passed"] is True
 
+
+def test_sparse_lucky_candidate_cannot_crowd_out_eligible_validation_candidate(monkeypatch):
+    index = pd.date_range(datetime(2023, 1, 1, tzinfo=timezone.utc), periods=1_200, freq="4h")
+    candles = pd.DataFrame(
+        {"open": 100.0, "high": 105.0, "low": 95.0, "close": 100.0, "volume": 1.0},
+        index=index,
+    )
+    sparse = RangeSpec("sparse", "Sparse", "structure", 20)
+    eligible = RangeSpec("eligible", "Eligible", "structure", 20)
+    train_end = index[600]
+    validation_end = index[900]
+    holdout_end = index[-1] + pd.Timedelta(hours=4)
+
+    def fake_backtest(_candles, spec, start=None, end=None):
+        if start == train_end:
+            count, return_pct = (1, 10.0) if spec.key == "sparse" else (20, 1.0)
+        elif start == validation_end:
+            count, return_pct = 30, 1.0
+        else:
+            count, return_pct = 1, 1.0
+        return [
+            {
+                "entry_time": (start + pd.Timedelta(hours=4 * offset)).isoformat(),
+                "exit_time": (start + pd.Timedelta(hours=4 * offset + 1)).isoformat(),
+                "return_pct": return_pct,
+            }
+            for offset in range(count)
+        ]
+
+    monkeypatch.setattr("src.range_lab.engine.backtest_spec", fake_backtest)
+    result = build_range_lab(
+        candles,
+        (sparse, eligible),
+        train_end=train_end,
+        validation_end=validation_end,
+        holdout_end=holdout_end,
+    )
+    assert result["validation_leader_key"] == "sparse"
+    assert result["selected_key"] == "eligible"
+    assert result["holdout_passed"] is True

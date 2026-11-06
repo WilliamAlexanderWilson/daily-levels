@@ -3,6 +3,8 @@ const RangeLab = require("../site/range-lab.js");
 
 const data = {
   generated_at: "2026-11-06T04:00:00Z",
+  current_range_data_through: "2026-11-06T04:00:00Z",
+  research_metrics_through: "2026-11-06T04:00:00Z",
   selected_key: null,
   validation_leader_key: "fixed",
   holdout_passed: false,
@@ -27,7 +29,7 @@ assert.equal(view.passed, false);
 assert.equal(view.range.low, 70000);
 assert.equal(RangeLab.freshness(data, Date.parse("2026-11-06T10:00:00Z")).stale, false);
 assert.equal(RangeLab.freshness(data, Date.parse("2026-11-07T10:00:00Z")).stale, true);
+assert.equal(RangeLab.researchCutoff(data), "2026-11-06");
 data.candidates[0].metrics.holdout.profit_factor_infinite = true;
 assert.equal(RangeLab.viewModel(data, "fixed").profitFactor, "∞");
 console.log("range-lab tests passed");
-

@@ -43,7 +43,7 @@
   }
 
   function freshness(data, nowMs = Date.now()) {
-    const updatedMs = Date.parse(data && data.generated_at);
+    const updatedMs = Date.parse(data && (data.current_range_data_through || data.generated_at));
     if (!Number.isFinite(updatedMs)) return { stale: true, ageHours: null, label: "update time unavailable" };
     const ageHours = Math.max(0, (nowMs - updatedMs) / 3_600_000);
     return {
@@ -53,6 +53,10 @@
     };
   }
 
-  return { candidateByKey, defaultKey, freshness, metric, viewModel };
-});
+  function researchCutoff(data) {
+    const value = data && data.research_metrics_through;
+    return typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : "unknown";
+  }
 
+  return { candidateByKey, defaultKey, freshness, metric, researchCutoff, viewModel };
+});

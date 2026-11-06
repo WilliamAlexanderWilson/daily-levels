@@ -1,5 +1,7 @@
 {
   "generated_at": "2026-11-06T04:00:00+00:00",
+  "current_range_data_through": "2026-11-06T04:00:00+00:00",
+  "research_metrics_through": "2026-11-06T04:00:00+00:00",
   "instrument": "Kraken PF_XBTUSD perpetual futures",
   "timeframe": "4h",
   "history": {
@@ -11,7 +13,7 @@
     "train_end": "2024-01-01T00:00:00+00:00",
     "validation_end": "2025-01-01T00:00:00+00:00",
     "holdout_end": "2026-11-06T04:00:00+00:00",
-    "selection_rule": "fixed calendar partitions; highest validation expectancy after costs; holdout never used to choose"
+    "selection_rule": "fixed calendar partitions; highest validation expectancy among candidates passing the validation gate; holdout never used to choose"
   },
   "costs": {
     "fee_per_side_pct": 0.2,

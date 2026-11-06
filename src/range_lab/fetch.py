@@ -96,4 +96,3 @@ def fetch_btc_4h(
         raise RuntimeError("Kraken returned no completed BTC 4-hour candles")
     _validate_history(candles, start, end)
     return candles
-

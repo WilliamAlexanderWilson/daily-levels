@@ -1907,7 +1907,8 @@
     document.getElementById("range-lab-current-label").textContent = freshness.stale
       ? "STALE COMPUTED RANGE"
       : "LAST COMPUTED RANGE";
-    document.getElementById("range-lab-warning").textContent = `${data.verdict} · ${freshness.label}.`;
+    document.getElementById("range-lab-warning").textContent =
+      `${data.verdict} · Current ranges ${freshness.label}; historical metrics end ${RangeLab.researchCutoff(data)}.`;
     const options = document.getElementById("range-lab-options");
     options.innerHTML = "";
     for (const candidate of data.candidates) {

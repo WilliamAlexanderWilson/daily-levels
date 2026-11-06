@@ -340,17 +340,21 @@ def build_range_lab(
         )
         return expectancy, profit_factor, metrics["trades"]
 
-    validation_leader = max(candidates, key=validation_score)
-    validation = validation_leader["metrics"]["validation"]
-    selected = validation_leader if bool(
-        validation["trades"] >= 20
-        and validation["expectancy_pct"] is not None
-        and validation["expectancy_pct"] > 0
-        and (
-            validation["profit_factor_infinite"]
-            or (validation["profit_factor"] is not None and validation["profit_factor"] > 1)
+    def validation_eligible(candidate: dict) -> bool:
+        validation = candidate["metrics"]["validation"]
+        return bool(
+            validation["trades"] >= 20
+            and validation["expectancy_pct"] is not None
+            and validation["expectancy_pct"] > 0
+            and (
+                validation["profit_factor_infinite"]
+                or (validation["profit_factor"] is not None and validation["profit_factor"] > 1)
+            )
         )
-    ) else None
+
+    validation_leader = max(candidates, key=validation_score)
+    eligible_candidates = [candidate for candidate in candidates if validation_eligible(candidate)]
+    selected = max(eligible_candidates, key=validation_score) if eligible_candidates else None
     holdout = selected["metrics"]["holdout"] if selected else None
     passed = bool(
         holdout
@@ -367,6 +371,8 @@ def build_range_lab(
         # Candle-derived rather than wall-clock-derived so a refresh with no
         # new completed bar does not create a meaningless commit/deployment.
         "generated_at": data_through.isoformat(),
+        "current_range_data_through": data_through.isoformat(),
+        "research_metrics_through": holdout_end.isoformat(),
         "instrument": "Kraken PF_XBTUSD perpetual futures",
         "timeframe": "4h",
         "history": {
@@ -378,7 +384,7 @@ def build_range_lab(
             "train_end": train_end.isoformat(),
             "validation_end": validation_end.isoformat(),
             "holdout_end": holdout_end.isoformat(),
-            "selection_rule": "fixed calendar partitions; highest validation expectancy after costs; holdout never used to choose",
+            "selection_rule": "fixed calendar partitions; highest validation expectancy among candidates passing the validation gate; holdout never used to choose",
         },
         "costs": {
             "fee_per_side_pct": FEE_PER_SIDE * 100,
@@ -400,4 +406,3 @@ def build_range_lab(
         ),
         "candidates": candidates,
     }
-
