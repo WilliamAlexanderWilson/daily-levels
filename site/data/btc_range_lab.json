@@ -1556,5 +1556,58 @@
         "pending_entry": null
       }
     }
-  ]
+  ],
+  "spot_futures_reconciliation": {
+    "scope": "latest completed Kraken 4h BTC/USD spot bars available from the bounded recent-only endpoint",
+    "futures_market": "PF_XBTUSD perpetual futures trade candles",
+    "spot_market": "BTC/USD spot candles",
+    "comparison_start": "2026-07-09T16:00:00+00:00",
+    "comparison_end": "2026-11-06T12:00:00+00:00",
+    "aligned_start": "2026-07-09T16:00:00+00:00",
+    "aligned_end": "2026-11-06T12:00:00+00:00",
+    "overlap_candles": 720,
+    "futures_candles_in_window": 720,
+    "spot_candles_in_window": 720,
+    "missing_in_spot": 0,
+    "missing_in_futures": 0,
+    "missing_spot_timestamps": [],
+    "missing_futures_timestamps": [],
+    "field_basis": {
+      "open": {
+        "mean_signed_pct": 0.0069,
+        "median_signed_pct": 0.0072,
+        "median_abs_pct": 0.0101,
+        "p95_abs_pct": 0.032,
+        "max_abs_pct": 0.0641
+      },
+      "high": {
+        "mean_signed_pct": 0.0442,
+        "median_signed_pct": 0.0222,
+        "median_abs_pct": 0.0226,
+        "p95_abs_pct": 0.1328,
+        "max_abs_pct": 1.0072
+      },
+      "low": {
+        "mean_signed_pct": -0.0264,
+        "median_signed_pct": -0.0056,
+        "median_abs_pct": 0.0116,
+        "p95_abs_pct": 0.1518,
+        "max_abs_pct": 0.687
+      },
+      "close": {
+        "mean_signed_pct": 0.0072,
+        "median_signed_pct": 0.0071,
+        "median_abs_pct": 0.0104,
+        "p95_abs_pct": 0.034,
+        "max_abs_pct": 0.0841
+      }
+    },
+    "largest_close_basis": {
+      "timestamp": "2026-11-05T12:00:00+00:00",
+      "signed_pct": 0.0841
+    },
+    "candle_direction_agreement_pct": 98.3333,
+    "high_low_envelope_overlap_pct": 100.0,
+    "interpretation": "Measures contract-versus-spot basis and timestamp coverage only. It does not validate the strategy or guarantee equivalent fills."
+  }
 }

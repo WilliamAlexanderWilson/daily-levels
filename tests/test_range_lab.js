@@ -6,6 +6,20 @@ const data = {
   current_range_data_through: "2026-11-06T04:00:00Z",
   research_metrics_through: "2026-11-06T04:00:00Z",
   forward_tracking: { frozen_at: "2026-11-06T04:00:00Z" },
+  spot_futures_reconciliation: {
+    comparison_start: "2026-07-10T00:00:00Z",
+    comparison_end: "2026-11-06T12:00:00Z",
+    overlap_candles: 719,
+    missing_in_spot: 0,
+    missing_in_futures: 0,
+    candle_direction_agreement_pct: 95.2,
+    field_basis: {
+      open: { p95_abs_pct: 0.18 },
+      high: { p95_abs_pct: 0.31 },
+      low: { p95_abs_pct: 0.29 },
+      close: { mean_signed_pct: 0.08, p95_abs_pct: 0.21 },
+    },
+  },
   selected_key: null,
   validation_leader_key: "fixed",
   holdout_passed: false,
@@ -41,6 +55,16 @@ assert.equal(RangeLab.freshness(data, Date.parse("2026-11-06T10:00:00Z")).stale,
 assert.equal(RangeLab.freshness(data, Date.parse("2026-11-07T10:00:00Z")).stale, true);
 assert.equal(RangeLab.researchCutoff(data), "2026-11-06");
 assert.equal(RangeLab.forwardStart(data), "2026-11-06");
+assert.deepEqual(RangeLab.reconciliationView(data), {
+  overlap: "719 aligned 4H candles",
+  missing: "0 missing timestamps",
+  signedCloseBasis: "+0.08% mean futures basis",
+  p95CloseBasis: "0.21% p95 absolute close difference",
+  p95OhlcBasis: "p95 abs O/H/L/C 0.18% / 0.31% / 0.29% / 0.21%",
+  directionAgreement: "95.2% candle-direction agreement",
+  start: "2026-07-10",
+  end: "2026-11-06",
+});
 data.candidates[0].metrics.holdout.profit_factor_infinite = true;
 assert.equal(RangeLab.viewModel(data, "fixed").profitFactor, "∞");
 console.log("range-lab tests passed");

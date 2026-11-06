@@ -80,5 +80,32 @@
     return typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : "not started";
   }
 
-  return { candidateByKey, defaultKey, forwardStart, freshness, metric, researchCutoff, viewModel };
+  function reconciliationView(data) {
+    const reconciliation = data && data.spot_futures_reconciliation;
+    const fields = reconciliation && reconciliation.field_basis;
+    if (!reconciliation || !fields || !fields.open || !fields.high || !fields.low || !fields.close) return null;
+    const close = fields.close;
+    const totalMissing = reconciliation.missing_in_spot + reconciliation.missing_in_futures;
+    return {
+      overlap: `${reconciliation.overlap_candles} aligned 4H candles`,
+      missing: `${totalMissing} missing timestamp${totalMissing === 1 ? "" : "s"}`,
+      signedCloseBasis: metric(close.mean_signed_pct, "% mean futures basis"),
+      p95CloseBasis: `${close.p95_abs_pct}% p95 absolute close difference`,
+      p95OhlcBasis: `p95 abs O/H/L/C ${fields.open.p95_abs_pct}% / ${fields.high.p95_abs_pct}% / ${fields.low.p95_abs_pct}% / ${fields.close.p95_abs_pct}%`,
+      directionAgreement: `${reconciliation.candle_direction_agreement_pct}% candle-direction agreement`,
+      start: reconciliation.comparison_start.slice(0, 10),
+      end: reconciliation.comparison_end.slice(0, 10),
+    };
+  }
+
+  return {
+    candidateByKey,
+    defaultKey,
+    forwardStart,
+    freshness,
+    metric,
+    reconciliationView,
+    researchCutoff,
+    viewModel,
+  };
 });

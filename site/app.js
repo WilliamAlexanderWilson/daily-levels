@@ -1899,6 +1899,8 @@
         const verdict = document.getElementById("range-lab-verdict");
         verdict.className = "range-lab-verdict is-failed";
         verdict.textContent = "RESEARCH DATA UNAVAILABLE";
+        document.querySelector("#range-lab-reconciliation strong").textContent =
+          "Spot-versus-futures comparison unavailable with the research artifact.";
         document.getElementById("range-lab-options").innerHTML = "";
         document.getElementById("range-lab-detail").hidden = true;
       }
@@ -1917,6 +1919,12 @@
       : "LAST COMPUTED RANGE";
     document.getElementById("range-lab-warning").textContent =
       `${data.verdict} · Current ranges ${freshness.label}; historical metrics end ${RangeLab.researchCutoff(data)}.`;
+    const reconciliation = RangeLab.reconciliationView(data);
+    const reconciliationPanel = document.getElementById("range-lab-reconciliation");
+    const reconciliationCopy = reconciliationPanel.querySelector("strong");
+    reconciliationCopy.textContent = reconciliation
+      ? `${reconciliation.overlap} (${reconciliation.start}–${reconciliation.end}) · ${reconciliation.missing} · ${reconciliation.signedCloseBasis} · ${reconciliation.p95OhlcBasis} · ${reconciliation.directionAgreement}. Basis check only—not strategy validation.`
+      : "Comparison unavailable until the next Range Lab refresh; futures research and the spot chart are different markets.";
     const options = document.getElementById("range-lab-options");
     options.innerHTML = "";
     for (const candidate of data.candidates) {

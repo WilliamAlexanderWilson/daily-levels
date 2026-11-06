@@ -142,6 +142,15 @@ candidate is validated, never combines their returns, never places an order,
 and leaves an unresolved position open rather than manufacturing a time exit
 at the end of the currently available data.
 
+`src/range_lab/reconciliation.py` compares the PF_XBTUSD research candles with
+the completed BTC/USD spot 4-hour bars that the bounded spot endpoint currently
+returns. Do not hardcode the documented 720-row response count: on 2026-11-06
+the live endpoint returned 721 rows including the forming candle. Reconcile the
+timestamps actually returned after `src.fetch` removes the forming row. The
+comparison belongs in `btc_range_lab.json` as data-quality context only; it
+must never be interpreted as proof that spot and futures fills are identical
+or that the strategy has an edge.
+
 ---
 
 ## Where we are
