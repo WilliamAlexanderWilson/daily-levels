@@ -237,6 +237,20 @@ across every round number the price actually traded near over the full
 replay — dozens of distinct values per asset, not just whatever's current
 today.
 
+## BTC Range Lab
+
+`python -m src.range_lab.cli` runs a separate, no-lookahead range-rejection
+experiment over public Kraken `PF_XBTUSD` 4-hour candles. It compares fixed
+dollar, percentage, ATR-normalized, and structure-based ranges. Every setup
+uses only preceding candles to define its range, waits for a completed
+edge-rejection candle, and enters at the next candle's open.
+
+The report includes modeled fees and slippage, pessimistically treats a
+same-candle stop/target collision as a stop, selects a candidate using only
+the validation period, and then reports the most recent 20% of history as an
+untouched holdout. The generated `site/data/btc_range_lab.json` is research
+evidence, not a profitability promise or an instruction to trade.
+
 ## Futures context (funding rate, open interest)
 
 `src/context/futures.py` fetches Kraken Futures' aggregate perpetual data
