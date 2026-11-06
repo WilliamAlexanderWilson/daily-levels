@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { build, recentBoundaryTest } = require("../site/range-decision.js");
+const { build, patienceAlertFingerprint, patienceState, recentBoundaryTest } = require("../site/range-decision.js");
 
 const levels = [
   { name: "Range low (60d)", price_low: 80, price_high: 80 },
@@ -63,4 +63,46 @@ test("reports a resistance touch without confirmation when it closes above", () 
   const testResult = recentBoundaryTest(candles, levels[2], "resistance");
   assert.equal(testResult.touched, true);
   assert.equal(testResult.confirmed, false);
+});
+
+test("patience state becomes ready only after all three facts agree", () => {
+  const decision = build(levels, scorecard, 92);
+  const candles = [
+    { time: 1, low: 89, high: 94, close: 91 },
+    { time: 2, low: 91, high: 93, close: 92 }, // forming: ignored
+  ];
+  const gate = patienceState(decision, candles);
+  assert.equal(gate.readyCount, 3);
+  assert.equal(gate.isReady, true);
+  assert.equal(gate.boundary.name, "VAL (60d)");
+  assert.equal(gate.boundaryTest.time, 1);
+});
+
+test("patience state refuses a confirmed candle when price is no longer at an edge", () => {
+  const decision = build(levels, scorecard, 95);
+  const candles = [
+    { time: 1, low: 89, high: 96, close: 91 },
+    { time: 2, low: 94, high: 96, close: 95 },
+  ];
+  const gate = patienceState(decision, candles);
+  assert.equal(gate.readyCount, 0);
+  assert.equal(gate.isReady, false);
+  assert.equal(gate.boundaryTest, null);
+});
+
+test("alert fingerprint deduplicates one confirmed setup and changes for a new candle", () => {
+  const decision = build(levels, scorecard, 92);
+  const first = patienceState(decision, [
+    { time: 1, low: 89, high: 94, close: 91 },
+    { time: 2, low: 91, high: 93, close: 92 },
+  ]);
+  const second = patienceState(decision, [
+    { time: 1, low: 89, high: 94, close: 91 },
+    { time: 3, low: 89, high: 94, close: 91 },
+    { time: 4, low: 91, high: 93, close: 92 },
+  ]);
+  assert.equal(patienceAlertFingerprint("btc", "4h", decision, first), "btc|4h|long-watch|VAL (60d)|1");
+  assert.equal(patienceAlertFingerprint("btc", "4h", decision, first), patienceAlertFingerprint("btc", "4h", decision, first));
+  assert.notEqual(patienceAlertFingerprint("btc", "4h", decision, first), patienceAlertFingerprint("btc", "4h", decision, second));
+  assert.equal(patienceAlertFingerprint("btc", "4h", decision, { ...first, isReady: false }), null);
 });

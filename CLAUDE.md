@@ -162,6 +162,16 @@ candle before checking, so an intrabar wick cannot flash a false completed
 confirmation. This is a transparent confirmation proxy, not a backtested
 edge; 3/3 says “setup to assess,” never “place the trade.”
 
+Follow-up: added an opt-in **ready alert** backed by the same pure
+`RangeDecision.patienceState()` result. It never alerts for location alone,
+a wick alone, or an unconfirmed close. A fingerprint of asset, timeframe,
+direction, boundary, and completed-candle time makes each setup alert once
+even across refreshes. Visible tabs get an in-page toast; hidden tabs can
+also receive a browser notification after the user explicitly enables and
+permits it. Preference and the last 20 fingerprints live only in browser
+localStorage. This is intentionally not Telegram/background infrastructure:
+the static page must remain open for its 15-second poll to evaluate a setup.
+
 Final visual acceptance caught that the default chart still contradicted
 the simplified brief: every level, order-book wall, proximity band, and
 liquidation row was still visible even though their explanatory controls

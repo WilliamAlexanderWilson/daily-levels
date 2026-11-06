@@ -43,6 +43,13 @@ The still-forming candle is always excluded. All three conditions produce
 “setup to assess,” never an automatic order; stop placement, size, and the
 trader's own confirmation remain separate decisions.
 
+The optional **ready alert** uses that exact same gate. It stays silent at
+0/3, 1/3, and 2/3, then emits one in-page alert per unique completed candle
+when all three facts agree. If browser notifications are allowed, the same
+one-time alert can appear while the tab is hidden. The opt-in setting and a
+short deduplication history are stored only in that browser's localStorage;
+no account, server, Telegram bot, or trading connection is involved.
+
 The chart follows the same progressive-disclosure rule as the page: with
 **Full analysis** closed, it draws only the two boundaries of the active
 support/resistance bracket. Opening Full analysis switches to a **level

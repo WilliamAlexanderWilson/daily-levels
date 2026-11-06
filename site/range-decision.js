@@ -71,6 +71,41 @@
     return { touched: false, confirmed: false, time: null, barsAgo: null, close: null };
   }
 
+  function patienceState(decision, candles) {
+    const hasLocation = decision && (decision.status === "long-watch" || decision.status === "short-watch");
+    const boundary = hasLocation
+      ? (decision.status === "long-watch" ? decision.support : decision.resistance)
+      : null;
+    const side = decision && decision.status === "long-watch" ? "support" : "resistance";
+    const boundaryTest = hasLocation && boundary
+      ? recentBoundaryTest(candles, boundary, side)
+      : null;
+    const hasTouch = Boolean(boundaryTest && boundaryTest.touched);
+    const hasConfirmation = Boolean(boundaryTest && boundaryTest.confirmed);
+    const readyCount = [hasLocation, hasTouch, hasConfirmation].filter(Boolean).length;
+    return {
+      hasLocation,
+      hasTouch,
+      hasConfirmation,
+      isReady: readyCount === 3,
+      readyCount,
+      boundary,
+      side,
+      boundaryTest,
+    };
+  }
+
+  function patienceAlertFingerprint(asset, range, decision, gateState) {
+    if (!asset || !range || !decision || !gateState || !gateState.isReady || !gateState.boundaryTest) return null;
+    return [
+      asset,
+      range,
+      decision.status,
+      gateState.boundary.name,
+      gateState.boundaryTest.time,
+    ].join("|");
+  }
+
   function emptyDecision(reason) {
     return {
       status: "wait",
@@ -156,5 +191,14 @@
     };
   }
 
-  return { EDGE_FRACTION, build, midpoint, nearestBracket, scoreForLevel, recentBoundaryTest };
+  return {
+    EDGE_FRACTION,
+    build,
+    midpoint,
+    nearestBracket,
+    scoreForLevel,
+    recentBoundaryTest,
+    patienceState,
+    patienceAlertFingerprint,
+  };
 });
