@@ -366,34 +366,42 @@ def backtest_spec(
     return trades
 
 
-def backtest_runner_spec(
+def backtest_runner_cohort(
     candles: pd.DataFrame,
     spec: RangeSpec,
-    start: pd.Timestamp | None = None,
+    baseline_trades: list[dict],
     end: pd.Timestamp | None = None,
 ) -> list[dict]:
-    """Replay the preregistered runner without altering the baseline path."""
+    """Apply the runner to the baseline's exact entry cohort.
+
+    Runner observations may overlap. That is deliberate: this is a paired
+    exit sensitivity, not a second strategy whose longer positions are allowed
+    to suppress later signals and change the cohort being compared.
+    """
     candles = candles.sort_index()
     if end is not None:
         candles = candles[candles.index < end]
     atr = _true_range(candles).rolling(14).mean()
     trades: list[dict] = []
-    period_start_index = int(candles.index.searchsorted(start)) if start is not None else 0
-    cursor = max(spec.lookback_bars, 15, period_start_index)
-    while cursor < len(candles) - 1:
-        state = _range_at(candles, cursor, spec, atr)
-        direction = _signal(candles.iloc[cursor], state) if state else None
-        if not direction:
-            cursor += 1
-            continue
-        trade, exit_index = _run_runner_trade(
-            candles, cursor + 1, direction, state, spec.lookback_bars
+    for baseline in baseline_trades:
+        signal_time = pd.Timestamp(baseline["signal_time"])
+        entry_time = pd.Timestamp(baseline["entry_time"])
+        if signal_time not in candles.index or entry_time not in candles.index:
+            raise ValueError("Baseline entry cohort falls outside the runner partition")
+        signal_index = int(candles.index.get_loc(signal_time))
+        entry_index = int(candles.index.get_loc(entry_time))
+        if entry_index != signal_index + 1:
+            raise ValueError("Runner comparison requires the same next-bar baseline entry")
+        state = _range_at(candles, signal_index, spec, atr)
+        direction = _signal(candles.iloc[signal_index], state) if state else None
+        if direction != baseline["direction"]:
+            raise ValueError("Baseline signal no longer reproduces for runner comparison")
+        trade, _exit_index = _run_runner_trade(
+            candles, entry_index, direction, state, spec.lookback_bars
         )
-        if trade:
-            trades.append(trade)
-            cursor = exit_index + 1
-        else:
-            cursor += 1
+        if not trade or trade["entry_time"] != baseline["entry_time"]:
+            raise ValueError("Runner comparison failed to preserve the baseline entry")
+        trades.append(trade)
     return trades
 
 
@@ -598,9 +606,22 @@ def build_range_lab(
             for name, (start, end) in periods.items()
         }
         runner_trades_by_period = {
-            name: backtest_runner_spec(candles, spec, start=start, end=end)
-            for name, (start, end) in periods.items()
+            name: backtest_runner_cohort(
+                candles, spec, trades_by_period[name], end=end
+            )
+            for name, (_start, end) in periods.items()
         }
+        for name in periods:
+            baseline_entries = [
+                (trade.get("direction"), trade.get("signal_time"), trade["entry_time"])
+                for trade in trades_by_period[name]
+            ]
+            runner_entries = [
+                (trade.get("direction"), trade.get("signal_time"), trade["entry_time"])
+                for trade in runner_trades_by_period[name]
+            ]
+            if runner_entries != baseline_entries:
+                raise RuntimeError(f"Runner changed the paired {name} entry cohort")
         trades = [trade for name in periods for trade in trades_by_period[name]]
         baseline_metrics = {name: _metrics(trades_by_period[name]) for name in periods}
         runner_metrics = {name: _metrics(runner_trades_by_period[name]) for name in periods}
@@ -712,6 +733,7 @@ def build_range_lab(
             "status": "exploratory historical sensitivity; not an untouched holdout or selection rule",
             "baseline": "100% at midpoint",
             "runner": "50% at midpoint; 50% at opposite boundary; original stop unchanged",
+            "cohort": "paired to the baseline's exact signal, direction, and next-bar entry; runner observations may overlap",
             "costs": "same fee and slippage per side, weighted by leg size",
             "intrabar": "stop wins for all remaining size when stop and an unfilled target share a candle",
         },

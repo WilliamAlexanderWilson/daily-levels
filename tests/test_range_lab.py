@@ -8,6 +8,7 @@ from src.range_lab.engine import (
     _paper_trade,
     _run_runner_trade,
     _run_trade,
+    backtest_runner_cohort,
     backtest_spec,
     build_range_lab,
     forward_paper_track,
@@ -268,6 +269,45 @@ def test_runner_trade_keeps_original_stop_after_midpoint():
     assert trade["legs"][1]["exit"] < trade["entry"]
 
 
+def test_runner_comparison_preserves_overlapping_baseline_entry_cohort(monkeypatch):
+    index = pd.date_range(datetime(2026, 1, 1, tzinfo=timezone.utc), periods=50, freq="4h")
+    candles = pd.DataFrame(
+        {
+            "open": [100.0] * 50,
+            "high": [101.0] * 50,
+            "low": [99.0] * 50,
+            "close": [100.0] * 50,
+            "volume": [1.0] * 50,
+        },
+        index=index,
+    )
+    spec = RangeSpec("structure", "Structure", "structure", 20)
+    baseline = [
+        {
+            "direction": "long",
+            "signal_time": index[24].isoformat(),
+            "entry_time": index[25].isoformat(),
+        },
+        {
+            "direction": "long",
+            "signal_time": index[26].isoformat(),
+            "entry_time": index[27].isoformat(),
+        },
+    ]
+
+    monkeypatch.setattr(
+        "src.range_lab.engine._range_at",
+        lambda *_args: {"low": 90.0, "high": 150.0, "midpoint": 120.0, "edge": 6.0, "atr": 1.0},
+    )
+    monkeypatch.setattr("src.range_lab.engine._signal", lambda *_args: "long")
+    runner = backtest_runner_cohort(candles, spec, baseline)
+    assert len(runner) == 2
+    assert [trade["entry_time"] for trade in runner] == [
+        trade["entry_time"] for trade in baseline
+    ]
+    assert runner[0]["exit_time"] > runner[1]["entry_time"]
+
+
 def test_forward_paper_trade_stays_open_until_full_holding_window():
     index = pd.date_range(datetime(2026, 11, 6, tzinfo=timezone.utc), periods=3, freq="4h")
     candles = pd.DataFrame(
@@ -401,6 +441,10 @@ def test_build_range_lab_preserves_untouched_selection_boundary(monkeypatch):
         ]
 
     monkeypatch.setattr("src.range_lab.engine.backtest_spec", fake_backtest)
+    monkeypatch.setattr(
+        "src.range_lab.engine.backtest_runner_cohort",
+        lambda _candles, _spec, baseline, end=None: baseline,
+    )
     result = build_range_lab(
         candles,
         (spec_a, spec_b),
@@ -436,6 +480,10 @@ def test_zero_loss_profit_factor_can_pass_only_with_required_sample_sizes(monkey
         ]
 
     monkeypatch.setattr("src.range_lab.engine.backtest_spec", fake_backtest)
+    monkeypatch.setattr(
+        "src.range_lab.engine.backtest_runner_cohort",
+        lambda _candles, _spec, baseline, end=None: baseline,
+    )
     result = build_range_lab(
         candles,
         (spec,),
@@ -476,6 +524,10 @@ def test_sparse_lucky_candidate_cannot_crowd_out_eligible_validation_candidate(m
         ]
 
     monkeypatch.setattr("src.range_lab.engine.backtest_spec", fake_backtest)
+    monkeypatch.setattr(
+        "src.range_lab.engine.backtest_runner_cohort",
+        lambda _candles, _spec, baseline, end=None: baseline,
+    )
     result = build_range_lab(
         candles,
         (sparse, eligible),

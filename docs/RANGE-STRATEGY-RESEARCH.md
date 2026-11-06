@@ -165,18 +165,22 @@ Computed only after commit `6a23e60` recorded the rules above.
 
 | Definition | Runner validation expectancy | Runner holdout expectancy | Runner holdout PF | Runner holdout trades |
 |---|---:|---:|---:|---:|
-| $2k–$4k | — | -0.3646% | 0.000 | 1 |
-| $5k–$10k | -2.4321% | +0.2926% | 1.192 | 19 |
-| 5%–10% | -2.1872% | -0.8932% | 0.375 | 30 |
-| 10%–20% | -2.6775% | +1.0326% | 1.620 | 27 |
-| 4–8 ATR | -1.7990% | -0.6286% | 0.587 | 24 |
-| Structure | -0.6204% | +0.5305% | 1.328 | 41 |
+| $2k–$4k | — | +1.0201% | 6.596 | 2 |
+| $5k–$10k | -2.4117% | -0.3222% | 0.811 | 25 |
+| 5%–10% | -2.1872% | -1.0193% | 0.311 | 35 |
+| 10%–20% | -2.4976% | +0.2383% | 1.125 | 34 |
+| 4–8 ATR | -1.7990% | -0.2906% | 0.794 | 29 |
+| Structure | -0.8362% | -0.1925% | 0.894 | 54 |
 
-The runner improved the old holdout for $5k–$10k, 10%–20%, and structure
-ranges, but **every definition remained negative in validation** (or had no
-validation trades). It therefore did not clear the pre-existing validation
-gate and no runner candidate is eligible for promotion. The positive old
-holdout cells are hypotheses for genuinely forward evidence, not trade calls.
+Both exits were evaluated on each definition's exact baseline signal,
+direction, and next-bar entry cohort; runner observations were allowed to
+overlap so a longer runner could not suppress later paired entries. The runner
+improved the old holdout for several definitions, but only the 10%–20% row was
+positive with a nontrivial sample, and **every definition remained negative in
+validation** (or had no validation trades). It therefore did not clear the
+pre-existing validation gate and no runner candidate is eligible for
+promotion. Positive old holdout cells are hypotheses for genuinely forward
+evidence, not trade calls.
 
 ## Tomorrow's plan
 

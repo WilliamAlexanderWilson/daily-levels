@@ -156,8 +156,10 @@ The frozen exit sensitivity is `range-exit-runner-v1`, preregistered in
 `_run_runner_trade` closes 50% at midpoint and 50% at the opposite boundary,
 keeps the original stop, weights the same costs by leg size, and gives the
 stop priority on ambiguous candles. All six runner variants remained negative
-in validation, so none may be promoted based on their later positive cells in
-the already-viewed historical holdout.
+in validation. Baseline and runner use the exact same entry cohort; runner
+observations may overlap so longer holding time cannot suppress a later paired
+signal. None may be promoted based on later results in the already-viewed
+historical holdout.
 
 ---
 
