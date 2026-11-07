@@ -31,6 +31,7 @@
     "total_events": 0,
     "wait_events": 0,
     "pending_events": 0,
+    "resolved_edge_session_rows": 0,
     "resolved_edge_events": 0,
     "resolved_lower_edge_events": 0,
     "resolved_upper_edge_events": 0,

@@ -21,6 +21,14 @@ ASSETS = {"btc": "BTC-USD", "eth": "ETH-USD"}
 def _is_fresh(path: str, max_age_hours: int) -> bool:
     if not os.path.exists(path):
         return False
+    try:
+        with open(path) as handle:
+            generated = pd.Timestamp(json.load(handle)["generated_at_utc"])
+        if generated.tzinfo is None:
+            generated = generated.tz_localize("UTC")
+        return pd.Timestamp.now(tz="UTC") - generated < pd.Timedelta(hours=max_age_hours)
+    except (OSError, KeyError, ValueError, TypeError, json.JSONDecodeError):
+        return False
 
 
 def _load_json(path: str) -> dict | None:
@@ -31,14 +39,6 @@ def _load_json(path: str) -> dict | None:
             return json.load(handle)
     except (OSError, json.JSONDecodeError):
         return None
-    try:
-        with open(path) as handle:
-            generated = pd.Timestamp(json.load(handle)["generated_at_utc"])
-        if generated.tzinfo is None:
-            generated = generated.tz_localize("UTC")
-        return pd.Timestamp.now(tz="UTC") - generated < pd.Timedelta(hours=max_age_hours)
-    except (KeyError, ValueError, TypeError, json.JSONDecodeError):
-        return False
 
 
 def main() -> int:

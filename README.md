@@ -91,6 +91,8 @@ including at least 20 lower-edge and 20 upper-edge observations. Even after
 that gate it remains descriptive underlying-price evidence—not a signal,
 options result, leverage result, or profitability claim. The immutable rules
 are in [`docs/RANGE-OPEN-FORWARD-TRACKER.md`](docs/RANGE-OPEN-FORWARD-TRACKER.md).
+Coincident sessions such as London and Frankfurt remain visible as separate
+rows but count as one opening cohort toward the evidence gate.
 
 The BTC chart marks the complete macro range behind the candles, including
 the $70k midpoint, $72k-$77k support zone, $80k ceiling, and $82.8k reclaim.

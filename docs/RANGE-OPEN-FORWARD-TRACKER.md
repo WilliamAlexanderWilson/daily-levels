@@ -81,7 +81,9 @@ its move was larger.
 - The tracker measures the underlying asset, not options fills, leverage,
   slippage, fees, or executable strategy returns.
 - Session opens can coincide. London and Frankfurt may therefore share the
-  same price path; that is real overlap, not independent confirmation.
+  same price path. Preserve both labeled session rows, but count one unique
+  asset-plus-opening timestamp toward the evidence gate and reaction rate.
+  Dashboard gate counts are independent opening cohorts, not raw session rows.
 
 ## Change control
 

@@ -89,18 +89,24 @@ def test_pending_event_resolves_later_without_changing_frozen_inputs():
     pending_payload = _payload(_candles(entry=110, after_bars=4))
     pending = pending_payload["events"][0]
     assert pending["status"] == "pending"
+    recorded_15m = pending["horizons"]["15"]
+    recorded_60m = pending["horizons"]["60"]
     later_frame = _candles(entry=110, after_bars=8)
     later_frame.iloc[0, later_frame.columns.get_loc("low")] = 50.0
+    later_frame.loc[OPENED, "close"] = 199.0
     resolved = _payload(later_frame, pending_payload)["events"][0]
     assert resolved["status"] == "resolved"
     assert resolved["range_low"] == 100.0
     assert resolved["opening_price"] == 110.0
+    assert resolved["horizons"]["15"] == recorded_15m
+    assert resolved["horizons"]["60"] == recorded_60m
 
 
 def test_evidence_gate_requires_fifty_total_and_twenty_on_each_side():
     def event(index, location):
         return {
             "id": str(index),
+            "opened_at_utc": (pd.Timestamp("2027-01-01T00:00:00Z") + pd.Timedelta(days=index)).isoformat(),
             "location": location,
             "status": "resolved",
             "horizons": {"60": {"direction_aligned_return_pct": 1.0}},
@@ -112,3 +118,24 @@ def test_evidence_gate_requires_fifty_total_and_twenty_on_each_side():
     summary = summarize_events(unbalanced)
     assert summary["evidence_gate_passed"] is False
     assert summary["positive_directional_60m_rate_pct"] is None
+
+
+def test_coincident_sessions_are_visible_rows_but_one_evidence_cohort():
+    rows = []
+    for index in range(25):
+        opened = (pd.Timestamp("2027-01-01T00:00:00Z") + pd.Timedelta(days=index)).isoformat()
+        location = "lower-edge" if index < 13 else "upper-edge"
+        for session in ("london", "xetra"):
+            rows.append(
+                {
+                    "id": f"{session}-{index}",
+                    "opened_at_utc": opened,
+                    "location": location,
+                    "status": "resolved",
+                    "horizons": {"60": {"direction_aligned_return_pct": 1.0}},
+                }
+            )
+    summary = summarize_events(rows)
+    assert summary["resolved_edge_session_rows"] == 50
+    assert summary["resolved_edge_events"] == 25
+    assert summary["evidence_gate_passed"] is False

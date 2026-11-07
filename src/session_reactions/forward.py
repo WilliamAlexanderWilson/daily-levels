@@ -93,14 +93,17 @@ def _fill_outcomes(event: dict, frame: pd.DataFrame, interval_minutes: int) -> d
     opened = pd.Timestamp(result["opened_at_utc"])
     entry = float(result["opening_price"])
     direction = 1 if result["location"] == "lower-edge" else -1 if result["location"] == "upper-edge" else 0
-    horizons = {}
+    horizons = deepcopy(result.get("horizons") or {})
     for minutes in HORIZONS_MINUTES:
+        key = str(minutes)
+        if horizons.get(key) is not None:
+            continue
         window = complete_window(frame, opened, minutes, interval_minutes)
         if window is None:
-            horizons[str(minutes)] = None
+            horizons[key] = None
             continue
         raw_return = 100 * (float(window.iloc[-1]["close"]) / entry - 1)
-        horizons[str(minutes)] = {
+        horizons[key] = {
             "raw_return_pct": _round(raw_return),
             "direction_aligned_return_pct": _round(raw_return * direction) if direction else None,
         }
@@ -114,15 +117,19 @@ def _fill_outcomes(event: dict, frame: pd.DataFrame, interval_minutes: int) -> d
     if direction:
         favorable = ((full["high"].max() / entry - 1) * 100) if direction > 0 else ((1 - full["low"].min() / entry) * 100)
         adverse = ((1 - full["low"].min() / entry) * 100) if direction > 0 else ((full["high"].max() / entry - 1) * 100)
-        result["max_favorable_excursion_pct"] = _round(favorable)
-        result["max_adverse_excursion_pct"] = _round(adverse)
+        if result.get("max_favorable_excursion_pct") is None:
+            result["max_favorable_excursion_pct"] = _round(favorable)
+        if result.get("max_adverse_excursion_pct") is None:
+            result["max_adverse_excursion_pct"] = _round(adverse)
         close_120 = float(full.iloc[-1]["close"])
-        result["sweep_reclaim"] = bool(
-            (direction > 0 and float(full["low"].min()) < result["range_low"] and close_120 > result["range_low"])
-            or (direction < 0 and float(full["high"].max()) > result["range_high"] and close_120 < result["range_high"])
-        )
+        if result.get("sweep_reclaim") is None:
+            result["sweep_reclaim"] = bool(
+                (direction > 0 and float(full["low"].min()) < result["range_low"] and close_120 > result["range_low"])
+                or (direction < 0 and float(full["high"].max()) > result["range_high"] and close_120 < result["range_high"])
+            )
     result["status"] = "resolved"
-    result["resolved_at_utc"] = (opened + pd.Timedelta(minutes=120)).isoformat()
+    if result.get("resolved_at_utc") is None:
+        result["resolved_at_utc"] = (opened + pd.Timedelta(minutes=120)).isoformat()
     return result
 
 
@@ -165,7 +172,14 @@ def _new_event(
 
 
 def summarize_events(events: list[dict]) -> dict:
-    resolved_edges = [event for event in events if event["location"] != "wait" and event["status"] == "resolved"]
+    resolved_edge_rows = [event for event in events if event["location"] != "wait" and event["status"] == "resolved"]
+    # Coincident sessions (commonly London and Frankfurt) share the exact
+    # same asset price path. Preserve both rows for session transparency, but
+    # let only one opening timestamp contribute to the evidence gate/rate.
+    cohort_by_open: dict[str, dict] = {}
+    for event in resolved_edge_rows:
+        cohort_by_open.setdefault(event["opened_at_utc"], event)
+    resolved_edges = list(cohort_by_open.values())
     lower = [event for event in resolved_edges if event["location"] == "lower-edge"]
     upper = [event for event in resolved_edges if event["location"] == "upper-edge"]
     qualified = len(resolved_edges) >= MIN_TOTAL_EDGE_EVENTS and len(lower) >= MIN_SIDE_EVENTS and len(upper) >= MIN_SIDE_EVENTS
@@ -178,6 +192,7 @@ def summarize_events(events: list[dict]) -> dict:
         "total_events": len(events),
         "wait_events": sum(event["location"] == "wait" for event in events),
         "pending_events": sum(event["status"] == "pending" for event in events),
+        "resolved_edge_session_rows": len(resolved_edge_rows),
         "resolved_edge_events": len(resolved_edges),
         "resolved_lower_edge_events": len(lower),
         "resolved_upper_edge_events": len(upper),
