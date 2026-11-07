@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-11-07T08:00:00+00:00",
-  "current_range_data_through": "2026-11-07T08:00:00+00:00",
+  "generated_at": "2026-11-07T12:00:00+00:00",
+  "current_range_data_through": "2026-11-07T12:00:00+00:00",
   "research_metrics_through": "2026-11-06T04:00:00+00:00",
   "instrument": "Kraken PF_XBTUSD perpetual futures",
   "timeframe": "4h",
   "history": {
     "start": "2022-03-23T08:00:00+00:00",
-    "end": "2026-11-07T04:00:00+00:00",
-    "candles": 10140
+    "end": "2026-11-07T08:00:00+00:00",
+    "candles": 10141
   },
   "split": {
     "train_end": "2024-01-01T00:00:00+00:00",
@@ -88,7 +88,7 @@
   "forward_tracking": {
     "version": "range-rejection-v1",
     "frozen_at": "2026-11-06T04:00:00+00:00",
-    "data_through": "2026-11-07T08:00:00+00:00",
+    "data_through": "2026-11-07T12:00:00+00:00",
     "mode": "candidate-level observation only; no real orders and no combined portfolio",
     "candidate_count": 6,
     "validated_candidate_key": null
@@ -128,7 +128,7 @@
         "midpoint": 78300.0,
         "width": 7200.0,
         "width_pct": 9.2,
-        "width_atr": 6.89,
+        "width_atr": 7.06,
         "low_touches": 5,
         "high_touches": 8,
         "active_now": false,
@@ -787,7 +787,7 @@
         "midpoint": 79773.0,
         "width": 10146.0,
         "width_pct": 12.72,
-        "width_atr": 9.71,
+        "width_atr": 9.94,
         "low_touches": 11,
         "high_touches": 4,
         "active_now": false,
@@ -1345,7 +1345,7 @@
           "target": 79916.0,
           "range_low": 74986.0,
           "range_high": 84846.0,
-          "bars_observed": 5,
+          "bars_observed": 6,
           "max_hold_bars": 120
         },
         "pending_entry": null
@@ -1458,7 +1458,7 @@
         "midpoint": 78300.0,
         "width": 7200.0,
         "width_pct": 9.2,
-        "width_atr": 6.89,
+        "width_atr": 7.06,
         "low_touches": 5,
         "high_touches": 8,
         "active_now": false,
@@ -2117,7 +2117,7 @@
         "midpoint": 79773.0,
         "width": 10146.0,
         "width_pct": 12.72,
-        "width_atr": 9.71,
+        "width_atr": 9.94,
         "low_touches": 11,
         "high_touches": 4,
         "active_now": false,
@@ -2675,7 +2675,7 @@
           "target": 79916.0,
           "range_low": 74986.0,
           "range_high": 84846.0,
-          "bars_observed": 5,
+          "bars_observed": 6,
           "max_hold_bars": 120
         },
         "pending_entry": null
@@ -2788,7 +2788,7 @@
         "midpoint": 78300.0,
         "width": 7200.0,
         "width_pct": 9.2,
-        "width_atr": 6.89,
+        "width_atr": 7.06,
         "low_touches": 5,
         "high_touches": 8,
         "active_now": false,
@@ -3447,7 +3447,7 @@
         "midpoint": 79773.0,
         "width": 10146.0,
         "width_pct": 12.72,
-        "width_atr": 9.71,
+        "width_atr": 9.94,
         "low_touches": 11,
         "high_touches": 4,
         "active_now": false,
@@ -4005,7 +4005,7 @@
           "target": 79916.0,
           "range_low": 74986.0,
           "range_high": 84846.0,
-          "bars_observed": 5,
+          "bars_observed": 6,
           "max_hold_bars": 120
         },
         "pending_entry": null
@@ -4108,10 +4108,10 @@
     "scope": "latest completed Kraken 4h BTC/USD spot bars available from the bounded recent-only endpoint",
     "futures_market": "PF_XBTUSD perpetual futures trade candles",
     "spot_market": "BTC/USD spot candles",
-    "comparison_start": "2026-07-10T08:00:00+00:00",
-    "comparison_end": "2026-11-07T04:00:00+00:00",
-    "aligned_start": "2026-07-10T08:00:00+00:00",
-    "aligned_end": "2026-11-07T04:00:00+00:00",
+    "comparison_start": "2026-07-10T12:00:00+00:00",
+    "comparison_end": "2026-11-07T08:00:00+00:00",
+    "aligned_start": "2026-07-10T12:00:00+00:00",
+    "aligned_end": "2026-11-07T08:00:00+00:00",
     "overlap_candles": 720,
     "futures_candles_in_window": 720,
     "spot_candles_in_window": 720,
@@ -4121,14 +4121,14 @@
     "missing_futures_timestamps": [],
     "field_basis": {
       "open": {
-        "mean_signed_pct": 0.0069,
+        "mean_signed_pct": 0.007,
         "median_signed_pct": 0.0073,
-        "median_abs_pct": 0.0101,
+        "median_abs_pct": 0.0102,
         "p95_abs_pct": 0.0318,
         "max_abs_pct": 0.0641
       },
       "high": {
-        "mean_signed_pct": 0.0428,
+        "mean_signed_pct": 0.0427,
         "median_signed_pct": 0.0222,
         "median_abs_pct": 0.0227,
         "p95_abs_pct": 0.1232,
@@ -4144,7 +4144,7 @@
       "close": {
         "mean_signed_pct": 0.0072,
         "median_signed_pct": 0.0072,
-        "median_abs_pct": 0.0104,
+        "median_abs_pct": 0.0105,
         "p95_abs_pct": 0.034,
         "max_abs_pct": 0.0841
       }
