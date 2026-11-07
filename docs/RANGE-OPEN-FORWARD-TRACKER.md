@@ -67,6 +67,11 @@ the gate permits a descriptive rate, not a `buy`, `sell`, `long now`, `short
 now`, `validated edge`, or profitability label. The label is revocable as new
 events arrive.
 
+The displayed 60-minute positive-direction rate is the share of resolved edge
+events whose direction-aligned 60-minute return is strictly above zero. A zero
+return is not counted as positive. No event is weighted more heavily because
+its move was larger.
+
 ## Sources and limits
 
 - BTC/ETH: Coinbase Exchange public 15-minute candles. This is one crypto

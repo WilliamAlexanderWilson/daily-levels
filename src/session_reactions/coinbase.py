@@ -10,10 +10,11 @@ import requests
 BASE_URL = "https://api.exchange.coinbase.com/products/{product}/candles"
 GRANULARITY_SECONDS = 900
 MAX_CANDLES = 300
-LOOKBACK_DAYS = 60
+REACTION_LOOKBACK_DAYS = 60
+FORWARD_FETCH_DAYS = 63
 
 
-def fetch_coinbase_15m(product: str, lookback_days: int = LOOKBACK_DAYS) -> pd.DataFrame:
+def fetch_coinbase_15m(product: str, lookback_days: int = FORWARD_FETCH_DAYS) -> pd.DataFrame:
     # A candle timestamp is its start time. Exclude the bucket that is still
     # forming so an incomplete move can never enter the research artifact.
     end = pd.Timestamp.now(tz="UTC").floor("15min") - pd.Timedelta(minutes=15)

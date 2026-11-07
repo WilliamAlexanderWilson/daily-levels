@@ -18,6 +18,8 @@ what the chart displays.
     python -m src.spy.export
 """
 
+import json
+
 import pandas as pd
 
 import config
@@ -27,6 +29,7 @@ from src.spy.exhaustion_signal import find_signals
 from src.spy.fetch import ALPACA_HISTORY_DAYS, fetch_alpaca_5m, fetch_vix_daily
 from src.spy.heikin_ashi import TIMEFRAMES_MINUTES, build_timeframes
 from src.session_reactions.engine import build_reaction_payload
+from src.session_reactions.forward import update_forward_payload
 
 SYMBOL = "SPY"
 CONFLUENCE_LEVELS = (1, 2, 3, 4)
@@ -116,7 +119,22 @@ def main() -> int:
     )
     atomic_write_json(f"{config.DATA_DIR}/spy_session_reactions.json", reaction_payload)
 
-    print("  wrote spy_chart.json, spy_signals.json, spy_backtest.json, spy_session_reactions.json")
+    forward_path = f"{config.DATA_DIR}/spy_range_open_forward.json"
+    try:
+        with open(forward_path) as handle:
+            prior_forward = json.load(handle)
+    except (OSError, ValueError):
+        prior_forward = None
+    forward_payload = update_forward_payload(
+        "spy",
+        real_5m,
+        5,
+        reaction_payload["source"],
+        prior_forward,
+    )
+    atomic_write_json(forward_path, forward_payload)
+
+    print("  wrote SPY chart, signals, backtest, session reactions, and range-open forward tracker")
     return 0
 
 

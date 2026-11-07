@@ -145,6 +145,18 @@ is not a holiday calendar. Preserve the
 holiday/half-day/emergency-closure warning and official source links rather
 than presenting a weekend-only calculation as exchange-authoritative.
 
+`range-open-forward-v1` is preregistered in
+`docs/RANGE-OPEN-FORWARD-TRACKER.md` with a future cutoff of
+`2026-11-08T00:00:00Z`. It records every eligible session open, including
+mid-range `WAIT` observations, against a trailing 60-calendar-day range built
+only from earlier candles. The outer 35% bands match the existing explicit
+range-location assumption. Original range and opening values are immutable;
+later runs may only fill missing 15/30/60/120-minute outcomes. Do not display a
+headline reaction rate before 50 resolved edge events with at least 20 on each
+side, and never describe the result as an entry, signal, options return, or
+profitable strategy. Material rule changes require a new version and future
+cutoff before results are viewed.
+
 Range Lab forward paper tracking is different from that discretionary journal:
 `src/range_lab/engine.py::forward_paper_track` deterministically replays all
 completed PF_XBTUSD 4-hour candles after the frozen 2026-11-06 04:00 UTC

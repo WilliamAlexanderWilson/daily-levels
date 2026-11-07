@@ -50,6 +50,8 @@
   let clockTimer = null;
   const reactionData = Object.create(null);
   const reactionRequests = Object.create(null);
+  const forwardData = Object.create(null);
+  const forwardRequests = Object.create(null);
 
   function zonedParts(date, timeZone) {
     const parts = new Intl.DateTimeFormat("en-CA", {
@@ -278,12 +280,58 @@
     return reactionRequests[asset];
   }
 
+  function forwardDisplay(data) {
+    if (!data?.summary) {
+      return {
+        qualified: false,
+        status: "FORWARD TRACKER UNAVAILABLE",
+        note: "No forward artifact is available; no evidence is inferred.",
+        total: "0 / 50 edge opens",
+        sides: "Lower 0 / 20 · Upper 0 / 20",
+      };
+    }
+    const summary = data.summary;
+    const start = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Chicago", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short",
+    }).format(new Date(data.forward_start_utc));
+    const latest = data.events?.length ? data.events[data.events.length - 1] : null;
+    let note = `Forward recording starts ${start}. No post-cutoff events yet.`;
+    if (latest) {
+      const location = latest.location === "wait" ? "WAIT" : latest.location.replace("-", " ").toUpperCase();
+      note = `Latest: ${latest.session_name} · ${location} · ${latest.status.toUpperCase()}.`;
+    }
+    return {
+      qualified: Boolean(summary.evidence_gate_passed),
+      status: summary.evidence_gate_passed
+        ? `DESCRIPTIVE SAMPLE READY · ${summary.positive_directional_60m_rate_pct.toFixed(1)}% positive at 60m`
+        : "COLLECTING FORWARD EVIDENCE · NO EDGE CLAIM",
+      note,
+      total: `${summary.resolved_edge_events} / 50 edge opens`,
+      sides: `Lower ${summary.resolved_lower_edge_events} / 20 · Upper ${summary.resolved_upper_edge_events} / 20`,
+    };
+  }
+
+  async function loadForwardData(asset) {
+    if (Object.prototype.hasOwnProperty.call(forwardData, asset)) return forwardData[asset];
+    if (forwardRequests[asset]) return forwardRequests[asset];
+    forwardRequests[asset] = fetch(`data/${asset}_range_open_forward.json`, { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error(`forward data ${response.status}`);
+        return response.json();
+      })
+      .then((data) => { forwardData[asset] = data; return data; })
+      .catch(() => { forwardData[asset] = null; return null; })
+      .finally(() => { delete forwardRequests[asset]; render(); });
+    return forwardRequests[asset];
+  }
+
   function render(now = new Date()) {
     if (!mountedDocument) return;
     const snapshot = marketSnapshot(now);
     const next = snapshot.next;
     const data = reactionData[activeAsset];
     const evidence = reactionByKey(data);
+    const forward = forwardDisplay(forwardData[activeAsset]);
     mountedDocument.getElementById("market-clock-context").textContent = assetContext(activeAsset);
     mountedDocument.getElementById("market-next-name").textContent = `${next.name} ${next.status.isBreak ? "reopens" : "opens"} in`;
     mountedDocument.getElementById("market-next-countdown").textContent = countdown(next.status.nextOpen, now);
@@ -304,6 +352,12 @@
       reactionSource.href = data.source.url;
       reactionSource.title = data.source.note || data.source.name || "Reaction data source";
     }
+    const forwardPanel = mountedDocument.getElementById("range-open-forward");
+    forwardPanel.classList.toggle("is-qualified", forward.qualified);
+    mountedDocument.getElementById("range-open-forward-status").textContent = forward.status;
+    mountedDocument.getElementById("range-open-forward-note").textContent = forward.note;
+    mountedDocument.getElementById("range-open-forward-total").textContent = forward.total;
+    mountedDocument.getElementById("range-open-forward-sides").textContent = forward.sides;
     const list = mountedDocument.getElementById("market-session-list");
     list.innerHTML = "";
     for (const session of rankSessions(snapshot.sessions, data)) {
@@ -348,6 +402,7 @@
     activeAsset = asset === "eth" || asset === "spy" ? asset : "btc";
     render();
     loadReactionData(activeAsset);
+    loadForwardData(activeAsset);
   }
 
   function mount(doc, asset = "btc") {
@@ -355,6 +410,7 @@
     activeAsset = asset;
     render();
     loadReactionData(activeAsset);
+    loadForwardData(activeAsset);
     if (clockTimer) clearInterval(clockTimer);
     clockTimer = setInterval(() => render(), 1000);
   }
@@ -370,6 +426,7 @@
     evidenceLabel,
     evidenceTitle,
     coverageLabel,
+    forwardDisplay,
     rankSessions,
     marketSnapshot,
     mount,
