@@ -242,6 +242,8 @@ main {
 .market-session-timing { display: grid; gap: 0.08rem; }
 .market-session strong { font-size: 0.68rem; }
 .market-session small { color: var(--text-muted); font-size: 0.57rem; }
+.market-session-evidence { color: var(--accent) !important; }
+.market-session.is-unmeasured .market-session-rank { opacity: 0.55; }
 .market-session-timing { text-align: right; }
 .market-session.is-open .market-session-timing strong { color: var(--support); }
 .market-session a { color: var(--accent); font-size: 0.58rem; text-decoration: none; }
@@ -252,6 +254,8 @@ main {
   font-size: 0.61rem;
   line-height: 1.4;
 }
+.market-clock-details > p a { color: var(--accent); text-decoration: none; }
+.market-clock-details > p span { display: block; margin-top: 0.22rem; color: var(--text); }
 
 .toggle-group {
   display: inline-flex;

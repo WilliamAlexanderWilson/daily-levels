@@ -66,6 +66,12 @@ jobs:
         # history outage cannot block the live levels update.
         run: python -m src.range_lab.cli || echo "Range Lab refresh failed, continuing with the prior artifact"
 
+      - name: Refresh market-open reaction research
+        # Coinbase asks clients not to poll historical candles frequently.
+        # The CLI therefore reuses an artifact younger than 20 hours even
+        # though this workflow checks for other live-data changes every 3h.
+        run: python -m src.session_reactions.cli || echo "Session reaction refresh failed, continuing with the prior artifact"
+
       - name: Run SPY exhaustion-reversal backtest
         # Also ungated: pulls Alpaca's ~2-year 5m window + Yahoo's VIX,
         # recomputes signals/backtest fresh every trigger (~every 3h)

@@ -48,6 +48,8 @@
   let mountedDocument = null;
   let activeAsset = "btc";
   let clockTimer = null;
+  const reactionData = Object.create(null);
+  const reactionRequests = Object.create(null);
 
   function zonedParts(date, timeZone) {
     const parts = new Intl.DateTimeFormat("en-CA", {
@@ -215,30 +217,112 @@
     return `${asset.toUpperCase()} trades 24/7 · cash opens can still change liquidity and volatility.`;
   }
 
+  function reactionByKey(data) {
+    if (!data || !Array.isArray(data.sessions)) return new Map();
+    return new Map(data.sessions.map((session) => [session.key, session]));
+  }
+
+  function rankSessions(sessions, data) {
+    const byKey = reactionByKey(data);
+    return sessions.slice().sort((left, right) => {
+      const leftObserved = byKey.get(left.key)?.observed_rank;
+      const rightObserved = byKey.get(right.key)?.observed_rank;
+      if (Number.isFinite(leftObserved) && Number.isFinite(rightObserved)) return leftObserved - rightObserved;
+      if (Number.isFinite(leftObserved)) return -1;
+      if (Number.isFinite(rightObserved)) return 1;
+      return left.rank - right.rank;
+    });
+  }
+
+  function evidenceLabel(evidence) {
+    const hour = evidence?.horizons?.["60"];
+    if (!hour || !hour.n) return "Not enough complete candles to measure";
+    if (evidence.evidence_status !== "measured") return `Early sample · n=${hour.n} (need 20)`;
+    return `Observed #${evidence.observed_rank} · median |60m| ${hour.median_abs_move_pct.toFixed(2)}% · n=${hour.n}`;
+  }
+
+  function evidenceTitle(evidence) {
+    if (!evidence?.horizons) return "No measured reaction for this source and lookback.";
+    const parts = [15, 30, 60, 120].map((minutes) => {
+      const item = evidence.horizons[String(minutes)];
+      return item?.n ? `${minutes}m ${item.median_abs_move_pct.toFixed(2)}% median absolute move (n=${item.n})` : `${minutes}m unavailable`;
+    });
+    if (evidence.median_volume_ratio_60m != null) parts.push(`60m volume ${evidence.median_volume_ratio_60m.toFixed(2)}× prior hour`);
+    if (evidence.median_range_expansion_60m != null) parts.push(`60m range ${evidence.median_range_expansion_60m.toFixed(2)}× prior hour`);
+    return parts.join(" · ");
+  }
+
+  function coverageLabel(data) {
+    if (!data?.coverage_start_utc || !data?.coverage_end_utc) return "Source scope unavailable.";
+    const start = new Date(data.coverage_start_utc);
+    const end = new Date(data.coverage_end_utc);
+    const days = Math.max(1, Math.round((end - start) / 86400000));
+    const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+    const sourceScope = data.asset === "spy"
+      ? "Alpaca IEX · one U.S. exchange"
+      : "Coinbase Exchange · one crypto venue";
+    return `${sourceScope} · ${days}-day sample · ${dateFormat.format(start)}–${dateFormat.format(end)}`;
+  }
+
+  async function loadReactionData(asset) {
+    if (Object.prototype.hasOwnProperty.call(reactionData, asset)) return reactionData[asset];
+    if (reactionRequests[asset]) return reactionRequests[asset];
+    reactionRequests[asset] = fetch(`data/${asset}_session_reactions.json`, { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error(`reaction data ${response.status}`);
+        return response.json();
+      })
+      .then((data) => { reactionData[asset] = data; return data; })
+      .catch(() => { reactionData[asset] = null; return null; })
+      .finally(() => { delete reactionRequests[asset]; render(); });
+    return reactionRequests[asset];
+  }
+
   function render(now = new Date()) {
     if (!mountedDocument) return;
     const snapshot = marketSnapshot(now);
     const next = snapshot.next;
+    const data = reactionData[activeAsset];
+    const evidence = reactionByKey(data);
     mountedDocument.getElementById("market-clock-context").textContent = assetContext(activeAsset);
     mountedDocument.getElementById("market-next-name").textContent = `${next.name} ${next.status.isBreak ? "reopens" : "opens"} in`;
     mountedDocument.getElementById("market-next-countdown").textContent = countdown(next.status.nextOpen, now);
     mountedDocument.getElementById("market-next-time").textContent =
       `${localTimeLabel(next.status.nextOpen)} Dallas · ${exchangeOpenLabel(next, next.status.nextOpen)}`;
     mountedDocument.getElementById("market-open-count").textContent = `${snapshot.openCount} of ${snapshot.sessions.length} open now`;
+    const rankingBasis = mountedDocument.getElementById("market-ranking-basis");
+    const measuredCount = data?.sessions?.filter((session) => session.observed_rank != null).length || 0;
+    rankingBasis.textContent = measuredCount
+      ? `${activeAsset.toUpperCase()} observed ranking · median absolute 60m move · ${measuredCount} sessions qualified`
+      : "Source-priority order · observed ranking needs at least 20 complete samples";
+    const reactionSource = mountedDocument.getElementById("market-reaction-source");
+    mountedDocument.getElementById("market-reaction-coverage").textContent = data
+      ? coverageLabel(data)
+      : "Observed source scope unavailable; showing the default session order.";
+    reactionSource.hidden = !data?.source?.url;
+    if (data?.source?.url) {
+      reactionSource.href = data.source.url;
+      reactionSource.title = data.source.note || data.source.name || "Reaction data source";
+    }
     const list = mountedDocument.getElementById("market-session-list");
     list.innerHTML = "";
-    for (const session of snapshot.sessions) {
+    for (const session of rankSessions(snapshot.sessions, data)) {
+      const sessionEvidence = evidence.get(session.key);
       const row = mountedDocument.createElement("article");
-      row.className = `market-session ${session.status.isOpen ? "is-open" : "is-closed"}`;
+      row.className = `market-session ${session.status.isOpen ? "is-open" : "is-closed"} ${sessionEvidence?.observed_rank ? "is-measured" : "is-unmeasured"}`;
       const rank = mountedDocument.createElement("span");
       rank.className = "market-session-rank";
-      rank.textContent = String(session.rank);
+      rank.textContent = sessionEvidence?.observed_rank ? String(sessionEvidence.observed_rank) : "—";
       const identity = mountedDocument.createElement("span");
       const name = mountedDocument.createElement("strong");
       name.textContent = session.name;
       const exchange = mountedDocument.createElement("small");
       exchange.textContent = session.exchange;
-      identity.append(name, exchange);
+      const observed = mountedDocument.createElement("small");
+      observed.className = "market-session-evidence";
+      observed.textContent = evidenceLabel(sessionEvidence);
+      observed.title = evidenceTitle(sessionEvidence);
+      identity.append(name, exchange, observed);
       const timing = mountedDocument.createElement("span");
       timing.className = "market-session-timing";
       const status = mountedDocument.createElement("strong");
@@ -263,12 +347,14 @@
   function setAsset(asset) {
     activeAsset = asset === "eth" || asset === "spy" ? asset : "btc";
     render();
+    loadReactionData(activeAsset);
   }
 
   function mount(doc, asset = "btc") {
     mountedDocument = doc;
     activeAsset = asset;
     render();
+    loadReactionData(activeAsset);
     if (clockTimer) clearInterval(clockTimer);
     clockTimer = setInterval(() => render(), 1000);
   }
@@ -281,6 +367,10 @@
     countdown,
     exchangeOpenLabel,
     localTimeLabel,
+    evidenceLabel,
+    evidenceTitle,
+    coverageLabel,
+    rankSessions,
     marketSnapshot,
     mount,
     nextWeekdayDate,

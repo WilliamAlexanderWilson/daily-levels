@@ -11,6 +11,29 @@ test("ranks the seven major sessions from most to least important", () => {
   );
 });
 
+test("observed reaction evidence replaces opinion ranking only for qualified sessions", () => {
+  const data = {
+    sessions: [
+      { key: "london", observed_rank: 1, evidence_status: "measured", horizons: { "60": { n: 42, median_abs_move_pct: 0.5 } } },
+      { key: "new-york", observed_rank: 2, evidence_status: "measured", horizons: { "60": { n: 42, median_abs_move_pct: 0.4 } } },
+    ],
+  };
+  const ranked = MarketSessions.rankSessions(MarketSessions.SESSIONS, data);
+  assert.deepEqual(ranked.slice(0, 3).map((session) => session.key), ["london", "new-york", "cme-equity"]);
+  assert.match(MarketSessions.evidenceLabel(data.sessions[0]), /Observed #1.*0\.50%.*n=42/);
+  assert.match(MarketSessions.evidenceLabel({ horizons: { "60": { n: 8 } }, evidence_status: "limited" }), /need 20/);
+  assert.match(MarketSessions.coverageLabel({
+    asset: "btc",
+    coverage_start_utc: "2026-09-08T00:00:00Z",
+    coverage_end_utc: "2026-11-07T00:00:00Z",
+  }), /Coinbase Exchange · one crypto venue · 60-day sample/);
+  assert.match(MarketSessions.coverageLabel({
+    asset: "spy",
+    coverage_start_utc: "2024-11-07T00:00:00Z",
+    coverage_end_utc: "2026-11-06T00:00:00Z",
+  }), /Alpaca IEX · one U\.S\. exchange · 729-day sample/);
+});
+
 test("New York countdown respects both standard and daylight time", () => {
   const newYork = MarketSessions.SESSIONS[0];
   const winter = new Date("2026-11-09T14:29:00Z");
@@ -74,6 +97,8 @@ test("the shared dashboard clock is present on every asset and discloses holiday
   assert.match(html, /All seven major market opens/);
   assert.match(html, /Regular sessions only/);
   assert.match(html, /Exchange holidays, half-days, severe weather, or emergency closures can override/);
+  assert.match(html, /past movement—not direction, a prediction, or a trade signal/);
+  assert.match(html, /market-reaction-coverage/);
   assert.match(html, /role="timer" aria-live="off"/);
   assert.match(html, /market-sessions\.js/);
   assert.match(app, /MarketSessions\.setAsset\(state\.asset\)/);

@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "asset": "btc",
+  "generated_at_utc": "2026-11-07T02:38:39.381122+00:00",
+  "coverage_start_utc": "2026-09-08T02:15:00+00:00",
+  "coverage_end_utc": "2026-11-07T02:15:00+00:00",
+  "candle_interval_minutes": 15,
+  "source": {
+    "name": "Coinbase Exchange BTC-USD/ETH-USD candles",
+    "url": "https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles",
+    "note": "Public Coinbase Exchange trades; this is one venue, not a consolidated crypto market."
+  },
+  "methodology": {
+    "ranking_basis": "median absolute price move 60 minutes after the regular open",
+    "minimum_samples_for_rank": 20,
+    "horizons_minutes": [
+      15,
+      30,
+      60,
+      120
+    ],
+    "limitations": [
+      "Descriptive historical reaction, not a prediction or trade signal.",
+      "Regular weekdays are modeled; exchange holidays and unscheduled closures are not removed.",
+      "Results describe this data source and lookback only and may not persist out of sample."
+    ]
+  },
+  "sessions": [
+    {
+      "key": "new-york",
+      "name": "New York",
+      "default_rank": 1,
+      "evidence_status": "measured",
+      "horizons": {
+        "15": {
+          "n": 44,
+          "median_return_pct": 0.0399,
+          "median_abs_move_pct": 0.2862,
+          "up_rate_pct": 54.5
+        },
+        "30": {
+          "n": 44,
+          "median_return_pct": 0.0466,
+          "median_abs_move_pct": 0.3149,
+          "up_rate_pct": 52.3
+        },
+        "60": {
+          "n": 44,
+          "median_return_pct": 0.182,
+          "median_abs_move_pct": 0.4466,
+          "up_rate_pct": 61.4
+        },
+        "120": {
+          "n": 44,
+          "median_return_pct": 0.117,
+          "median_abs_move_pct": 0.6128,
+          "up_rate_pct": 52.3
+        }
+      },
+      "median_volume_ratio_60m": 2.8691,
+      "volume_ratio_n": 44,
+      "median_range_expansion_60m": 1.8798,
+      "range_expansion_n": 44,
+      "observed_rank": 1
+    },
+    {
+      "key": "cme-equity",
+      "name": "Chicago",
+      "default_rank": 2,
+      "evidence_status": "measured",
+      "horizons": {
+        "15": {
+          "n": 43,
+          "median_return_pct": -0.0071,
+          "median_abs_move_pct": 0.1142,
+          "up_rate_pct": 48.8
+        },
+        "30": {
+          "n": 43,
+          "median_return_pct": 0.0287,
+          "median_abs_move_pct": 0.1439,
+          "up_rate_pct": 53.5
+        },
+        "60": {
+          "n": 43,
+          "median_return_pct": -0.0138,
+          "median_abs_move_pct": 0.1638,
+          "up_rate_pct": 46.5
+        },
+        "120": {
+          "n": 43,
+          "median_return_pct": 0.0128,
+          "median_abs_move_pct": 0.2238,
+          "up_rate_pct": 51.2
+        }
+      },
+      "median_volume_ratio_60m": 0.9344,
+      "volume_ratio_n": 43,
+      "median_range_expansion_60m": 1.0984,
+      "range_expansion_n": 43,
+      "observed_rank": 7
+    },
+    {
+      "key": "london",
+      "name": "London",
+      "default_rank": 3,
+      "evidence_status": "measured",
+      "horizons": {
+        "15": {
+          "n": 44,
+          "median_return_pct": 0.0228,
+          "median_abs_move_pct": 0.0853,
+          "up_rate_pct": 54.5
+        },
+        "30": {
+          "n": 44,
+          "median_return_pct": 0.0362,
+          "median_abs_move_pct": 0.1544,
+          "up_rate_pct": 56.8
+        },
+        "60": {
+          "n": 44,
+          "median_return_pct": 0.0925,
+          "median_abs_move_pct": 0.2122,
+          "up_rate_pct": 59.1
+        },
+        "120": {
+          "n": 44,
+          "median_return_pct": 0.0527,
+          "median_abs_move_pct": 0.3453,
+          "up_rate_pct": 52.3
+        }
+      },
+      "median_volume_ratio_60m": 1.4218,
+      "volume_ratio_n": 44,
+      "median_range_expansion_60m": 1.045,
+      "range_expansion_n": 44,
+      "observed_rank": 4
+    },
+    {
+      "key": "tokyo",
+      "name": "Tokyo",
+      "default_rank": 4,
+      "evidence_status": "measured",
+      "horizons": {
+        "15": {
+          "n": 43,
+          "median_return_pct": 0.0358,
+          "median_abs_move_pct": 0.0994,
+          "up_rate_pct": 58.1
+        },
+        "30": {
+          "n": 43,
+          "median_return_pct": 0.0614,
+          "median_abs_move_pct": 0.2037,
+          "up_rate_pct": 53.5
+        },
+        "60": {
+          "n": 43,
+          "median_return_pct": 0.0406,
+          "median_abs_move_pct": 0.2198,
+          "up_rate_pct": 55.8
+        },
+        "120": {
+          "n": 43,
+          "median_return_pct": -0.0972,
+          "median_abs_move_pct": 0.2619,
+          "up_rate_pct": 41.9
+        }
+      },
+      "median_volume_ratio_60m": 1.1679,
+      "volume_ratio_n": 43,
+      "median_range_expansion_60m": 1.1922,
+      "range_expansion_n": 43,
+      "observed_rank": 3
+    },
+    {
+      "key": "hong-kong",
+      "name": "Hong Kong",
+      "default_rank": 5,
+      "evidence_status": "measured",
+      "horizons": {
+        "15": {
+          "n": 43,
+          "median_return_pct": -0.0023,
+          "median_abs_move_pct": 0.1396,
+          "up_rate_pct": 46.5
+        },
+        "30": {
+          "n": 43,
+          "median_return_pct": -0.1168,
+          "median_abs_move_pct": 0.1978,
+          "up_rate_pct": 44.2
+        },
+        "60": {
+          "n": 43,
+          "median_return_pct": -0.0353,
+          "median_abs_move_pct": 0.1966,
+          "up_rate_pct": 41.9
+        },
+        "120": {
+          "n": 43,
+          "median_return_pct": -0.1384,
+          "median_abs_move_pct": 0.399,
+          "up_rate_pct": 39.5
+        }
+      },
+      "median_volume_ratio_60m": 0.9924,
+      "volume_ratio_n": 43,
+      "median_range_expansion_60m": 1.1525,
+      "range_expansion_n": 43,
+      "observed_rank": 6
+    },
+    {
+      "key": "xetra",
+      "name": "Frankfurt",
+      "default_rank": 6,
+      "evidence_status": "measured",
+      "horizons": {
+        "15": {
+          "n": 44,
+          "median_return_pct": 0.0228,
+          "median_abs_move_pct": 0.0853,
+          "up_rate_pct": 54.5
+        },
+        "30": {
+          "n": 44,
+          "median_return_pct": 0.0362,
+          "median_abs_move_pct": 0.1544,
+          "up_rate_pct": 56.8
+        },
+        "60": {
+          "n": 44,
+          "median_return_pct": 0.0925,
+          "median_abs_move_pct": 0.2122,
+          "up_rate_pct": 59.1
+        },
+        "120": {
+          "n": 44,
+          "median_return_pct": 0.0527,
+          "median_abs_move_pct": 0.3453,
+          "up_rate_pct": 52.3
+        }
+      },
+      "median_volume_ratio_60m": 1.4218,
+      "volume_ratio_n": 44,
+      "median_range_expansion_60m": 1.045,
+      "range_expansion_n": 44,
+      "observed_rank": 4
+    },
+    {
+      "key": "sydney",
+      "name": "Sydney",
+      "default_rank": 7,
+      "evidence_status": "measured",
+      "horizons": {
+        "15": {
+          "n": 43,
+          "median_return_pct": -0.0357,
+          "median_abs_move_pct": 0.0866,
+          "up_rate_pct": 41.9
+        },
+        "30": {
+          "n": 43,
+          "median_return_pct": -0.0364,
+          "median_abs_move_pct": 0.2084,
+          "up_rate_pct": 46.5
+        },
+        "60": {
+          "n": 43,
+          "median_return_pct": -0.089,
+          "median_abs_move_pct": 0.2277,
+          "up_rate_pct": 46.5
+        },
+        "120": {
+          "n": 43,
+          "median_return_pct": -0.1155,
+          "median_abs_move_pct": 0.2719,
+          "up_rate_pct": 44.2
+        }
+      },
+      "median_volume_ratio_60m": 1.1308,
+      "volume_ratio_n": 43,
+      "median_range_expansion_60m": 1.1199,
+      "range_expansion_n": 43,
+      "observed_rank": 2
+    }
+  ]
+}
