@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "asset": "eth",
-  "generated_at_utc": "2026-11-07T02:38:43.992888+00:00",
-  "coverage_start_utc": "2026-09-08T02:15:00+00:00",
-  "coverage_end_utc": "2026-11-07T02:15:00+00:00",
+  "generated_at_utc": "2026-11-07T03:18:50.967600+00:00",
+  "coverage_start_utc": "2026-09-08T03:00:00+00:00",
+  "coverage_end_utc": "2026-11-07T03:00:00+00:00",
   "candle_interval_minutes": 15,
   "source": {
     "name": "Coinbase Exchange BTC-USD/ETH-USD candles",

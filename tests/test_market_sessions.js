@@ -34,6 +34,37 @@ test("observed reaction evidence replaces opinion ranking only for qualified ses
   }), /Alpaca IEX · one U\.S\. exchange · 729-day sample/);
 });
 
+test("forward tracker stays collecting until the frozen balanced gate passes", () => {
+  const collecting = MarketSessions.forwardDisplay({
+    forward_start_utc: "2026-11-08T00:00:00Z",
+    summary: {
+      evidence_gate_passed: false,
+      resolved_edge_events: 12,
+      resolved_lower_edge_events: 8,
+      resolved_upper_edge_events: 4,
+      positive_directional_60m_rate_pct: null,
+    },
+    events: [],
+  });
+  assert.match(collecting.status, /COLLECTING FORWARD EVIDENCE · NO EDGE CLAIM/);
+  assert.equal(collecting.total, "12 / 50 edge opens");
+  assert.match(collecting.note, /Forward recording starts Nov 7, 6:00 PM CST/);
+
+  const qualified = MarketSessions.forwardDisplay({
+    forward_start_utc: "2026-11-08T00:00:00Z",
+    summary: {
+      evidence_gate_passed: true,
+      resolved_edge_events: 50,
+      resolved_lower_edge_events: 25,
+      resolved_upper_edge_events: 25,
+      positive_directional_60m_rate_pct: 58.2,
+    },
+    events: [],
+  });
+  assert.equal(qualified.qualified, true);
+  assert.match(qualified.status, /58\.2% positive at 60m/);
+});
+
 test("New York countdown respects both standard and daylight time", () => {
   const newYork = MarketSessions.SESSIONS[0];
   const winter = new Date("2026-11-09T14:29:00Z");
@@ -99,6 +130,8 @@ test("the shared dashboard clock is present on every asset and discloses holiday
   assert.match(html, /Exchange holidays, half-days, severe weather, or emergency closures can override/);
   assert.match(html, /past movement—not direction, a prediction, or a trade signal/);
   assert.match(html, /market-reaction-coverage/);
+  assert.match(html, /RANGE × OPEN · FORWARD TEST/);
+  assert.match(html, /Only post-cutoff observations count/);
   assert.match(html, /role="timer" aria-live="off"/);
   assert.match(html, /market-sessions\.js/);
   assert.match(app, /MarketSessions\.setAsset\(state\.asset\)/);
