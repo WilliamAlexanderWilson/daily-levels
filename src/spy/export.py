@@ -26,6 +26,7 @@ from src.spy.backtest import run_backtest, summarize
 from src.spy.exhaustion_signal import find_signals
 from src.spy.fetch import ALPACA_HISTORY_DAYS, fetch_alpaca_5m, fetch_vix_daily
 from src.spy.heikin_ashi import TIMEFRAMES_MINUTES, build_timeframes
+from src.session_reactions.engine import build_reaction_payload
 
 SYMBOL = "SPY"
 CONFLUENCE_LEVELS = (1, 2, 3, 4)
@@ -105,7 +106,17 @@ def main() -> int:
     }
     atomic_write_json(f"{config.DATA_DIR}/spy_backtest.json", backtest_payload)
 
-    print("  wrote spy_chart.json, spy_signals.json, spy_backtest.json")
+    reaction_payload = build_reaction_payload(
+        "spy",
+        real_5m,
+        5,
+        "Alpaca historical SPY bars (IEX feed)",
+        "https://docs.alpaca.markets/us/docs/historical-stock-data-1",
+        "Free IEX data covers one U.S. exchange, not the consolidated SIP market; non-U.S. opens may have no SPY prints.",
+    )
+    atomic_write_json(f"{config.DATA_DIR}/spy_session_reactions.json", reaction_payload)
+
+    print("  wrote spy_chart.json, spy_signals.json, spy_backtest.json, spy_session_reactions.json")
     return 0
 
 
