@@ -438,11 +438,13 @@ liquidation heatmap: a plausible read on where crowded leverage might
 sit, built transparently from real data plus one stated, simple
 assumption — not a fact.
 
-## Trade journal
+## Paper position tracker
 
-Mark a trade by clicking "+ Mark trade" above the chart, then clicking
-where you got in — a small form asks for long/short and an optional note,
-and `site/app.js` saves it to **this browser's localStorage**, keyed per
+The chart is now the first major dashboard surface. Directly beneath it,
+the paper tracker can use the current streamed mark, a tapped chart price,
+or a manually typed fill. The form asks for long/short, optional margin,
+1–100x leverage, and an optional plan. `site/app.js` saves the position to
+**this browser's localStorage**, keyed per
 asset. There's no server or account involved, so it won't follow you to a
 different browser or device, and clearing site data wipes it (a
 deliberate tradeoff — the alternative was a real backend). Markers render
@@ -453,10 +455,13 @@ timeframe happened to use at click time, so it renders correctly on any
 timeframe later, as long as that timeframe's currently-loaded candles
 actually cover it.
 
-You can also just **type the price** instead of clicking the chart — a
-number field sits right next to "+ Mark trade" for exact fills.
+The open-position card shows entry, current mark, notional, running P&L,
+and a deliberately rough liquidation estimate. The 100x ceiling is
+enforced in both the UI and the calculation module. The estimate excludes
+maintenance margin, fees, funding, and exchange-specific liquidation
+rules, so it is a risk warning rather than a quote.
 
-**Size and leverage are optional, and turn on live P&L tracking.** Fill
+**Margin and leverage are optional, and turn on live P&L tracking.** Fill
 them in and the trades table shows a running P&L next to that trade,
 in both dollars and percent, updating from the real-time price — size is
 treated as margin (what you actually put up), so
@@ -464,10 +469,17 @@ treated as margin (what you actually put up), so
 perp exchange uses. Leave them blank and the trade still saves fine,
 just without a P&L column.
 
-**Close a trade with "Close"** in its row — type the exit price you got
-and confirm. That freezes the P&L at that exit price for good (it stops
+**Close a trade with "Close at mark"** in its row — the current streamed
+price is prefilled but can be replaced with the actual exit. Confirming
+freezes the P&L at that exit price for good (it stops
 following the live price) and adds a second marker on the chart at the
 exit point, colored by whether it was a win or a loss.
+
+BTC and ETH use Kraken's real-time stream. SPY remains visibly disabled in
+the paper tracker because its chart is batch-generated; the site does not
+present a stale SPY mark as live P&L. On narrow screens the chart stays
+near the top, controls become full-width touch targets, and the history
+table scrolls within its panel.
 
 ## Jump to a level
 

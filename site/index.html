@@ -309,16 +309,6 @@
       </div>
     </details>
 
-    <div class="trade-controls" id="trade-controls">
-      <button type="button" id="mark-trade-btn" class="mark-trade-btn">+ Mark trade</button>
-      <span id="mark-trade-hint" class="mark-trade-hint" hidden>Click the chart where you got in…</span>
-      <span class="trade-manual-entry">
-        <span class="trade-manual-or">or type a price</span>
-        <input type="number" id="trade-manual-price" class="trade-manual-price" placeholder="e.g. 84500" step="any" inputmode="decimal" />
-        <button type="button" id="trade-manual-btn" class="trade-manual-btn">Use price</button>
-      </span>
-    </div>
-
     <div id="chart-container" class="chart-container">
       <div id="chart-live-ticker" class="chart-live-ticker is-connecting">
         <span class="chart-live-dot" aria-hidden="true"></span>
@@ -331,41 +321,94 @@
       <div id="chart-loading-overlay" class="chart-loading-overlay" hidden>Loading…</div>
     </div>
 
+    <section id="paper-trader" class="paper-trader" aria-labelledby="paper-trader-title">
+      <div class="paper-trader-heading">
+        <div>
+          <span class="paper-trader-kicker">PAPER ONLY · SAVED ON THIS DEVICE</span>
+          <h2 id="paper-trader-title">Track a position against the live chart</h2>
+          <p id="paper-trader-status">BTC and ETH P&amp;L follows Kraken's real-time trade stream. No order is sent anywhere.</p>
+        </div>
+        <span class="paper-trader-live"><i class="live-dot"></i><span id="paper-trader-live-label">LIVE MARK</span></span>
+      </div>
+
+      <div class="trade-controls" id="trade-controls">
+        <button type="button" id="trade-live-btn" class="trade-live-btn">Open at live price</button>
+        <button type="button" id="mark-trade-btn" class="mark-trade-btn">Pick price on chart</button>
+        <span id="mark-trade-hint" class="mark-trade-hint" hidden>Tap the chart where you got in…</span>
+        <span class="trade-manual-entry">
+          <label for="trade-manual-price" class="trade-manual-or">Manual entry</label>
+          <input type="number" id="trade-manual-price" class="trade-manual-price" placeholder="Price" min="0" step="any" inputmode="decimal" />
+          <button type="button" id="trade-manual-btn" class="trade-manual-btn">Use price</button>
+        </span>
+      </div>
+
+      <div id="trade-form" class="trade-form" hidden>
+        <div class="trade-form-row">
+          <span id="trade-form-price"></span>
+          <div class="trade-form-direction" role="group" aria-label="Paper position direction">
+            <button type="button" class="trade-dir-btn trade-dir-long" data-direction="long">Long</button>
+            <button type="button" class="trade-dir-btn trade-dir-short" data-direction="short">Short</button>
+          </div>
+        </div>
+        <div class="trade-form-row trade-form-size-row">
+          <label class="trade-form-field">
+            Margin ($)
+            <input type="number" id="trade-form-size" placeholder="e.g. 500" min="0" step="any" inputmode="decimal" />
+          </label>
+          <label class="trade-form-field">
+            Leverage (1–100×)
+            <input type="number" id="trade-form-leverage" placeholder="e.g. 10" min="1" max="100" step="1" inputmode="numeric" />
+          </label>
+          <div class="trade-form-risk">
+            <strong>100× can liquidate near a 1% adverse move.</strong>
+            <span>This estimate excludes maintenance margin, fees, funding, and exchange rules.</span>
+          </div>
+        </div>
+        <textarea id="trade-form-description" class="trade-form-description" placeholder="Trade plan or reason (optional)" rows="2"></textarea>
+        <div class="trade-form-actions">
+          <button type="button" id="trade-form-cancel" class="trade-form-cancel">Cancel</button>
+          <button type="button" id="trade-form-save" class="trade-form-save" disabled>Open paper position</button>
+        </div>
+      </div>
+
+      <div id="paper-position-summary" class="paper-position-summary"></div>
+
+      <section class="levels-table-section paper-history" id="trades-section">
+        <div class="paper-history-heading">
+          <h3>Position history</h3>
+          <small>Local browser storage only · clearing site data removes it</small>
+        </div>
+        <div class="table-wrapper">
+          <table id="trades-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Side</th>
+                <th>Entry</th>
+                <th>Exit</th>
+                <th>Margin</th>
+                <th>Leverage</th>
+                <th>P&amp;L</th>
+                <th>Plan</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="trades-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
     <details id="advanced-analysis" class="advanced-analysis">
       <summary>
         <span>
-          <strong>Full analysis &amp; trade journal</strong>
-          <small>Levels, liquidity, backtests, explanations, and saved trades</small>
+          <strong>Full analysis</strong>
+          <small>Levels, liquidity, backtests, and methodology</small>
         </span>
         <span class="advanced-summary-action">Open details</span>
       </summary>
       <div id="advanced-analysis-content" class="advanced-analysis-content"></div>
     </details>
-
-    <div id="trade-form" class="trade-form" hidden>
-      <div class="trade-form-row">
-        <span id="trade-form-price"></span>
-        <div class="trade-form-direction">
-          <button type="button" class="trade-dir-btn trade-dir-long" data-direction="long">Long</button>
-          <button type="button" class="trade-dir-btn trade-dir-short" data-direction="short">Short</button>
-        </div>
-      </div>
-      <div class="trade-form-row trade-form-size-row">
-        <label class="trade-form-field">
-          Size ($)
-          <input type="number" id="trade-form-size" placeholder="e.g. 500" min="0" step="any" inputmode="decimal" />
-        </label>
-        <label class="trade-form-field">
-          Leverage
-          <input type="number" id="trade-form-leverage" placeholder="e.g. 10" min="1" step="any" inputmode="decimal" />
-        </label>
-      </div>
-      <textarea id="trade-form-description" class="trade-form-description" placeholder="Why'd you take this trade? (optional)" rows="2"></textarea>
-      <div class="trade-form-actions">
-        <button type="button" id="trade-form-cancel" class="trade-form-cancel">Cancel</button>
-        <button type="button" id="trade-form-save" class="trade-form-save" disabled>Save trade</button>
-      </div>
-    </div>
 
     <div id="chart-legend" class="chart-legend">
       <span class="legend-item"><i class="swatch support"></i>Support</span>
@@ -403,33 +446,6 @@
       data source (Alpaca) needs an auth header the browser can't send
       cleanly, so unlike BTC/ETH this gets baked server-side instead.
     </p>
-
-    <section class="levels-table-section" id="trades-section">
-      <h2>My trades</h2>
-      <p class="scorecard-note">
-        Saved in this browser only (no server, no account) — click
-        "+ Mark trade" above, then click the chart where you got in.
-        Won't follow you to a different browser or device.
-      </p>
-      <div class="table-wrapper">
-        <table id="trades-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Direction</th>
-              <th>Entry</th>
-              <th>Exit</th>
-              <th>Size</th>
-              <th>Leverage</th>
-              <th>P&amp;L</th>
-              <th>Note</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="trades-table-body"></tbody>
-        </table>
-      </div>
-    </section>
 
     <section class="levels-table-section" id="level-table-section">
       <h2>Level table</h2>
@@ -640,6 +656,7 @@
   <script src="liquidation-risk.js"></script>
   <script src="live-stream.js"></script>
   <script src="market-sessions.js"></script>
+  <script src="paper-trader.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

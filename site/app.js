@@ -1138,6 +1138,12 @@
     document.getElementById("chart-live-age").textContent = status === "reconnecting"
       ? `${liveAgeLabel()} · reconnecting`
       : liveAgeLabel();
+    const liveEntryButton = document.getElementById("trade-live-btn");
+    if (liveEntryButton) liveEntryButton.disabled = state.asset === "spy" || !Number.isFinite(lastLivePrice);
+    const paperLiveLabel = document.getElementById("paper-trader-live-label");
+    if (paperLiveLabel && state.asset !== "spy") {
+      paperLiveLabel.textContent = status === "reconnecting" ? "RECONNECTING" : "LIVE MARK";
+    }
   }
 
   function renderDerivedLiveState(asset, price) {
@@ -2346,7 +2352,7 @@
     const btn = document.getElementById("mark-trade-btn");
     const hint = document.getElementById("mark-trade-hint");
     btn.classList.toggle("active", on);
-    btn.textContent = on ? "Cancel marking" : "+ Mark trade";
+    btn.textContent = on ? "Cancel picking" : "Pick price on chart";
     hint.hidden = !on;
   }
 
@@ -2356,7 +2362,7 @@
     document.getElementById("trade-form-price").textContent = `Entry: ${formatPriceRange(pendingTrade.price, pendingTrade.price)}`;
     document.getElementById("trade-form-description").value = "";
     document.getElementById("trade-form-size").value = "";
-    document.getElementById("trade-form-leverage").value = "";
+    document.getElementById("trade-form-leverage").value = "1";
     document.querySelectorAll(".trade-dir-btn").forEach((b) => b.classList.remove("active"));
     saveBtn.disabled = true;
     saveBtn.dataset.direction = "";
@@ -2501,18 +2507,7 @@
   // exitPrice forever, regardless of what currentPrice is passed in -
   // that's what "closed" means.
   function tradePnl(trade, currentPrice) {
-    if (!trade.size || !trade.leverage) return null;
-    const referencePrice = trade.exitPrice != null ? trade.exitPrice : currentPrice;
-    if (referencePrice === null || referencePrice === undefined) return null;
-    const priceChangePct =
-      trade.direction === "long"
-        ? (referencePrice - trade.price) / trade.price
-        : (trade.price - referencePrice) / trade.price;
-    return {
-      usd: trade.size * trade.leverage * priceChangePct,
-      pct: trade.leverage * priceChangePct * 100,
-      isRealized: trade.exitPrice != null,
-    };
+    return window.PaperTrader.pnl(trade, currentPrice);
   }
 
   function tradePnlDisplay(trade, currentPrice) {
@@ -2526,6 +2521,49 @@
     };
   }
 
+  function estimatedLiquidationPrice(trade) {
+    return window.PaperTrader.estimatedLiquidationPrice(trade);
+  }
+
+  function renderPaperPositions(asset, currentPrice) {
+    const container = document.getElementById("paper-position-summary");
+    if (!container) return;
+    if (asset === "spy") {
+      container.innerHTML = '<div class="paper-position-empty">Live SPY paper tracking is paused because this page only has batch SPY data. BTC and ETH use a real-time Kraken stream.</div>';
+      return;
+    }
+
+    const openTrades = loadTrades(asset)
+      .filter((trade) => trade.exitPrice == null)
+      .sort((a, b) => b.time - a.time);
+    if (!openTrades.length) {
+      container.innerHTML = `<div class="paper-position-empty">No open ${asset.toUpperCase()} paper position. Use the live price, tap a chart price, or enter one manually.</div>`;
+      return;
+    }
+
+    container.innerHTML = openTrades.map((trade) => {
+      const pnl = tradePnlDisplay(trade, currentPrice);
+      const direction = trade.direction === "short" ? "short" : "long";
+      const leverage = window.PaperTrader.normalizeLeverage(trade.leverage);
+      const notional = trade.size && leverage ? trade.size * leverage : null;
+      const liquidation = estimatedLiquidationPrice(trade);
+      const liveMark = Number.isFinite(currentPrice) ? formatPriceRange(currentPrice, currentPrice) : "Connecting…";
+      return `
+        <article class="paper-position-card">
+          <div class="paper-position-card-head">
+            <span class="paper-position-side ${direction}">${direction} · ${leverage ? `${leverage}×` : "no leverage"}</span>
+            <strong class="paper-position-pnl" style="color: ${pnl.color}">${pnl.text}</strong>
+          </div>
+          <div class="paper-position-card-metrics">
+            <span>ENTRY<strong>${formatPriceRange(trade.price, trade.price)}</strong></span>
+            <span>LIVE MARK<strong>${liveMark}</strong></span>
+            <span>NOTIONAL<strong>${notional ? `$${notional.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "—"}</strong></span>
+            <span>EST. LIQ.<strong>${liquidation ? formatPriceRange(liquidation, liquidation) : "—"}</strong></span>
+          </div>
+        </article>`;
+    }).join("");
+  }
+
   function updateLiveTradePnlCells(asset, currentPrice) {
     if (state.asset !== asset) return;
     const tradesById = new Map(loadTrades(asset).map((trade) => [String(trade.id), trade]));
@@ -2536,6 +2574,7 @@
       cell.textContent = display.text;
       cell.style.color = display.color;
     });
+    renderPaperPositions(asset, currentPrice);
   }
 
   function startClosingTrade(id) {
@@ -2566,6 +2605,7 @@
     tbody.innerHTML = "";
 
     const trades = [...loadTrades(asset)].sort((a, b) => b.time - a.time);
+    renderPaperPositions(asset, currentPrice);
     if (!trades.length) {
       tbody.innerHTML = `<tr><td colspan="9">No trades marked yet for ${asset.toUpperCase()}.</td></tr>`;
       return;
@@ -2605,6 +2645,7 @@
         input.inputMode = "decimal";
         input.placeholder = "Exit price";
         input.className = "trade-close-input";
+        if (Number.isFinite(currentPrice)) input.value = currentPrice;
         const confirmBtn = document.createElement("button");
         confirmBtn.className = "trade-close-confirm-btn";
         confirmBtn.textContent = "Confirm";
@@ -2633,7 +2674,7 @@
         if (trade.exitPrice == null) {
           const closeBtn = document.createElement("button");
           closeBtn.className = "trade-close-btn";
-          closeBtn.textContent = "Close";
+          closeBtn.textContent = "Close at mark";
           closeBtn.addEventListener("click", () => startClosingTrade(trade.id));
           actionsCell.appendChild(closeBtn);
         }
@@ -2663,7 +2704,15 @@
     openTradeForm();
   }
 
+  function useLiveTradePrice() {
+    if (state.asset === "spy" || !Number.isFinite(lastLivePrice)) return;
+    setMarkingMode(false);
+    pendingTrade = { time: Math.floor(Date.now() / 1000), price: lastLivePrice };
+    openTradeForm();
+  }
+
   function wireTradeForm() {
+    document.getElementById("trade-live-btn").addEventListener("click", useLiveTradePrice);
     document.getElementById("mark-trade-btn").addEventListener("click", () => {
       if (markingMode) {
         setMarkingMode(false);
@@ -2690,6 +2739,9 @@
 
     document.getElementById("trade-form-cancel").addEventListener("click", closeTradeForm);
 
+    const leverageInput = document.getElementById("trade-form-leverage");
+    leverageInput.addEventListener("input", () => leverageInput.setCustomValidity(""));
+
     document.getElementById("trade-form-save").addEventListener("click", (e) => {
       const direction = e.currentTarget.dataset.direction;
       if (!pendingTrade || !direction) return;
@@ -2697,9 +2749,14 @@
       // Size/leverage are optional - a trade with neither still saves fine,
       // it just won't show a live P&L (nothing to compute one from).
       const sizeRaw = parseFloat(document.getElementById("trade-form-size").value);
-      const leverageRaw = parseFloat(document.getElementById("trade-form-leverage").value);
+      const leverageRaw = parseFloat(leverageInput.value);
       const size = Number.isFinite(sizeRaw) && sizeRaw > 0 ? sizeRaw : null;
-      const leverage = Number.isFinite(leverageRaw) && leverageRaw >= 1 ? leverageRaw : null;
+      if (Number.isFinite(leverageRaw) && (leverageRaw < 1 || leverageRaw > 100 || !Number.isInteger(leverageRaw))) {
+        leverageInput.setCustomValidity("Choose a whole-number leverage from 1× to 100×.");
+        leverageInput.reportValidity();
+        return;
+      }
+      const leverage = Number.isFinite(leverageRaw) ? leverageRaw : null;
 
       const trades = loadTrades(state.asset);
       trades.push({
@@ -3151,6 +3208,9 @@
 
   function applyAssetVisibility(asset) {
     const isSpy = asset === "spy";
+    const paperTrader = document.getElementById("paper-trader");
+    const paperStatus = document.getElementById("paper-trader-status");
+    const paperLiveLabel = document.getElementById("paper-trader-live-label");
     document.getElementById("subtitle").textContent = isSpy
       ? "One intraday SPY options setup, backtested against ~2 years of real data."
       : asset === "btc"
@@ -3179,6 +3239,13 @@
     document.getElementById("spy-explainer").hidden = !isSpy;
     document.getElementById("chart-live-ticker").hidden = isSpy;
     document.getElementById("range-lab").hidden = asset !== "btc";
+    paperTrader.classList.toggle("is-unavailable", isSpy);
+    paperStatus.textContent = isSpy
+      ? "SPY is batch data on this site, so live paper P&L is disabled rather than presenting a stale mark as real-time."
+      : `${asset.toUpperCase()} P&L follows Kraken's real-time trade stream. No order is sent anywhere.`;
+    paperLiveLabel.textContent = isSpy ? "BATCH DATA" : "LIVE MARK";
+    if (isSpy) closeTradeForm();
+    renderPaperPositions(asset, isSpy ? null : lastLivePrice);
     if (asset !== "btc") clearRangeLabLines();
     if (isSpy) document.getElementById("live-badge").hidden = true;
   }
@@ -3189,13 +3256,10 @@
     const advancedIds = [
       "futures-context",
       "exhaustion-banner",
-      "trade-controls",
-      "trade-form",
       "chart-legend",
       "spy-legend",
       "liquidation-note",
       "spy-chart-note",
-      "trades-section",
       "level-table-section",
       "scorecard-section",
       "spy-backtest-section",
@@ -3206,6 +3270,25 @@
     for (const id of advancedIds) {
       const element = document.getElementById(id);
       if (element) destination.appendChild(element);
+    }
+  }
+
+  function organizePrimaryLayout() {
+    const main = document.querySelector("main");
+    if (!main) return;
+    const primary = [
+      document.querySelector(".controls"),
+      document.getElementById("market-clock"),
+      document.querySelector(".meta-row"),
+      document.getElementById("chart-container"),
+      document.getElementById("paper-trader"),
+      document.getElementById("decision-brief"),
+      document.getElementById("range-lab"),
+      document.getElementById("nearby-context"),
+      document.getElementById("advanced-analysis"),
+    ];
+    for (const element of primary) {
+      if (element) main.appendChild(element);
     }
   }
 
@@ -3618,6 +3701,7 @@
   }
 
   organizeAdvancedAnalysis();
+  organizePrimaryLayout();
   wireAdvancedAnalysis();
   wireNearbyContext();
   readHash();
