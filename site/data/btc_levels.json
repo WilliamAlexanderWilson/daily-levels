@@ -38,6 +38,26 @@
     "caveat": "Calculated structure, not a prediction, signal, or guarantee.",
     "calculated_at_utc": "2026-11-07T06:49:25.380374+00:00"
   },
+  "structural_reclaim_audit": {
+    "method_version": "structural-reclaim-audit-v1",
+    "status": "initialized",
+    "current_since": "2026-11-07T06:49:25.380374+00:00",
+    "last_established": {
+      "exact_price": 82790.9,
+      "origin_date": "2026-05-06",
+      "pivot_count": 4,
+      "distinct_months": 4,
+      "span_days": 176,
+      "calculated_at_utc": "2026-11-07T06:49:25.380374+00:00"
+    },
+    "latest_change": null,
+    "events": [],
+    "notification": {
+      "should_notify": false,
+      "fingerprint": null
+    },
+    "reason": "First established boundary recorded; initialization does not trigger an alert."
+  },
   "config": {
     "range_days": 60,
     "volume_bin_pct": 0.0025,

@@ -10,6 +10,7 @@ import pandas as pd
 
 from config import DATA_DIR, HISTORY_DIR
 from src.levels.daily_diff import compute_diff
+from src.levels.structural_reclaim_audit import build_structural_reclaim_audit
 
 
 def atomic_write_json(path: str, data: dict | list) -> None:
@@ -43,6 +44,15 @@ def load_previous_snapshot(asset_key: str, before_date: str) -> dict | None:
         return json.load(f)
 
 
+def load_current_snapshot(asset_key: str) -> dict | None:
+    """Latest published asset snapshot, including an earlier same-day run."""
+    path = f"{DATA_DIR}/{asset_key}_levels.json"
+    if not os.path.exists(path):
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
 def _candles_to_json(candles: pd.DataFrame) -> list[dict]:
     return [
         {
@@ -66,6 +76,13 @@ def write_asset_outputs(asset_key: str, engine_result: dict) -> None:
     previous = load_previous_snapshot(asset_key, today)
     previous_levels = previous["levels"] if previous else None
     result["diff"] = compute_diff(result["levels"], previous_levels)
+    if asset_key == "btc":
+        audit_previous = load_current_snapshot(asset_key) or previous
+        result["structural_reclaim_audit"] = build_structural_reclaim_audit(
+            result.get("structural_reclaim"),
+            audit_previous,
+            result["generated_at_utc"],
+        )
 
     atomic_write_json(f"{DATA_DIR}/{asset_key}_levels.json", result)
     atomic_write_json(

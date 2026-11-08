@@ -1586,7 +1586,7 @@
     const permission = patienceAlertPermission();
     button.setAttribute("aria-pressed", String(patienceAlertsEnabled));
     button.textContent = patienceAlertsEnabled ? "Disable alerts" : "Enable alerts";
-    if (!patienceAlertsEnabled) status.textContent = "Off · no setup or paper-observation notifications";
+    if (!patienceAlertsEnabled) status.textContent = "Off · no setup, boundary-change, or paper-observation notifications";
     else if (permission === "granted") status.textContent = "On · in-page and hidden-tab browser alerts";
     else if (permission === "denied") status.textContent = "On · in-page alert only (browser notifications blocked)";
     else if (permission === "unsupported") status.textContent = "On · in-page alert only on this device";
@@ -3315,15 +3315,67 @@
     const calculated = regime.calculated_at_utc
       ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "America/Chicago" }).format(new Date(regime.calculated_at_utc))
       : "unknown date";
+    const tests = boundary.tests.map((test) => `
+      <li><time datetime="${escapeHtml(test.date)}">${escapeHtml(test.date)}</time><b>$${Number(test.high).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></li>
+    `).join("");
+    const closes = regime.acceptance.closes.map((close) => `
+      <li><time datetime="${escapeHtml(close.date)}">${escapeHtml(close.date)}</time><b>$${Number(close.close).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></li>
+    `).join("");
     el.innerHTML = `
-      <strong>Calculated structural reclaim:</strong>
-      $${Number(boundary.exact_price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-      from the ${boundary.origin_date} Daily high · ${boundary.pivot_count} confirmed pivot highs across
-      ${boundary.distinct_months} months · last retest ${boundary.last_test_date} · ${acceptance} by
-      ${escapeHtml(regime.acceptance ? regime.acceptance.rule : "no acceptance rule")} · ${escapeHtml(regime.quality || "unrated")} structure · calculated ${calculated} ·
-      <span>${escapeHtml(regime.method_version || "unversioned method")}</span>.
-      This is calculated structure, not a prediction or entry signal.
+      <div class="structural-proof-heading">
+        <div><small>WHY THIS LEVEL?</small><strong>$${Number(boundary.exact_price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+        <span>${escapeHtml(regime.quality)} · ${escapeHtml(acceptance)}</span>
+      </div>
+      <p>The ${boundary.origin_date} Daily high became the exact boundary because its pivot cluster won the frozen ranking: most tests, then distinct months, duration, and recency.</p>
+      <div class="structural-proof-grid">
+        <section><small>CONFIRMING PIVOTS</small><ul>${tests}</ul></section>
+        <section><small>LATEST COMPLETED CLOSES</small><ul>${closes}</ul></section>
+      </div>
+      <p class="structural-audit-status" id="structural-audit-status">Loading boundary history…</p>
+      <p class="structural-proof-method">Last retest ${boundary.last_test_date} · calculated ${calculated} · <span>${escapeHtml(regime.method_version)}</span></p>
+      <p class="structural-proof-caveat">This is calculated structure, not a prediction or entry signal, and not a guarantee.</p>
     `;
+  }
+
+  function renderStructuralReclaimAudit(audit) {
+    const el = document.getElementById("structural-audit-status");
+    if (!el) return;
+    if (!audit || audit.status === "unavailable") {
+      el.textContent = "Boundary history unavailable. No change alert can be issued.";
+      return;
+    }
+    const since = audit.current_since
+      ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "America/Chicago" }).format(new Date(audit.current_since))
+      : "an unknown date";
+    if (audit.status === "changed" && audit.latest_change) {
+      el.innerHTML = `<strong>Changed ${since}:</strong> $${Number(audit.latest_change.old_exact_price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} → $${Number(audit.latest_change.new_exact_price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. ${escapeHtml(audit.latest_change.reason)}`;
+      return;
+    }
+    el.innerHTML = `<strong>${audit.status === "initialized" ? "First recorded" : "Unchanged"} since ${since}.</strong> ${escapeHtml(audit.reason || "The same established pivot cluster remains selected.")}`;
+  }
+
+  function maybeSendStructuralReclaimAlert(audit) {
+    const notice = audit && audit.notification;
+    if (!patienceAlertsEnabled || !notice || !notice.should_notify || !notice.fingerprint) return;
+    const fingerprint = `structural-reclaim:${notice.fingerprint}`;
+    if (alertedFingerprints().includes(fingerprint)) return;
+    rememberAlertFingerprint(fingerprint);
+    showAlertToast("BTC · ESTABLISHED BOUNDARY CHANGE", notice.title, notice.detail);
+    if (document.hidden && patienceAlertPermission() === "granted") {
+      try {
+        const notification = new Notification(notice.title, {
+          body: notice.detail,
+          tag: "range-desk-btc-structural-reclaim",
+          renotify: false,
+        });
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+      } catch (err) {
+        console.error("boundary-change notification unavailable; in-page alert still shown", err);
+      }
+    }
   }
 
   // Kraken Futures' open-interest/funding endpoint has no CORS header at
@@ -3893,6 +3945,10 @@
           ? RangeDecision.strategyRangeFromRegime(levelsData.structural_reclaim)
           : RangeDecision.BTC_MACRO_RANGE;
         renderStructuralReclaimProof(asset === "btc" ? levelsData.structural_reclaim : null);
+        if (asset === "btc") {
+          renderStructuralReclaimAudit(levelsData.structural_reclaim_audit);
+          maybeSendStructuralReclaimAlert(levelsData.structural_reclaim_audit);
+        }
         renderFuturesContext(levelsData.futures_context);
         // set before renderChart(): its zoom call can trigger the time-axis
         // subscription straight into renderOverlays() (which draws the
