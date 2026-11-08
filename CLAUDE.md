@@ -873,10 +873,11 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   header the browser can't send cleanly for a public static site, and
   Yahoo's chart endpoint (VIX only now) has no CORS header either
   (confirmed live, same way the Kraken Futures gap above was confirmed),
-  so the chart/signals/backtest table are baked once per cron run
+  so the chart/historical-record/backtest data are baked once per cron run
   (`python -m src.spy.export`, wired into the same
   `update-levels.yml` as the level engine) rather than ticking in the
-  browser.
+  browser. Historical Call/Put outcomes stay in the audit table and are not
+  rendered as labels on the main decision chart.
 - **Alpaca secrets added to GitHub Actions, SPY export confirmed live in
   CI** (2026-10-11) - `gh secret set ALPACA_API_KEY`/`ALPACA_SECRET_KEY`
   from the local `.env`, then `gh workflow run update-levels.yml` and

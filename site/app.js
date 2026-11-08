@@ -3718,51 +3718,19 @@
     const candleData = bars.map((b) => ({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close }));
     candleSeries.setData(candleData);
     volumeSeries.setData([]); // no HA volume computed - an empty histogram beats a stale crypto one
+    // Historical Call/Put annotations are intentionally excluded from the
+    // decision chart. They were batch backtest observations with outcomes
+    // known later, not live information available to the viewer.
+    if (tradeMarkersPlugin) tradeMarkersPlugin.setMarkers([]);
     candleSeries.priceScale().applyOptions({ mode: LightweightCharts.PriceScaleMode.Normal });
     chart.timeScale().fitContent();
     lastLiveUnixTime = bars.length ? bars[bars.length - 1].time : null;
-  }
-
-  function nearestBarTimeAtOrAfter(bars, unixTime) {
-    for (const b of bars) {
-      if (b.time >= unixTime) return b.time;
-    }
-    return bars.length ? bars[bars.length - 1].time : null;
-  }
-
-  function renderSpySignalMarkers(bars, trades) {
-    if (!tradeMarkersPlugin) return;
-    if (!bars.length || !trades.length) {
-      tradeMarkersPlugin.setMarkers([]);
-      return;
-    }
-    const minTime = bars[0].time;
-    const maxTime = bars[bars.length - 1].time;
-    const outcomeSymbol = { target: " ✓", stop: " ✗", expiry: " =", incomplete: " …" };
-
-    const markers = [];
-    for (const t of trades) {
-      if (t.signal_time < minTime || t.signal_time > maxTime) continue;
-      const barTime = nearestBarTimeAtOrAfter(bars, t.signal_time);
-      if (barTime === null) continue;
-      const isCall = t.direction === "call";
-      markers.push({
-        time: barTime,
-        position: isCall ? "belowBar" : "aboveBar",
-        color: isCall ? cssVar("--support") : cssVar("--resistance"),
-        shape: isCall ? "arrowUp" : "arrowDown",
-        text: `Historical ${isCall ? "Call" : "Put"} setup${outcomeSymbol[t.exit_reason] || ""}`,
-      });
-    }
-    markers.sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0));
-    tradeMarkersPlugin.setMarkers(markers);
   }
 
   function rerenderSpyTimeframe() {
     if (!activeSpyChart) return;
     const bars = activeSpyChart.timeframes[state.spyTimeframe] || [];
     renderSpyChart(bars);
-    renderSpySignalMarkers(bars, activeSpyTrades);
   }
 
   function renderSpyBacktestTable(backtest) {
@@ -3837,7 +3805,6 @@
 
       const bars = chartData.timeframes[state.spyTimeframe] || [];
       renderSpyChart(bars);
-      renderSpySignalMarkers(bars, activeSpyTrades);
       renderSpyBacktestTable(backtestData);
       renderSpySignalsTable(activeSpyTrades);
       renderSpyDecision(chartData, activeSpyTrades, backtestData);

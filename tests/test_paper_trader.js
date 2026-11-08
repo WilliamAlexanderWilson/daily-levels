@@ -159,3 +159,16 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.match(css, /\.mobile-jump-nav\s*\{[\s\S]*position:\s*fixed/);
   assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.decision-brief\s*\{\s*grid-template-columns:\s*1fr/);
 });
+
+test("SPY decision chart excludes retrospective Call and Put markers", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const root = path.join(__dirname, "..");
+  const app = fs.readFileSync(path.join(root, "site", "app.js"), "utf8");
+  const html = fs.readFileSync(path.join(root, "site", "index.html"), "utf8");
+  assert.doesNotMatch(app, /renderSpySignalMarkers/);
+  assert.doesNotMatch(app, /Historical \$\{isCall \? "Call" : "Put"\} setup/);
+  assert.match(app, /tradeMarkersPlugin\.setMarkers\(\[\]\)/);
+  assert.match(html, /Historical batch chart — no Call\/Put labels/);
+  assert.match(html, /Historical setup records remain available/);
+});
