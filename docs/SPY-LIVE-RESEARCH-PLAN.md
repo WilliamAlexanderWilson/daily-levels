@@ -1,11 +1,17 @@
 # SPY live research plan
 
-Status: **not connected and not validated**
+Status: **not connected; first preregistered candidate family rejected**
 
 The current SPY chart is scheduled batch data. Historical exhaustion records
 are retained for audit, but their Call/Put arrows are intentionally excluded
 from the decision chart because the rule failed its untouched holdout test and
 the outcomes were known only afterward.
+
+The first frozen replacement study, `spy-or-reclaim-v1`, is now complete. All
+four opening-range reclaim candidates had negative expectancy in training and
+untouched validation. No candidate qualified, so the locked holdout remained
+unopened and no live range-reclaim label was enabled. See
+`docs/SPY-RANGE-RECLAIM-RESULT.md`.
 
 ## What is required for a genuinely live version
 

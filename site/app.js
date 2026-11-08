@@ -2214,37 +2214,53 @@
     }
   }
 
-  function renderSpyDecision(chartData, trades, backtest) {
+  function renderSpyDecision(rangeResearch) {
     setDecisionClass("wait");
-    document.getElementById("decision-badge").textContent = "No validated edge";
-    document.getElementById("decision-method").textContent = "Holdout result · Oct 11, 2026";
+    const candidates = rangeResearch && Array.isArray(rangeResearch.candidates)
+      ? rangeResearch.candidates
+      : [];
+    const best = candidates.reduce((current, candidate) => {
+      const value = candidate.validation_4bps && candidate.validation_4bps.expectancy_pct;
+      const currentValue = current && current.validation_4bps
+        ? current.validation_4bps.expectancy_pct
+        : -Infinity;
+      return Number.isFinite(value) && value > currentValue ? candidate : current;
+    }, null);
+    const bestValidation = best && best.validation_4bps;
+    const bestEightBps = best && best.validation;
+
+    document.getElementById("decision-badge").textContent = "Wait";
+    document.getElementById("decision-method").textContent = "Preregistered range-reclaim test · Nov 8, 2026";
     document.getElementById("decision-source-link").hidden = true;
-    document.getElementById("decision-title").textContent = "SPY setup failed its holdout test";
+    document.getElementById("decision-title").textContent = "No SPY range-reclaim rule passed validation";
     document.getElementById("decision-summary").textContent =
-      "Every tested trend/doji parameter was profitable on the first half and unprofitable on the untouched second half. The honest current read is observe, not buy or short.";
+      "All four rules were frozen before testing. Every one lost money in both training and untouched validation, so no live Call, Put, Buy, or Sell state is enabled.";
     document.getElementById("decision-range").hidden = true;
     document.getElementById("patience-gate").hidden = true;
     document.getElementById("decision-metrics").hidden = false;
-    document.getElementById("decision-rr-label").textContent = "Latest pattern";
-    document.getElementById("decision-support-label").textContent = "Full sample";
-    document.getElementById("decision-resistance-label").textContent = "Holdout";
+    document.getElementById("decision-rr-label").textContent = "Best validation result";
+    document.getElementById("decision-support-label").textContent = "Validation sample";
+    document.getElementById("decision-resistance-label").textContent = "Promotion gate";
 
-    const latest = [...(trades || [])].sort((a, b) => b.signal_time - a.signal_time)[0];
-    const onePlus = backtest && backtest.by_min_confirmed && backtest.by_min_confirmed["1"];
-    document.getElementById("decision-rr").textContent = latest
-      ? `${latest.direction === "call" ? "Call" : "Put"} · historical`
-      : "No recent pattern";
-    document.getElementById("decision-rr-note").textContent = latest
-      ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "America/New_York" }).format(new Date(latest.signal_time * 1000))
-      : "nothing to review";
-    document.getElementById("decision-support-odds").textContent = onePlus && onePlus.avg_pct_return !== null
-      ? `${onePlus.avg_pct_return >= 0 ? "+" : ""}${onePlus.avg_pct_return.toFixed(2)}%`
+    document.getElementById("decision-rr").textContent = bestValidation
+      ? `${bestValidation.expectancy_pct >= 0 ? "+" : ""}${bestValidation.expectancy_pct.toFixed(3)}% / trade`
+      : "Unavailable";
+    document.getElementById("decision-rr-note").textContent = best
+      ? `${best.spec.opening_minutes}-minute range · 4 bps costs`
+      : "research artifact unavailable";
+    document.getElementById("decision-support-odds").textContent = bestEightBps
+      ? `${bestEightBps.trades} trades`
       : "—";
-    document.getElementById("decision-support-note").textContent = "full-sample modeled avg return";
-    document.getElementById("decision-resistance-odds").textContent = "Negative";
-    document.getElementById("decision-resistance-note").textContent = "all 24 holdout combinations";
+    document.getElementById("decision-support-note").textContent = bestEightBps
+      ? `${bestEightBps.longs} long · ${bestEightBps.shorts} short · 8 bps stress`
+      : "no validated sample";
+    document.getElementById("decision-resistance-odds").textContent = "Blocked";
+    document.getElementById("decision-resistance-note").textContent =
+      rangeResearch && rangeResearch.selected_key === null
+        ? "no rule qualified; locked holdout stayed unopened"
+        : "no validated live candidate";
     document.getElementById("decision-caveat").textContent =
-      "SPY remains available for chart and backtest review under Research & details. It is not presented as a current entry signal.";
+      "The chart remains batch context only. Research used Alpaca IEX, one exchange rather than the consolidated U.S. market, and is not a current entry signal.";
   }
 
   function renderNearestLevels(levels, scorecard, currentPrice) {
@@ -3541,6 +3557,9 @@
   function spyBacktestUrl() {
     return "data/spy_backtest.json";
   }
+  function spyRangeResearchUrl() {
+    return "data/spy_range_reclaim.json";
+  }
 
   function applyAssetVisibility(asset) {
     const isSpy = asset === "spy";
@@ -3548,7 +3567,7 @@
     const paperStatus = document.getElementById("paper-trader-status");
     const paperLiveLabel = document.getElementById("paper-trader-live-label");
     document.getElementById("subtitle").textContent = isSpy
-      ? "Historical SPY setup review with clearly labeled batch data."
+      ? "SPY range research with a fail-closed validation gate."
       : asset === "btc"
         ? "Live BTC price, the current macro range, and a clear confirmation checklist."
         : "Live ETH price, the current rolling range, and a clear confirmation checklist.";
@@ -3800,10 +3819,11 @@
 
   async function loadAndRenderSpy() {
     try {
-      const [chartData, signalsData, backtestData] = await Promise.all([
+      const [chartData, signalsData, backtestData, rangeResearch] = await Promise.all([
         fetchJson(spyChartUrl()),
         fetchJson(spySignalsUrl()),
         fetchJson(spyBacktestUrl()),
+        fetchJson(spyRangeResearchUrl()),
       ]);
       if (state.asset !== "spy") return; // user moved on while this was in flight
 
@@ -3816,7 +3836,7 @@
       renderSpyChart(bars);
       renderSpyBacktestTable(backtestData);
       renderSpySignalsTable(activeSpyTrades);
-      renderSpyDecision(chartData, activeSpyTrades, backtestData);
+      renderSpyDecision(rangeResearch);
     } catch (err) {
       if (state.asset !== "spy") return;
       console.error(err);

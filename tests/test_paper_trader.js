@@ -171,6 +171,28 @@ test("SPY decision chart excludes retrospective Call and Put markers", () => {
   assert.match(app, /tradeMarkersPlugin\.setMarkers\(\[\]\)/);
   assert.match(app, /if \(isSpy\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
   assert.match(app, /function renderSpyChart\(bars\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
-  assert.match(html, /Historical batch chart — no Call\/Put labels/);
-  assert.match(html, /Historical setup records remain available/);
+  assert.match(html, /Batch chart — no live trade labels/);
+  assert.match(html, /Historical setup records remain[\s\S]*for audit/);
+});
+
+test("SPY range research fails closed when no preregistered rule validates", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const root = path.join(__dirname, "..");
+  const app = fs.readFileSync(path.join(root, "site", "app.js"), "utf8");
+  const html = fs.readFileSync(path.join(root, "site", "index.html"), "utf8");
+  const result = JSON.parse(fs.readFileSync(path.join(root, "site", "data", "spy_range_reclaim.json"), "utf8"));
+
+  assert.equal(result.method_version, "spy-or-reclaim-v1");
+  assert.equal(result.selected_key, null);
+  assert.equal(result.historical_gate_passed, false);
+  assert.equal(result.candidates.length, 4);
+  assert.ok(result.candidates.every((candidate) => candidate.validation_passed === false));
+  assert.ok(result.candidates.every((candidate) => candidate.holdout === null));
+  assert.match(app, /No SPY range-reclaim rule passed validation/);
+  assert.match(app, /no live Call, Put, Buy, or Sell state is enabled/);
+  assert.match(app, /locked holdout stayed unopened/);
+  assert.match(app, /fetchJson\(spyRangeResearchUrl\(\)\)/);
+  assert.match(html, /no live trade labels/i);
+  assert.match(html, /all four[\s\S]*negative expectancy in untouched validation/i);
 });

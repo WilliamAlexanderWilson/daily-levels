@@ -656,6 +656,15 @@ first half. A universal sign flip like that across every combination is a
 sign the apparent edge tracks which period got sampled, not the rule itself.
 Treat every number on this page as "this setup, tested," not "a proven edge."
 
+**The preregistered opening-range replacement also failed.** The frozen
+`spy-or-reclaim-v1` study tested four 15/30-minute opening-range reclaim rules
+with relative-volume filters, next-bar entries, explicit stop/target geometry,
+and 4/8-basis-point cost cases. Every candidate was negative in both training
+and untouched validation. No rule was selected and the locked holdout stayed
+unopened. The main decision card therefore remains `WAIT`; see
+`docs/SPY-RANGE-RECLAIM-RESULT.md` and the exact artifact at
+`research/spy_or_reclaim_v1.json`.
+
 **Timeframe confluence is reported, not assumed.** "Watching 4 timeframes"
 didn't specify whether all 4 must agree, a majority, or just one — rather
 than guess, `src/spy/exhaustion_signal.py` tags every signal with how many
