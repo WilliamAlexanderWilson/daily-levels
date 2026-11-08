@@ -53,6 +53,38 @@ test("a paper position stops at estimated liquidation instead of showing recover
   });
 });
 
+test("risk plan sizes margin from account risk and stop distance", () => {
+  const plan = PaperTrader.riskPlan({
+    direction: "long", entry: 100, stop: 98, target: 106,
+    accountBalance: 10000, riskPct: 1, leverage: 5,
+  });
+  assert.equal(plan.valid, true);
+  assert.equal(plan.riskDollars, 100);
+  assert.equal(plan.notional, 5000);
+  assert.equal(plan.margin, 1000);
+  assert.equal(plan.rewardRisk, 3);
+  const shortPlan = PaperTrader.riskPlan({
+    direction: "short", entry: 100, stop: 102, target: 94,
+    accountBalance: 10000, riskPct: 1, leverage: 5,
+  });
+  assert.equal(shortPlan.valid, true);
+  assert.equal(shortPlan.rewardRisk, 3);
+});
+
+test("risk plan rejects invalid geometry, over-risk, and a stop beyond liquidation", () => {
+  assert.equal(PaperTrader.riskPlan({ direction: "long", entry: 100, stop: 101, target: 110, accountBalance: 10000, riskPct: 1, leverage: 5 }).valid, false);
+  assert.equal(PaperTrader.riskPlan({ direction: "long", entry: 100, stop: 98, target: 110, accountBalance: 10000, riskPct: 0.01, leverage: 5 }).valid, false);
+  assert.equal(PaperTrader.riskPlan({ direction: "long", entry: 100, stop: 98, target: 110, accountBalance: 10000, riskPct: 6, leverage: 5 }).valid, false);
+  assert.equal(PaperTrader.riskPlan({ direction: "long", entry: 100, stop: 98, target: 110, accountBalance: 10000, riskPct: 1, leverage: 100 }).valid, false);
+});
+
+test("paper stops and targets are terminal and R is based on planned dollars at risk", () => {
+  const trade = { direction: "long", price: 100, stopPrice: 98, targetPrice: 106, size: 1000, leverage: 5, riskDollars: 100 };
+  assert.deepEqual(PaperTrader.triggeredExit(trade, 97.5), { reason: "stop", price: 98 });
+  assert.deepEqual(PaperTrader.triggeredExit(trade, 106.5), { reason: "target", price: 106 });
+  assert.ok(Math.abs(PaperTrader.rMultiple(trade, 102) - 1) < 1e-9);
+});
+
 test("primary chart precedes decision research and paper tracker remains outside collapsed analysis", () => {
   const fs = require("node:fs");
   const path = require("node:path");
@@ -61,8 +93,15 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.ok(html.indexOf('id="chart-container"') < html.indexOf('id="paper-trader"'));
   assert.ok(html.indexOf('id="paper-trader"') < html.indexOf('id="advanced-analysis"'));
   assert.match(html, /id="trade-form-leverage"[^>]+max="100"/);
+  assert.match(html, /id="trade-form-account"/);
+  assert.match(html, /id="trade-form-risk-pct"[^>]+max="5"/);
+  assert.match(html, /id="trade-form-stop"/);
+  assert.match(html, /id="trade-form-target"/);
+  assert.match(html, /id="trade-form-size"[^>]+readonly/);
   assert.match(app, /SPY is batch data|batch SPY data/);
   assert.match(app, /liveEntryButton\.disabled = !markFresh/);
   assert.match(app, /paperLiveLabel\.textContent = markFresh \? "LIVE MARK" : "LAST MARK"/);
   assert.match(app, /" \(last mark\)"/);
+  assert.match(app, /"PAPER STOP"/);
+  assert.match(app, /"PAPER TARGET"/);
 });

@@ -51,5 +51,77 @@
     return trade.direction === "long" ? mark <= liquidation : mark >= liquidation;
   }
 
-  return { normalizeLeverage, pnl, estimatedLiquidationPrice, isLiquidationCrossed };
+  function riskPlan({ direction, entry, stop, target, accountBalance, riskPct, leverage }) {
+    const normalizedLeverage = normalizeLeverage(leverage);
+    const values = [entry, stop, target, accountBalance, riskPct].map(Number);
+    if (!normalizedLeverage || values.some((value) => !Number.isFinite(value) || value <= 0)) {
+      return { valid: false, error: "Complete account, risk, leverage, stop, and target." };
+    }
+    [entry, stop, target, accountBalance, riskPct] = values;
+    if (riskPct < 0.1 || riskPct > 5) return { valid: false, error: "Risk per trade must be between 0.1% and 5%." };
+    const isLong = direction === "long";
+    const isShort = direction === "short";
+    if (!isLong && !isShort) return { valid: false, error: "Choose long or short." };
+    if ((isLong && stop >= entry) || (isShort && stop <= entry)) {
+      return { valid: false, error: `${isLong ? "Long" : "Short"} stop must be ${isLong ? "below" : "above"} entry.` };
+    }
+    if ((isLong && target <= entry) || (isShort && target >= entry)) {
+      return { valid: false, error: `${isLong ? "Long" : "Short"} target must be ${isLong ? "above" : "below"} entry.` };
+    }
+    const stopFraction = Math.abs(entry - stop) / entry;
+    const targetFraction = Math.abs(target - entry) / entry;
+    const riskDollars = accountBalance * riskPct / 100;
+    const notional = riskDollars / stopFraction;
+    const margin = notional / normalizedLeverage;
+    const liquidation = estimatedLiquidationPrice({ direction, price: entry, leverage: normalizedLeverage });
+    const stopBeforeLiquidation = liquidation == null || (isLong ? stop > liquidation : stop < liquidation);
+    if (!stopBeforeLiquidation) {
+      return { valid: false, error: "Estimated liquidation comes before the stop. Reduce leverage or move the stop." };
+    }
+    if (margin > accountBalance) {
+      return { valid: false, error: "Calculated margin exceeds the account. Reduce risk or use a wider stop." };
+    }
+    return {
+      valid: true,
+      direction,
+      entry,
+      stop,
+      target,
+      accountBalance,
+      riskPct,
+      leverage: normalizedLeverage,
+      riskDollars,
+      stopFraction,
+      targetFraction,
+      rewardRisk: targetFraction / stopFraction,
+      notional,
+      margin,
+      liquidation,
+    };
+  }
+
+  function rMultiple(trade, currentPrice) {
+    const result = pnl(trade, currentPrice);
+    if (!result || !Number.isFinite(trade && trade.riskDollars) || trade.riskDollars <= 0) return null;
+    return result.usd / trade.riskDollars;
+  }
+
+  function triggeredExit(trade, currentPrice) {
+    if (!trade || trade.exitPrice != null || !Number.isFinite(Number(currentPrice))) return null;
+    const mark = Number(currentPrice);
+    if (isLiquidationCrossed(trade, mark)) {
+      return { reason: "liquidation", price: estimatedLiquidationPrice(trade) };
+    }
+    if (Number.isFinite(trade.stopPrice)) {
+      const hit = trade.direction === "long" ? mark <= trade.stopPrice : mark >= trade.stopPrice;
+      if (hit) return { reason: "stop", price: trade.stopPrice };
+    }
+    if (Number.isFinite(trade.targetPrice)) {
+      const hit = trade.direction === "long" ? mark >= trade.targetPrice : mark <= trade.targetPrice;
+      if (hit) return { reason: "target", price: trade.targetPrice };
+    }
+    return null;
+  }
+
+  return { normalizeLeverage, pnl, estimatedLiquidationPrice, isLiquidationCrossed, riskPlan, rMultiple, triggeredExit };
 });

@@ -2101,17 +2101,17 @@ summary:focus-visible {
   color: #fff;
 }
 
-.trade-form-size-row {
-  font-weight: 400;
-  font-size: 0.85rem;
-  justify-content: flex-start;
-  gap: 1.25rem;
+.trade-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
 }
 
 .trade-form-risk {
   display: grid;
   gap: 0.15rem;
-  max-width: 27rem;
+  max-width: none;
+  margin-top: 0.6rem;
   color: var(--text-muted);
   font-size: 0.72rem;
 }
@@ -2127,7 +2127,7 @@ summary:focus-visible {
 }
 
 .trade-form-field input {
-  width: 7rem;
+  width: 100%;
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);
@@ -2137,6 +2137,36 @@ summary:focus-visible {
   font-size: 0.85rem;
   box-sizing: border-box;
 }
+
+.trade-form-field input[readonly] {
+  color: var(--accent);
+  font-weight: 800;
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg));
+}
+
+.trade-risk-preview {
+  display: grid;
+  gap: 0.15rem;
+  margin-top: 0.7rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.trade-risk-preview.is-valid {
+  border-color: color-mix(in srgb, var(--support) 65%, var(--border));
+  color: var(--text);
+}
+
+.trade-risk-preview.is-invalid {
+  border-color: color-mix(in srgb, var(--resistance) 65%, var(--border));
+  color: var(--resistance);
+}
+
+.trade-risk-preview strong { color: var(--accent); }
 
 .trade-form-description {
   width: 100%;
@@ -2553,8 +2583,7 @@ tr.low-confidence-row {
   .paper-trader-live { grid-row: 1; width: max-content; }
   .trade-controls,
   .trade-manual-entry,
-  .trade-form-row,
-  .trade-form-size-row {
+  .trade-form-row {
     align-items: stretch;
     flex-direction: column;
   }
@@ -2570,6 +2599,7 @@ tr.low-confidence-row {
   }
   .trade-manual-price,
   .trade-form-field input { width: 100%; }
+  .trade-form-grid { grid-template-columns: 1fr; }
   .trade-form-direction { display: grid; grid-template-columns: 1fr 1fr; }
   .trade-form-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .paper-position-summary { grid-template-columns: 1fr; }

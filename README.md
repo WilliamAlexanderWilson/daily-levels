@@ -442,8 +442,10 @@ assumption — not a fact.
 
 The chart is now the first major dashboard surface. Directly beneath it,
 the paper tracker can use the current streamed mark, a tapped chart price,
-or a manually typed fill. The form asks for long/short, optional margin,
-1–100x leverage, and an optional plan. `site/app.js` saves the position to
+or a manually typed fill. The risk-first ticket requires long/short, account
+balance, risk percentage (capped at 5%), stop, target, and 1–100x leverage.
+It calculates position notional and required margin from the stop distance;
+leverage changes margin, not the dollars selected for risk. `site/app.js` saves the position to
 **this browser's localStorage**, keyed per
 asset. There's no server or account involved, so it won't follow you to a
 different browser or device, and clearing site data wipes it (a
@@ -455,8 +457,10 @@ timeframe happened to use at click time, so it renders correctly on any
 timeframe later, as long as that timeframe's currently-loaded candles
 actually cover it.
 
-The open-position card shows entry, current mark, notional, running P&L,
-and a deliberately rough liquidation estimate. The 100x ceiling is
+The open-position card shows entry, current mark, stop, target, current R,
+planned R, dollars at risk, notional, running P&L, and a deliberately rough
+liquidation estimate. The active position also adds entry, stop, target, and
+estimated-liquidation lines to the chart. The 100x ceiling is
 enforced in both the UI and the calculation module. The estimate excludes
 maintenance margin, fees, funding, and exchange-specific liquidation
 rules, so it is a risk warning rather than a quote. If the live stream
@@ -465,13 +469,14 @@ margin and cannot later appear to recover after it should have liquidated.
 While Kraken is reconnecting, new live-mark entries are disabled and open
 P&L is labeled `last mark`, not `live`.
 
-**Margin and leverage are optional, and turn on live P&L tracking.** Fill
-them in and the trades table shows a running P&L next to that trade,
-in both dollars and percent, updating from the real-time price — size is
-treated as margin (what you actually put up), so
-`size x leverage` is the notional position, same mental model a real
-perp exchange uses. Leave them blank and the trade still saves fine,
-just without a P&L column.
+The ticket sizes notional as `risk dollars / stop distance %`, then calculates
+required margin as `notional / leverage`. It refuses invalid stop/target
+geometry, risk above 5%, a stop beyond the rough liquidation estimate, or a
+position whose calculated margin exceeds the entered account balance. The
+trades table updates live P&L and R, then freezes the exact result and labels
+the reason when stop, target, estimated liquidation, or a manual close ends the
+paper trade. Legacy local trades remain readable even when they lack the new
+risk fields.
 
 **Close a trade with "Close at mark"** in its row — the current streamed
 price is prefilled but can be replaced with the actual exit. Confirming
