@@ -34,6 +34,25 @@ test("observed reaction evidence replaces opinion ranking only for qualified ses
   }), /Alpaca IEX · one U\.S\. exchange · 729-day sample/);
 });
 
+test("keeps two volatility leaders expanded while clearly marking a fallback as provisional", () => {
+  const measured = {
+    sessions: [
+      { key: "london", observed_rank: 1, evidence_status: "measured", horizons: { "60": { n: 42, median_abs_move_pct: 0.5 } } },
+      { key: "new-york", observed_rank: 2, evidence_status: "measured", horizons: { "60": { n: 42, median_abs_move_pct: 0.4 } } },
+    ],
+  };
+  const leaders = MarketSessions.topVolatilitySessions(MarketSessions.SESSIONS, measured);
+  assert.deepEqual(leaders.map((session) => [session.key, session.measured]), [["london", true], ["new-york", true]]);
+
+  const oneQualified = {
+    sessions: [
+      { key: "new-york", observed_rank: 1, evidence_status: "measured", horizons: { "60": { n: 498, median_abs_move_pct: 0.22 } } },
+    ],
+  };
+  const provisional = MarketSessions.topVolatilitySessions(MarketSessions.SESSIONS, oneQualified);
+  assert.deepEqual(provisional.map((session) => [session.key, session.measured]), [["new-york", true], ["cme-equity", false]]);
+});
+
 test("forward tracker stays collecting until the frozen balanced gate passes", () => {
   const collecting = MarketSessions.forwardDisplay({
     forward_start_utc: "2026-11-08T00:00:00Z",
@@ -126,6 +145,8 @@ test("the shared dashboard clock is present on every asset and discloses holiday
   const app = fs.readFileSync(path.join(siteRoot, "app.js"), "utf8");
   assert.match(html, /Market clock · Dallas time/);
   assert.match(html, /All seven major market opens/);
+  assert.match(html, /Two volatility leaders/);
+  assert.match(html, /market-leader-list/);
   assert.match(html, /Regular sessions only/);
   assert.match(html, /Exchange holidays, half-days, severe weather, or emergency closures can override/);
   assert.match(html, /past movement—not direction, a prediction, or a trade signal/);
