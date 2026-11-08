@@ -244,7 +244,7 @@ research panels follow below. The existing nearest-level cards, futures context,
 liquidity overlays, scorecards, and explainers remain available under
 **Research & details**, not deleted. BTC/ETH positions can be opened from the
 live Kraken mark, a chart point, or a manual fill. The risk-first ticket requires
-account balance, 0.1–5% risk, stop, target, and 1–100x leverage; it derives
+account balance, 0.1–2% risk, stop, target, and 1–100x leverage; it derives
 notional and required margin from stop distance, tracks live P&L and R, and
 automatically freezes stop, target, or estimated-liquidation exits. SPY tracking is
 disabled and labeled batch-only rather than pretending its baked chart is
@@ -256,6 +256,12 @@ bracket = `LONG WATCH` or `SHORT WATCH`; middle 30% = `WAIT`. “Watch” never
 means entry confirmation. The brief shows the exact bracket, boundary
 reward/risk, and existing historical hold-rate evidence. It refuses to
 create a setup outside a complete bracket.
+
+`site/decision-lock.js` adds a pure, tested paper-eligibility gate. It requires
+the current 3-of-3 confirmation, matching direction, a stop beyond the mapped
+invalidation, a first target inside the opposite boundary, and the user's
+minimum planned R. The UI must call this `paper-eligible`, never a signal,
+permission, recommendation, or profitable setup. See `docs/DECISION-LOCK.md`.
 
 The compact **How to use Range Desk** disclosure explains the intended flow as
 price location, three-condition confirmation, then risk planning. Its summary

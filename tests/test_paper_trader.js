@@ -74,7 +74,7 @@ test("risk plan sizes margin from account risk and stop distance", () => {
 test("risk plan rejects invalid geometry, over-risk, and a stop beyond liquidation", () => {
   assert.equal(PaperTrader.riskPlan({ direction: "long", entry: 100, stop: 101, target: 110, accountBalance: 10000, riskPct: 1, leverage: 5 }).valid, false);
   assert.equal(PaperTrader.riskPlan({ direction: "long", entry: 100, stop: 98, target: 110, accountBalance: 10000, riskPct: 0.01, leverage: 5 }).valid, false);
-  assert.equal(PaperTrader.riskPlan({ direction: "long", entry: 100, stop: 98, target: 110, accountBalance: 10000, riskPct: 6, leverage: 5 }).valid, false);
+  assert.equal(PaperTrader.riskPlan({ direction: "long", entry: 100, stop: 98, target: 110, accountBalance: 10000, riskPct: 2.1, leverage: 5 }).valid, false);
   assert.equal(PaperTrader.riskPlan({ direction: "long", entry: 100, stop: 98, target: 110, accountBalance: 10000, riskPct: 1, leverage: 100 }).valid, false);
 });
 
@@ -111,9 +111,13 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.ok(html.indexOf('id="paper-trader"') < html.indexOf('id="advanced-analysis"'));
   assert.match(html, /id="trade-form-leverage"[^>]+max="100"/);
   assert.match(html, /id="trade-form-account"/);
-  assert.match(html, /id="trade-form-risk-pct"[^>]+max="5"/);
+  assert.match(html, /id="trade-form-risk-pct"[^>]+max="2"/);
   assert.match(html, /id="trade-form-stop"/);
   assert.match(html, /id="trade-form-target"/);
+  assert.match(html, /id="decision-lock"/);
+  assert.match(html, /id="trade-form-min-r"/);
+  assert.match(html, /decision-lock\.js/);
+  assert.match(app, /DecisionLock\.evaluate/);
   assert.match(html, /id="trade-form-size"[^>]+readonly/);
   assert.match(app, /SPY is batch data|batch SPY data/);
   assert.match(app, /liveEntryButton\.disabled = !markFresh/);

@@ -387,9 +387,9 @@
             <input type="number" id="trade-form-account" placeholder="e.g. 10000" min="1" step="any" inputmode="decimal" />
           </label>
           <label class="trade-form-field">
-            Risk per trade (0.1–5%)
-            <small>Maximum account loss if the stop is reached.</small>
-            <input type="number" id="trade-form-risk-pct" value="1" min="0.1" max="5" step="0.1" inputmode="decimal" />
+            Risk per trade (0.1–2%)
+            <small>Planned loss if filled at the stop, before fees and slippage.</small>
+            <input type="number" id="trade-form-risk-pct" value="1" min="0.1" max="2" step="0.1" inputmode="decimal" />
           </label>
           <label class="trade-form-field">
             Leverage (1–100×)
@@ -411,14 +411,34 @@
             <small>Calculated from risk, stop distance, and leverage.</small>
             <input type="number" id="trade-form-size" placeholder="Calculated" readonly aria-readonly="true" />
           </label>
+          <label class="trade-form-field">
+            Minimum planned R
+            <small>Your rule, not a proven threshold.</small>
+            <input type="number" id="trade-form-min-r" value="2" min="1" max="10" step="0.25" inputmode="decimal" />
+          </label>
         </div>
         <div id="trade-risk-preview" class="trade-risk-preview" role="status">
           Choose a side and complete the risk fields to calculate position size.
         </div>
         <div class="trade-form-risk">
           <strong>Your stop determines position size.</strong>
-          <span>Leverage changes required margin, not the amount you planned to lose. Risk is capped at 5%.</span>
+          <span>Leverage changes required margin, not planned loss. This paper tool caps planned loss at 2%, but fast markets can fill worse than the stop and actual loss can be larger.</span>
         </div>
+        <section id="decision-lock" class="decision-lock is-wait">
+          <div class="decision-lock-heading">
+            <span>DECISION LOCK · 0 OF 5</span>
+            <strong>WAIT — complete the current market and risk checks</strong>
+            <span id="decision-lock-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true">Decision Lock waiting.</span>
+          </div>
+          <ol id="decision-lock-checks"></ol>
+          <p>“Paper-eligible” means your stated rules agree; it does not mean the trade will win or should be placed with real money.</p>
+          <small>
+            Risk references:
+            <a href="https://www.cmegroup.com/education/courses/trade-and-risk-management/proper-position-size" target="_blank" rel="noopener noreferrer">CME position sizing ↗</a>
+            · <a href="https://www.cftc.gov/LearnAndProtect/AdvisoriesAndArticles/understand_risks_of_virtual_currency.html" target="_blank" rel="noopener noreferrer">CFTC leverage risk ↗</a>
+            · <a href="https://www.finra.org/sites/default/files/notice_other_file_ref/Regulatory-Notice-16-19.pdf" target="_blank" rel="noopener noreferrer">FINRA stop-fill risk ↗</a>
+          </small>
+        </section>
         <textarea id="trade-form-description" class="trade-form-description" placeholder="Trade plan or reason (optional)" rows="2"></textarea>
         <div class="trade-form-actions">
           <button type="button" id="trade-form-cancel" class="trade-form-cancel">Cancel</button>
@@ -724,6 +744,7 @@
   <script src="live-stream.js"></script>
   <script src="market-sessions.js"></script>
   <script src="paper-trader.js"></script>
+  <script src="decision-lock.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

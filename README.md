@@ -449,7 +449,7 @@ assumption — not a fact.
 The chart is now the first major dashboard surface. Directly beneath it,
 the paper tracker can use the current streamed mark, a tapped chart price,
 or a manually typed fill. The risk-first ticket requires long/short, account
-balance, risk percentage (capped at 5%), stop, target, and 1–100x leverage.
+balance, risk percentage (capped at 2%), stop, target, and 1–100x leverage.
 It calculates position notional and required margin from the stop distance;
 leverage changes margin, not the dollars selected for risk. `site/app.js` saves the position to
 **this browser's localStorage**, keyed per
@@ -477,12 +477,20 @@ P&L is labeled `last mark`, not `live`.
 
 The ticket sizes notional as `risk dollars / stop distance %`, then calculates
 required margin as `notional / leverage`. It refuses invalid stop/target
-geometry, risk above 5%, a stop beyond the rough liquidation estimate, or a
+geometry, risk above 2%, a stop beyond the rough liquidation estimate, or a
 position whose calculated margin exceeds the entered account balance. The
 trades table updates live P&L and R, then freezes the exact result and labels
 the reason when stop, target, estimated liquidation, or a manual close ends the
 paper trade. Legacy local trades remain readable even when they lack the new
 risk fields.
+
+The paper ticket also contains a tested **Decision Lock**. It stays locked
+unless the current three-part market checklist is ready, direction matches the
+confirmed edge, the stop is beyond invalidation, the first target stays inside
+the opposite range boundary, and the plan meets the user's stated minimum-R
+rule. Passing means only `paper-eligible`; it is not a signal or a claim that
+the trade will win. See `docs/DECISION-LOCK.md` for the frozen rules and risk
+sources.
 
 **Close a trade with "Close at mark"** in its row — the current streamed
 price is prefilled but can be replaced with the actual exit. Confirming

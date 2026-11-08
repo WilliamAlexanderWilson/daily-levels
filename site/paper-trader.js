@@ -58,7 +58,7 @@
       return { valid: false, error: "Complete account, risk, leverage, stop, and target." };
     }
     [entry, stop, target, accountBalance, riskPct] = values;
-    if (riskPct < 0.1 || riskPct > 5) return { valid: false, error: "Risk per trade must be between 0.1% and 5%." };
+    if (riskPct < 0.1 || riskPct > 2) return { valid: false, error: "Risk per trade must be between 0.1% and the 2% paper-safety ceiling." };
     const isLong = direction === "long";
     const isShort = direction === "short";
     if (!isLong && !isShort) return { valid: false, error: "Choose long or short." };
