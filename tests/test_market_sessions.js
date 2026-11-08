@@ -61,6 +61,20 @@ test("keeps two volatility leaders expanded while clearly marking a fallback as 
   const failedClosed = MarketSessions.topVolatilitySessions(MarketSessions.SESSIONS, malformed);
   assert.deepEqual(failedClosed.map((session) => [session.key, session.measured]), [["new-york", true], ["cme-equity", false]]);
   assert.equal(MarketSessions.qualifiedEvidence(malformed.sessions[0]), false);
+  for (const invalidMove of [null, "", "0.5"]) {
+    assert.equal(MarketSessions.qualifiedEvidence({
+      key: "tokyo",
+      observed_rank: 1,
+      evidence_status: "measured",
+      horizons: { "60": { n: 42, median_abs_move_pct: invalidMove } },
+    }), false);
+  }
+  assert.equal(MarketSessions.qualifiedEvidence({
+    key: "tokyo",
+    observed_rank: 1,
+    evidence_status: "measured",
+    horizons: { "60": { n: "42", median_abs_move_pct: 0.5 } },
+  }), false);
 });
 
 test("forward tracker stays collecting until the frozen balanced gate passes", () => {

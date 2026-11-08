@@ -229,8 +229,9 @@
     return Boolean(
       evidence?.evidence_status === "measured"
       && Number.isFinite(evidence.observed_rank)
-      && Number(hour?.n) >= 20
-      && Number.isFinite(Number(hour?.median_abs_move_pct))
+      && Number.isFinite(hour?.n)
+      && hour.n >= 20
+      && Number.isFinite(hour?.median_abs_move_pct)
     );
   }
 
