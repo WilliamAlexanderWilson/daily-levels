@@ -257,6 +257,13 @@ means entry confirmation. The brief shows the exact bracket, boundary
 reward/risk, and existing historical hold-rate evidence. It refuses to
 create a setup outside a complete bracket.
 
+The compact **How to use Range Desk** disclosure explains the intended flow as
+price location, three-condition confirmation, then risk planning. Its summary
+reflects the current checklist count without turning that count into a trade
+instruction. On screens up to 700px, a fixed bottom navigation provides direct
+44px touch targets for Chart, Checklist, and Paper trade; keep the desktop view
+free of that navigation and preserve mobile safe-area padding.
+
 Correction after reviewing the creator's strategy-focused videos rather than
 only the original exchange tutorial: for BTC, the nearest calculated bracket
 is no longer called "the range." The controlling November 4, 2026 framework

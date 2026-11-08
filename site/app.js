@@ -1749,6 +1749,12 @@
     );
 
     document.getElementById("patience-count").textContent = `${readyCount} of 3 conditions met`;
+    const quickGuideStatus = document.getElementById("quick-guide-status");
+    if (quickGuideStatus) {
+      quickGuideStatus.textContent = readyCount === 3
+        ? "All three conditions are visible. Review risk before making a decision."
+        : `${readyCount} of 3 conditions met · patience is part of the process.`;
+    }
     let instruction = "Price is between the important boundaries. Wait for it to reach an edge.";
     if (hasLocation && !hasTouch) instruction = `Price is in the right area, but it has not tested ${boundary.name} yet.`;
     if (hasTouch && !hasConfirmation) instruction = boundaryTest && boundaryTest.confirmed
@@ -3493,6 +3499,7 @@
       document.querySelector(".meta-row"),
       document.getElementById("chart-container"),
       document.getElementById("decision-brief"),
+      document.getElementById("quick-guide"),
       document.getElementById("paper-trader"),
       document.getElementById("advanced-analysis"),
     ];
