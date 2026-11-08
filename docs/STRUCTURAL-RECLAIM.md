@@ -60,7 +60,9 @@ day. It records the first established level without alerting, carries the
 original `current_since` timestamp while the boundary is unchanged, and
 appends a versioned event only when a different **established** pivot cluster
 wins the frozen ranking rule. Developing candidates and acceptance-state
-changes do not create boundary-change alerts.
+changes do not create boundary-change alerts. The last established boundary
+is retained through a developing or unavailable interval so the next
+established calculation is still compared with the correct baseline.
 
 The browser reuses the existing opt-in alert control. A changed boundary gets
 one deduplicated in-page alert and, when permission is granted and the tab is

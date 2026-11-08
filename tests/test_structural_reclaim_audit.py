@@ -63,4 +63,48 @@ def test_developing_candidate_never_replaces_or_alerts():
     previous = {"structural_reclaim": _regime()}
     audit = build_structural_reclaim_audit(developing, previous, "2026-11-08T07:00:00Z")
     assert audit["status"] == "unavailable"
+    assert audit["last_established"]["exact_price"] == 82_790.9
     assert audit["notification"]["should_notify"] is False
+
+
+def test_established_change_after_developing_gap_uses_last_established_baseline():
+    established_a = _regime(price=82_000)
+    initialized = build_structural_reclaim_audit(established_a, None, "2026-11-07T07:00:00Z")
+    developing = _regime(price=84_000)
+    developing["quality"] = "developing"
+    gap = build_structural_reclaim_audit(
+        developing,
+        {"structural_reclaim": established_a, "structural_reclaim_audit": initialized},
+        "2026-11-08T07:00:00Z",
+    )
+    changed = build_structural_reclaim_audit(
+        _regime(price=83_250, pivots=5),
+        {"structural_reclaim": developing, "structural_reclaim_audit": gap},
+        "2026-11-09T07:00:00Z",
+    )
+    assert changed["status"] == "changed"
+    assert changed["latest_change"]["old_exact_price"] == 82_000
+    assert changed["latest_change"]["new_exact_price"] == 83_250
+    assert len(changed["events"]) == 1
+    assert changed["notification"]["should_notify"] is True
+
+
+def test_same_established_boundary_after_gap_remains_unchanged_without_alert():
+    established_a = _regime(price=82_000)
+    initialized = build_structural_reclaim_audit(established_a, None, "2026-11-07T07:00:00Z")
+    developing = _regime(price=84_000)
+    developing["quality"] = "developing"
+    gap = build_structural_reclaim_audit(
+        developing,
+        {"structural_reclaim": established_a, "structural_reclaim_audit": initialized},
+        "2026-11-08T07:00:00Z",
+    )
+    unchanged = build_structural_reclaim_audit(
+        _regime(price=82_000),
+        {"structural_reclaim": developing, "structural_reclaim_audit": gap},
+        "2026-11-09T07:00:00Z",
+    )
+    assert unchanged["status"] == "unchanged"
+    assert unchanged["current_since"] == "2026-11-07T06:49:25Z"
+    assert unchanged["events"] == []
+    assert unchanged["notification"]["should_notify"] is False
