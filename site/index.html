@@ -500,8 +500,6 @@
       <span class="legend-item"><i class="swatch round-zone"></i>Round-number proximity (hold rate)</span>
     </div>
     <div id="spy-legend" class="chart-legend" hidden>
-      <span class="legend-item"><i class="swatch support"></i>Historical call setup</span>
-      <span class="legend-item"><i class="swatch resistance"></i>Historical put setup</span>
       <span class="legend-item"><i class="swatch current"></i>Last batch price — not live</span>
     </div>
     <p class="liquidation-note" id="liquidation-note">
@@ -512,17 +510,12 @@
       never use this background alone as an entry signal.
     </p>
     <p class="liquidation-note" id="spy-chart-note" hidden>
-      <strong>Historical backtest only — not a live recommendation.</strong>
-      Every arrow was detected after loading past data, and ✓ / ✗ describes
-      a modeled outcome known later, not information available at the arrow.
-      Candles are <strong>Heikin-Ashi</strong>, not real OHLC — that's what
-      the setup is defined on. This chart shows the last 60 days (our own
-      choice, for readability — the backtest below actually runs on ~2
-      years of real 5-minute data). Markers show every historical exhaustion
-      setup that falls in the visible window, colored by direction. This
-      refreshes on the same cron as the rest of the site, not live — SPY's
-      data source (Alpaca) needs an auth header the browser can't send
-      cleanly, so unlike BTC/ETH this gets baked server-side instead.
+      <strong>Historical batch chart — no Call/Put labels.</strong>
+      The previous arrows were retrospective backtest observations with
+      modeled outcomes known later, so they have been removed from the main
+      decision chart. The underlying Heikin-Ashi candles still refresh on the
+      scheduled batch, not live. Historical setup records remain available
+      below for audit inside Research &amp; details; they are not alerts.
     </p>
 
     <section class="levels-table-section" id="level-table-section">

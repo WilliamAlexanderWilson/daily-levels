@@ -604,12 +604,13 @@ below) and daily VIX closes from Yahoo's public chart endpoint (no key,
 daily-only history has no rolling-window cap the way Yahoo's intraday data
 does). Neither is safely available live from this static browser app — Alpaca needs an auth
 header, and Yahoo's intraday endpoint sends no CORS header (confirmed
-live) — so the chart, signal markers, and backtest table are baked once
+live) — so the chart, historical setup records, and backtest table are baked once
 per cron run into `site/data/spy_*.json`, same staleness as everything
 else on this site. There's no live SPY ticking the way there is for crypto,
-and the SPY arrows are historical backtest markers, not live alerts. Their
-✓ / ✗ outcomes are retrospective modeled results that were not known when
-the setup occurred.
+and the SPY setup records are historical backtest observations, not live
+alerts. Their retrospective modeled outcomes were not known when each setup
+occurred, so they are kept in the Research audit table and no longer drawn as
+Call/Put arrows on the main decision chart.
 
 **Alpaca needs `ALPACA_API_KEY` / `ALPACA_SECRET_KEY`.** Free account at
 alpaca.markets (Trading API, not Broker API — the latter is for building a
@@ -630,10 +631,9 @@ recent `CHART_DISPLAY_DAYS` (60, `src/spy/export.py`) of each timeframe:
 two years of 10-minute candles would be both an enormous JSON payload
 committed to git on every 3-hour cron run and visually unreadable as a
 candlestick chart. The signal history table and backtest stats reflect the
-full ~2-year window regardless of what the chart draws — a signal older
-than 60 days just won't have a marker on the visible chart, same
-bounds-checking pattern the crypto trade journal already uses for markers
-outside the loaded candle range.
+full ~2-year window regardless of what the chart draws. Historical setup
+markers are deliberately not rendered on the main decision chart; they remain
+in the audit table under Research & details.
 
 **Premiums are modeled, not real quotes.** No free source publishes
 historical SPY options chains, so `src/spy/options_pricing.py` prices the
