@@ -2,7 +2,7 @@
   "schema_version": 1,
   "study_version": "range-open-forward-v1",
   "asset": "btc",
-  "generated_at_utc": "2026-11-07T03:18:46.271382+00:00",
+  "generated_at_utc": "2026-11-08T06:55:41.572760+00:00",
   "forward_start_utc": "2026-11-08T00:00:00+00:00",
   "source": {
     "name": "Coinbase Exchange BTC-USD/ETH-USD candles",
