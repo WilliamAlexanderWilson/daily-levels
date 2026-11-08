@@ -11,6 +11,9 @@
   // 30% is a no-trade area. This is a geometry filter, not a claim of edge.
   const EDGE_FRACTION = 0.35;
   const STRUCTURAL_RECLAIM_METHOD = "structural-reclaim-pivot-cluster-v1";
+  const STRUCTURAL_RECLAIM_DATA_SOURCE = "Kraken BTC/USD completed Daily candles";
+  const STRUCTURAL_RECLAIM_ACCEPTANCE_RULE = "2 consecutive completed Daily closes";
+  const STRUCTURAL_RECLAIM_ACCEPTANCE_CLOSES = 2;
 
   // This is an explicitly sourced market-structure framework, not a value
   // derived from the daily rolling-level engine. Keeping it as data makes the
@@ -34,11 +37,35 @@
     const exactPrice = boundary && Number(boundary.exact_price);
     const acceptance = regime && regime.acceptance;
     const allowedAcceptance = new Set(["accepted-above", "accepted-below", "testing", "insufficient-data"]);
+    const testsAreValid = Array.isArray(boundary && boundary.tests)
+      && boundary.tests.every((test) => test
+        && typeof test.date === "string"
+        && Number.isFinite(Date.parse(test.date))
+        && Number.isFinite(Number(test.high))
+        && Number(test.high) > 0);
+    const closesAreValid = Array.isArray(acceptance && acceptance.closes)
+      && acceptance.closes.every((close) => close
+        && typeof close.date === "string"
+        && Number.isFinite(Date.parse(close.date))
+        && Number.isFinite(Number(close.close))
+        && Number(close.close) > 0);
+    const closeValues = closesAreValid
+      ? acceptance.closes.map((close) => Number(close.close))
+      : [];
+    const hasCompleteAcceptanceEvidence = closeValues.length === STRUCTURAL_RECLAIM_ACCEPTANCE_CLOSES;
+    const acceptanceMatchesEvidence = acceptance && (
+      (acceptance.state === "accepted-above" && hasCompleteAcceptanceEvidence && closeValues.every((close) => close > exactPrice))
+      || (acceptance.state === "accepted-below" && hasCompleteAcceptanceEvidence && closeValues.every((close) => close < exactPrice))
+      || (acceptance.state === "testing" && hasCompleteAcceptanceEvidence
+        && !closeValues.every((close) => close > exactPrice)
+        && !closeValues.every((close) => close < exactPrice))
+      || (acceptance.state === "insufficient-data" && closeValues.length < STRUCTURAL_RECLAIM_ACCEPTANCE_CLOSES)
+    );
     return Boolean(
       regime
       && regime.method_version === STRUCTURAL_RECLAIM_METHOD
       && regime.quality === "established"
-      && typeof regime.data_source === "string" && regime.data_source.length > 0
+      && regime.data_source === STRUCTURAL_RECLAIM_DATA_SOURCE
       && Number.isFinite(Date.parse(regime.calculated_at_utc))
       && Number.isFinite(exactPrice) && exactPrice > fallback.high
       && Number.isFinite(Number(boundary.display_price))
@@ -47,10 +74,11 @@
       && Number(boundary.pivot_count) >= 4
       && Number(boundary.distinct_months) >= 3
       && Number(boundary.span_days) >= 90
-      && Array.isArray(boundary.tests) && boundary.tests.length >= Number(boundary.pivot_count)
+      && testsAreValid && boundary.tests.length === Number(boundary.pivot_count)
       && acceptance && allowedAcceptance.has(acceptance.state)
-      && typeof acceptance.rule === "string" && acceptance.rule.length > 0
-      && Array.isArray(acceptance.closes)
+      && acceptance.rule === STRUCTURAL_RECLAIM_ACCEPTANCE_RULE
+      && closesAreValid
+      && acceptanceMatchesEvidence
     );
   }
 
@@ -471,6 +499,8 @@
     buildStrategyRange,
     BTC_MACRO_RANGE,
     STRUCTURAL_RECLAIM_METHOD,
+    STRUCTURAL_RECLAIM_DATA_SOURCE,
+    STRUCTURAL_RECLAIM_ACCEPTANCE_RULE,
     structuralRegimeIsUsable,
     strategyRangeFromRegime,
     reclaimBiasPresentation,
