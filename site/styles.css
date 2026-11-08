@@ -222,7 +222,7 @@ main > * { min-width: 0; }
 .market-leaders-heading > small {
   max-width: 28rem;
   color: var(--text-muted);
-  font-size: 0.58rem;
+  font-size: 0.65rem;
   text-align: right;
 }
 
@@ -255,7 +255,7 @@ main > * { min-width: 0; }
 
 .market-leader-badge,
 .market-leader-state {
-  font: 800 0.55rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font: 800 0.62rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: 0.08em;
 }
 
@@ -266,7 +266,7 @@ main > * { min-width: 0; }
 
 .market-leader-identity { display: grid; gap: 0.08rem; }
 .market-leader-identity strong { font-size: 0.84rem; }
-.market-leader-identity small { color: var(--text-muted); font-size: 0.59rem; }
+.market-leader-identity small { color: var(--text-muted); font-size: 0.65rem; }
 
 .market-leader-metrics > span {
   display: grid;
@@ -277,8 +277,8 @@ main > * { min-width: 0; }
 .market-leader-metrics > span:last-child { text-align: right; }
 .market-leader-metrics small,
 .market-leader-metrics em,
-.market-leader > p { color: var(--text-muted); font-size: 0.55rem; font-style: normal; }
-.market-leader-metrics strong { font-size: 0.72rem; }
+.market-leader > p { color: var(--text-muted); font-size: 0.65rem; font-style: normal; }
+.market-leader-metrics strong { font-size: 0.78rem; }
 .market-leader > p { margin: 0; line-height: 1.35; }
 
 .market-clock-details {

@@ -224,14 +224,26 @@
     return new Map(data.sessions.map((session) => [session.key, session]));
   }
 
+  function qualifiedEvidence(evidence) {
+    const hour = evidence?.horizons?.["60"];
+    return Boolean(
+      evidence?.evidence_status === "measured"
+      && Number.isFinite(evidence.observed_rank)
+      && Number(hour?.n) >= 20
+      && Number.isFinite(Number(hour?.median_abs_move_pct))
+    );
+  }
+
   function rankSessions(sessions, data) {
     const byKey = reactionByKey(data);
     return sessions.slice().sort((left, right) => {
-      const leftObserved = byKey.get(left.key)?.observed_rank;
-      const rightObserved = byKey.get(right.key)?.observed_rank;
-      if (Number.isFinite(leftObserved) && Number.isFinite(rightObserved)) return leftObserved - rightObserved;
-      if (Number.isFinite(leftObserved)) return -1;
-      if (Number.isFinite(rightObserved)) return 1;
+      const leftEvidence = byKey.get(left.key);
+      const rightEvidence = byKey.get(right.key);
+      const leftObserved = qualifiedEvidence(leftEvidence) ? leftEvidence.observed_rank : null;
+      const rightObserved = qualifiedEvidence(rightEvidence) ? rightEvidence.observed_rank : null;
+      if (leftObserved !== null && rightObserved !== null) return leftObserved - rightObserved;
+      if (leftObserved !== null) return -1;
+      if (rightObserved !== null) return 1;
       return left.rank - right.rank;
     });
   }
@@ -242,14 +254,14 @@
       ...session,
       evidence: evidence.get(session.key) || null,
       displayRank: index + 1,
-      measured: Number.isFinite(evidence.get(session.key)?.observed_rank),
+      measured: qualifiedEvidence(evidence.get(session.key)),
     }));
   }
 
   function evidenceLabel(evidence) {
     const hour = evidence?.horizons?.["60"];
     if (!hour || !hour.n) return "Not enough complete candles to measure";
-    if (evidence.evidence_status !== "measured") return `Early sample · n=${hour.n} (need 20)`;
+    if (!qualifiedEvidence(evidence)) return `Not qualified · n=${hour.n} (need measured 20+)`;
     return `Observed #${evidence.observed_rank} · median |60m| ${hour.median_abs_move_pct.toFixed(2)}% · n=${hour.n}`;
   }
 
@@ -349,7 +361,7 @@
       `${localTimeLabel(next.status.nextOpen)} Dallas · ${exchangeOpenLabel(next, next.status.nextOpen)}`;
     mountedDocument.getElementById("market-open-count").textContent = `${snapshot.openCount} of ${snapshot.sessions.length} open now`;
     const rankingBasis = mountedDocument.getElementById("market-ranking-basis");
-    const measuredCount = data?.sessions?.filter((session) => session.observed_rank != null).length || 0;
+    const measuredCount = data?.sessions?.filter(qualifiedEvidence).length || 0;
     rankingBasis.textContent = measuredCount
       ? `${activeAsset.toUpperCase()} observed ranking · median absolute 60m move · ${measuredCount} sessions qualified`
       : "Source-priority order · observed ranking needs at least 20 complete samples";
@@ -485,6 +497,7 @@
     evidenceTitle,
     coverageLabel,
     forwardDisplay,
+    qualifiedEvidence,
     rankSessions,
     topVolatilitySessions,
     marketSnapshot,
