@@ -145,6 +145,18 @@ is not a holiday calendar. Preserve the
 holiday/half-day/emergency-closure warning and official source links rather
 than presenting a weekend-only calculation as exchange-authoritative.
 
+`range-open-forward-v1` is preregistered in
+`docs/RANGE-OPEN-FORWARD-TRACKER.md` with a future cutoff of
+`2026-11-08T00:00:00Z`. It records every eligible session open, including
+mid-range `WAIT` observations, against a trailing 60-calendar-day range built
+only from earlier candles. The outer 35% bands match the existing explicit
+range-location assumption. Original range and opening values are immutable;
+later runs may only fill missing 15/30/60/120-minute outcomes. Do not display a
+headline reaction rate before 50 resolved edge events with at least 20 on each
+side, and never describe the result as an entry, signal, options return, or
+profitable strategy. Material rule changes require a new version and future
+cutoff before results are viewed.
+
 Range Lab forward paper tracking is different from that discretionary journal:
 `src/range_lab/engine.py::forward_paper_track` deterministically replays all
 completed PF_XBTUSD 4-hour candles after the frozen 2026-11-06 04:00 UTC
@@ -226,10 +238,16 @@ are limited to trading from range edges, predefining target and stop,
 preferring isolated margin for bounded risk, and keeping portfolio risk in
 the 1-5% range while explicitly calling 5% aggressive.
 
-The UI was redesigned around one default decision brief plus the chart.
-The existing nearest-level cards, futures context, liquidity overlays,
-scorecards, explainers, and trade journal remain available under **Full
-analysis**, not deleted. `site/range-decision.js` owns the pure range
+The UI now makes the live chart the first major surface, followed by a
+prominent local paper-position tracker; the decision brief and research
+panels follow below. The existing nearest-level cards, futures context,
+liquidity overlays, scorecards, and explainers remain available under
+**Full analysis**, not deleted. BTC/ETH positions can be opened from the
+live Kraken mark, a chart point, or a manual fill, with 1–100x leverage,
+live P&L, notional, and a rough liquidation estimate. SPY tracking is
+disabled and labeled batch-only rather than pretending its baked chart is
+live. `site/paper-trader.js` owns the tested calculations and
+`site/range-decision.js` owns the pure range
 geometry. Because the transcript never defines an entry threshold, the UI
 labels its added assumption: outer 35% of the nearest support/resistance
 bracket = `LONG WATCH` or `SHORT WATCH`; middle 30% = `WAIT`. “Watch” never

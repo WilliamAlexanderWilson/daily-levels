@@ -61,7 +61,8 @@ no account, server, Telegram bot, or trading connection is involved.
 The BTC, ETH, and SPY views share one compact global-session clock. It keeps
 the chronologically next major market open visible with a one-second countdown
 in William's Dallas/Central time, while a collapsed list shows seven regular
-sessions ranked for this dashboard: New York cash, Chicago CME U.S. index
+sessions ranked from observed median 60-minute movement when at least 20
+complete samples exist: New York cash, Chicago CME U.S. index
 futures, London, Tokyo, Hong Kong, Frankfurt/Xetra, and Sydney. BTC and ETH are
 correctly labeled 24/7; these opens are liquidity/volatility context, not
 periods when crypto itself opens.
@@ -71,8 +72,27 @@ changes are automatic. Cash clocks model regular Monday-Friday hours; CME
 also models its Sunday-Friday session and daily 4:00-5:00 PM Central halt.
 Exchange holidays, half-days, severe-weather changes, and emergency closures
 can override it, so every row links to the exchange's official hours/calendar.
-The order is a practical attention hierarchy for this dashboard, not a claim
-that one exchange is universally more important in every market regime.
+BTC/ETH use a visible 60-day Coinbase Exchange sample; SPY uses the existing
+Alpaca IEX history and leaves opens without exact SPY candles unranked. These
+are source-specific historical measurements, not a claim that one exchange is
+universally more important or predictive in every market regime.
+
+### Range × open forward test
+
+The compact forward panel begins at the frozen `2026-11-08T00:00:00Z` cutoff.
+For every eligible session open it computes a 60-calendar-day range from
+strictly earlier candles, labels the opening location `LOWER EDGE`, `UPPER
+EDGE`, or `WAIT`, and records raw 15/30/60/120-minute movement. Existing event
+ranges and opening prices never change; missing outcome candles leave an event
+pending rather than manufacturing a flat result.
+
+The panel cannot headline a reaction rate until it has 50 resolved edge opens,
+including at least 20 lower-edge and 20 upper-edge observations. Even after
+that gate it remains descriptive underlying-price evidence—not a signal,
+options result, leverage result, or profitability claim. The immutable rules
+are in [`docs/RANGE-OPEN-FORWARD-TRACKER.md`](docs/RANGE-OPEN-FORWARD-TRACKER.md).
+Coincident sessions such as London and Frankfurt remain visible as separate
+rows but count as one opening cohort toward the evidence gate.
 
 The BTC chart marks the complete macro range behind the candles, including
 the $70k midpoint, $72k-$77k support zone, $80k ceiling, and $82.8k reclaim.
@@ -83,10 +103,10 @@ age of the last successful update.
 
 ## How it works
 
-1. A GitHub Action runs `src/run.py` twice a day (10:00 and 11:00 UTC); the
-   script itself checks the time in `America/Chicago` and only does
-   anything during the 5 AM hour, so exactly one of those two firings is a
-   real run regardless of daylight saving.
+1. A GitHub Action checks every three hours because scheduled runs can be
+   delayed. `src/run.py` performs at most one daily level refresh per asset,
+   based on whether today's snapshot already exists rather than requiring one
+   exact wall-clock hour.
 2. The engine (`src/levels/engine.py`) fetches 4h and daily OHLC candles
    from Kraken's public API for `BTC/USD` and `ETH/USD`, runs the volume
    profile / pivot / golden pocket / reference-level / flip-level
@@ -95,6 +115,8 @@ age of the last successful update.
 3. The same Action run also replays history day by day (`src/backtest/`)
    to build a hold-rate scorecard — how often each level type has
    historically held vs. broken when touched — and writes that alongside.
+   It also refreshes market-open reaction research roughly once per day and
+   advances the preregistered range-open forward record.
 4. The Action commits those JSON files to the repo, then deploys the site
    to GitHub Pages itself (see "Why Pages deploys from the workflow"
    below).
@@ -116,6 +138,9 @@ python -m src.run --force
 # run the backtest scorecard for real (writes into site/data/)
 python -m src.backtest.cli
 
+# refresh BTC/ETH session reaction and range-open research
+python -m src.session_reactions.cli --force
+
 # run the tests
 python -m pytest
 node --test tests/*.js
@@ -125,10 +150,9 @@ cd site && python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
-`--force` skips the 5 AM Central gate, which is what you want for a manual
-local run — without it, `src/run.py` only runs during that hour and exits
-immediately otherwise. `src.backtest.cli` isn't time-gated at all; it
-replays history, not "now," so it's safe to run anytime.
+`--force` bypasses `src.run`'s once-per-day snapshot check, which is what you
+want for a deliberate manual refresh. `src.backtest.cli` isn't time-gated; it
+replays history rather than "now."
 
 ## Why Pages deploys from the workflow, not "deploy from a branch"
 
@@ -414,11 +438,13 @@ liquidation heatmap: a plausible read on where crowded leverage might
 sit, built transparently from real data plus one stated, simple
 assumption — not a fact.
 
-## Trade journal
+## Paper position tracker
 
-Mark a trade by clicking "+ Mark trade" above the chart, then clicking
-where you got in — a small form asks for long/short and an optional note,
-and `site/app.js` saves it to **this browser's localStorage**, keyed per
+The chart is now the first major dashboard surface. Directly beneath it,
+the paper tracker can use the current streamed mark, a tapped chart price,
+or a manually typed fill. The form asks for long/short, optional margin,
+1–100x leverage, and an optional plan. `site/app.js` saves the position to
+**this browser's localStorage**, keyed per
 asset. There's no server or account involved, so it won't follow you to a
 different browser or device, and clearing site data wipes it (a
 deliberate tradeoff — the alternative was a real backend). Markers render
@@ -429,10 +455,17 @@ timeframe happened to use at click time, so it renders correctly on any
 timeframe later, as long as that timeframe's currently-loaded candles
 actually cover it.
 
-You can also just **type the price** instead of clicking the chart — a
-number field sits right next to "+ Mark trade" for exact fills.
+The open-position card shows entry, current mark, notional, running P&L,
+and a deliberately rough liquidation estimate. The 100x ceiling is
+enforced in both the UI and the calculation module. The estimate excludes
+maintenance margin, fees, funding, and exchange-specific liquidation
+rules, so it is a risk warning rather than a quote. If the live stream
+crosses that estimate, the local paper position closes there at -100% of
+margin and cannot later appear to recover after it should have liquidated.
+While Kraken is reconnecting, new live-mark entries are disabled and open
+P&L is labeled `last mark`, not `live`.
 
-**Size and leverage are optional, and turn on live P&L tracking.** Fill
+**Margin and leverage are optional, and turn on live P&L tracking.** Fill
 them in and the trades table shows a running P&L next to that trade,
 in both dollars and percent, updating from the real-time price — size is
 treated as margin (what you actually put up), so
@@ -440,10 +473,17 @@ treated as margin (what you actually put up), so
 perp exchange uses. Leave them blank and the trade still saves fine,
 just without a P&L column.
 
-**Close a trade with "Close"** in its row — type the exit price you got
-and confirm. That freezes the P&L at that exit price for good (it stops
+**Close a trade with "Close at mark"** in its row — the current streamed
+price is prefilled but can be replaced with the actual exit. Confirming
+freezes the P&L at that exit price for good (it stops
 following the live price) and adds a second marker on the chart at the
 exit point, colored by whether it was a win or a loss.
+
+BTC and ETH use Kraken's real-time stream. SPY remains visibly disabled in
+the paper tracker because its chart is batch-generated; the site does not
+present a stale SPY mark as live P&L. On narrow screens the chart stays
+near the top, controls become full-width touch targets, and the history
+table scrolls within its panel.
 
 ## Jump to a level
 

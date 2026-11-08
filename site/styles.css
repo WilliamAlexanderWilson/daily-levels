@@ -122,7 +122,22 @@ main {
   max-width: 1240px;
   margin: 0 auto;
   padding: 1rem 1rem 3rem;
+  display: flex;
+  flex-direction: column;
 }
+
+/* Put the thing the user came to see first. Research and methodology stay
+   available below it without forcing the live chart beneath several screens. */
+main > .controls { order: 1; }
+main > .market-clock { order: 2; }
+main > .meta-row { order: 3; }
+main > .chart-container { order: 4; }
+main > .paper-trader { order: 5; }
+main > .decision-brief { order: 6; }
+main > .range-lab { order: 7; }
+main > .nearby-context { order: 8; }
+main > .advanced-analysis { order: 9; }
+main > * { min-width: 0; }
 
 .controls {
   display: flex;
@@ -256,6 +271,29 @@ main {
 }
 .market-clock-details > p a { color: var(--accent); text-decoration: none; }
 .market-clock-details > p span { display: block; margin-top: 0.22rem; color: var(--text); }
+
+.range-open-forward {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.58rem 0.85rem;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+.range-open-forward > div { display: grid; gap: 0.1rem; }
+.range-open-forward > div:first-child > span {
+  color: var(--accent);
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+.range-open-forward strong { font-size: 0.67rem; }
+.range-open-forward small { color: var(--text-muted); font-size: 0.57rem; }
+.range-open-forward-counts { text-align: right; }
+.range-open-forward > a { color: var(--accent); font-size: 0.58rem; text-decoration: none; }
+.range-open-forward.is-qualified { background: color-mix(in srgb, var(--support) 8%, var(--surface)); }
+.range-open-forward.is-qualified > div:first-child > span { color: var(--support); }
 
 .toggle-group {
   display: inline-flex;
@@ -1467,6 +1505,137 @@ summary:focus-visible {
   box-shadow: var(--shadow);
 }
 
+.paper-trader {
+  order: 5;
+  margin-top: 0.9rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 93%, var(--accent));
+  box-shadow: var(--shadow);
+}
+
+.paper-trader-heading,
+.paper-history-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.paper-trader-heading h2,
+.paper-trader-heading p,
+.paper-history-heading h3,
+.paper-history-heading small {
+  margin: 0;
+}
+
+.paper-trader-heading h2 {
+  margin-top: 0.15rem;
+  font: 500 clamp(1.25rem, 3vw, 1.65rem)/1.15 Georgia, "Times New Roman", serif;
+}
+
+.paper-trader-heading p,
+.paper-history-heading small {
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.paper-trader-kicker {
+  color: var(--accent);
+  font: 800 0.58rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.12em;
+}
+
+.paper-trader-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--support) 55%, var(--border));
+  border-radius: 999px;
+  color: var(--support);
+  font: 800 0.64rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.paper-trader.is-unavailable {
+  border-color: var(--border);
+}
+
+.paper-trader.is-unavailable .paper-trader-live {
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.paper-trader.is-unavailable .paper-trader-live .live-dot {
+  background: var(--text-muted);
+}
+
+.paper-position-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+
+.paper-position-card,
+.paper-position-empty {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.paper-position-empty {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.paper-position-card-head,
+.paper-position-card-metrics {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.paper-position-side {
+  font: 800 0.68rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.paper-position-side.long { color: var(--support); }
+.paper-position-side.short { color: var(--resistance); }
+.paper-position-pnl { font-size: 1rem; }
+
+.paper-position-card-metrics {
+  margin-top: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.paper-position-card-metrics span {
+  display: grid;
+  gap: 0.08rem;
+  color: var(--text-muted);
+  font-size: 0.64rem;
+}
+
+.paper-position-card-metrics strong {
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.paper-history {
+  margin-top: 0.8rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.paper-history-heading h3 { font-size: 0.9rem; }
+.paper-history .table-wrapper { margin-top: 0.55rem; }
+
 .nearby-context {
   margin: 0 0 1rem;
   border: 1px solid var(--border);
@@ -1816,7 +1985,7 @@ summary:focus-visible {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.6rem;
-  margin-bottom: 0.5rem;
+  margin: 0.85rem 0 0.5rem;
 }
 
 .trade-manual-entry {
@@ -1841,7 +2010,8 @@ summary:focus-visible {
   font-family: inherit;
 }
 
-.trade-manual-btn {
+.trade-manual-btn,
+.trade-live-btn {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
@@ -1850,6 +2020,18 @@ summary:focus-visible {
   font-size: 0.85rem;
   font-family: inherit;
   cursor: pointer;
+}
+
+.trade-live-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.trade-live-btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--surface-strong);
+  font-weight: 750;
 }
 
 .mark-trade-btn {
@@ -1925,6 +2107,16 @@ summary:focus-visible {
   justify-content: flex-start;
   gap: 1.25rem;
 }
+
+.trade-form-risk {
+  display: grid;
+  gap: 0.15rem;
+  max-width: 27rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.trade-form-risk strong { color: var(--resistance); }
 
 .trade-form-field {
   display: flex;
@@ -2303,19 +2495,27 @@ tr.low-confidence-row {
   font-weight: 700;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 700px) {
   .site-header {
-    padding-top: 1.7rem;
+    padding: 1.2rem 0.7rem 0.4rem;
   }
   main {
     padding-inline: 0.7rem;
   }
+  .subtitle {
+    max-width: 92vw;
+    margin-inline: auto;
+  }
+  .controls { gap: 0.5rem; }
   .market-clock-primary { grid-template-columns: 1fr; gap: 0.45rem; }
   .market-clock-context { justify-items: start; text-align: left; }
   .market-session-list { grid-template-columns: 1fr; }
   .market-session { grid-template-columns: auto minmax(0, 1fr) auto; }
   .market-session-timing { grid-column: 2 / -1; text-align: left; }
   .market-session a { grid-column: 3; grid-row: 1; }
+  .range-open-forward { grid-template-columns: minmax(0, 1fr) auto; gap: 0.45rem; }
+  .range-open-forward-counts { grid-column: 1 / -1; grid-row: 2; text-align: left; }
+  .range-open-forward > a { grid-column: 2; grid-row: 1; }
   .decision-brief {
     grid-template-columns: 1fr;
     gap: 1.1rem;
@@ -2341,7 +2541,42 @@ tr.low-confidence-row {
     align-items: flex-start;
   }
   .chart-container {
-    height: 520px;
+    height: min(66svh, 560px);
+    min-height: 410px;
+    border-radius: 12px;
+  }
+  .paper-trader {
+    padding: 0.75rem;
+    border-radius: 13px;
+  }
+  .paper-trader-heading { display: grid; }
+  .paper-trader-live { grid-row: 1; width: max-content; }
+  .trade-controls,
+  .trade-manual-entry,
+  .trade-form-row,
+  .trade-form-size-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .trade-live-btn,
+  .mark-trade-btn,
+  .trade-manual-btn,
+  .trade-manual-price,
+  .trade-form-field input,
+  .trade-dir-btn,
+  .trade-form-cancel,
+  .trade-form-save {
+    min-height: 44px;
+  }
+  .trade-manual-price,
+  .trade-form-field input { width: 100%; }
+  .trade-form-direction { display: grid; grid-template-columns: 1fr 1fr; }
+  .trade-form-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .paper-position-summary { grid-template-columns: 1fr; }
+  .paper-history-heading { display: grid; gap: 0.1rem; }
+  .paper-history .table-wrapper {
+    max-height: 18rem;
+    overflow: auto;
   }
   table {
     font-size: 0.78rem;

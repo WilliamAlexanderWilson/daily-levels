@@ -45,7 +45,7 @@ def _round(value: float, places: int = 4) -> float:
     return round(float(value), places)
 
 
-def _candidate_opens(session: SessionOpen, start: pd.Timestamp, end: pd.Timestamp):
+def candidate_opens(session: SessionOpen, start: pd.Timestamp, end: pd.Timestamp):
     zone = ZoneInfo(session.timezone)
     local_start = start.tz_convert(zone).date() - timedelta(days=1)
     local_end = end.tz_convert(zone).date() + timedelta(days=1)
@@ -59,7 +59,7 @@ def _candidate_opens(session: SessionOpen, start: pd.Timestamp, end: pd.Timestam
         current += timedelta(days=1)
 
 
-def _complete_window(frame: pd.DataFrame, start: pd.Timestamp, minutes: int, interval_minutes: int):
+def complete_window(frame: pd.DataFrame, start: pd.Timestamp, minutes: int, interval_minutes: int):
     expected = minutes // interval_minutes
     if expected < 1 or minutes % interval_minutes:
         raise ValueError("horizons must be divisible by the candle interval")
@@ -86,18 +86,18 @@ def analyze_session(frame: pd.DataFrame, session: SessionOpen, interval_minutes:
     volume_ratios: list[float] = []
     range_ratios: list[float] = []
 
-    for opened in _candidate_opens(session, frame.index.min(), frame.index.max()):
+    for opened in candidate_opens(session, frame.index.min(), frame.index.max()):
         entry = frame.reindex([opened])
         if entry[["open"]].isna().any().any():
             continue
         entry_price = float(entry.iloc[0]["open"])
         for horizon in HORIZONS_MINUTES:
-            window = _complete_window(frame, opened, horizon, interval_minutes)
+            window = complete_window(frame, opened, horizon, interval_minutes)
             if window is not None:
                 returns[horizon].append(100 * (float(window.iloc[-1]["close"]) / entry_price - 1))
 
-        post = _complete_window(frame, opened, 60, interval_minutes)
-        pre = _complete_window(frame, opened - pd.Timedelta(minutes=60), 60, interval_minutes)
+        post = complete_window(frame, opened, 60, interval_minutes)
+        pre = complete_window(frame, opened - pd.Timedelta(minutes=60), 60, interval_minutes)
         if post is None or pre is None:
             continue
         prior_volume = float(pre["volume"].sum())
