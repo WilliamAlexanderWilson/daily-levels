@@ -238,9 +238,9 @@ are limited to trading from range edges, predefining target and stop,
 preferring isolated margin for bounded risk, and keeping portfolio risk in
 the 1-5% range while explicitly calling 5% aggressive.
 
-The UI now makes the live chart the first major surface, followed by a
-prominent local paper-position tracker; the decision brief and research
-panels follow below. The existing nearest-level cards, futures context,
+The UI now makes the live chart the first major surface, followed by the
+plain-language decision brief and a prominent local paper-position tracker;
+research panels follow below. The existing nearest-level cards, futures context,
 liquidity overlays, scorecards, and explainers remain available under
 **Research & details**, not deleted. BTC/ETH positions can be opened from the
 live Kraken mark, a chart point, or a manual fill. The risk-first ticket requires

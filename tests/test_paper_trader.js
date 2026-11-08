@@ -129,6 +129,8 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.match(app, /source === "stream" && liveMarkIsFresh\(\)/);
   assert.match(app, /"range-lab",\s+"nearby-context"/);
   assert.doesNotMatch(app, /selectRangeLabCandidate\(activeRangeLabCandidateKey \|\| RangeLab\.defaultKey/);
+  assert.match(app, /if \(!details\.open\) \{[\s\S]*clearRangeLabLines\(\)/);
+  assert.match(app, /activeRangeLabCandidateKey && activeRangeLabData/);
   assert.match(html, /Research &amp; details/);
   assert.match(html, /Trade checklist/);
 });

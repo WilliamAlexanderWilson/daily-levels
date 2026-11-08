@@ -3515,6 +3515,15 @@
     }
     details.addEventListener("toggle", () => {
       clearPriceSnapState();
+      if (!details.open) {
+        // Research overlays are intentionally scoped to the expanded drawer.
+        // Keep the selected definition for comparison, but restore the quiet
+        // primary chart as soon as the drawer closes.
+        clearRangeLabLines();
+      } else if (activeRangeLabCandidateKey && activeRangeLabData) {
+        const candidate = RangeLab.candidateByKey(activeRangeLabData, activeRangeLabCandidateKey);
+        if (candidate) drawRangeLabCandidate(candidate);
+      }
       if (state.asset !== "spy") {
         renderLevels(activeLevels);
         renderRoundProximityBands(lastLivePrice, activeProximity);
