@@ -1881,14 +1881,15 @@
       document.getElementById("decision-resistance-label").textContent = decision.strategyRange.isCalculatedReclaim
         ? "Calculated structural reclaim"
         : "Bias-changing reclaim";
-      const reclaimAccepted = RangeDecision.completedCloseAbove(activeCandles, decision.strategyRange.reclaim);
-      document.getElementById("decision-rr").textContent = currentPrice < decision.strategyRange.reclaim
-        ? `LOWER < ${reclaimText}`
-        : reclaimAccepted
-          ? `ABOVE ${reclaimText}`
-          : `TESTING ${reclaimText}`;
-      document.getElementById("decision-rr-note").textContent = currentPrice >= decision.strategyRange.reclaim && !reclaimAccepted
-        ? `wait for a completed ${state.range.toUpperCase()} close`
+      const dailyAcceptance = decision.strategyRange.reclaimAcceptance;
+      const dailyAcceptanceState = dailyAcceptance && dailyAcceptance.state;
+      document.getElementById("decision-rr").textContent = dailyAcceptanceState === "accepted-above"
+        ? `DAILY ACCEPTED > ${reclaimText}`
+        : dailyAcceptanceState === "accepted-below"
+          ? `DAILY BELOW < ${reclaimText}`
+          : `DAILY TESTING ${reclaimText}`;
+      document.getElementById("decision-rr-note").textContent = dailyAcceptance && dailyAcceptance.rule
+        ? `${dailyAcceptance.rule} · descriptive, not a trade instruction`
         : "framework bias; not a trade instruction";
       document.getElementById("decision-support-odds").textContent = "$72k–$77k";
       document.getElementById("decision-support-note").textContent = `loss of ~$${compactPrice(decision.strategyRange.failureLevel)} raises sub-$70k risk`;

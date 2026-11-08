@@ -139,6 +139,8 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.match(html, /id="structural-reclaim-proof"/);
   assert.match(app, /Calculated structural reclaim/);
   assert.match(app, /reclaimPivotCount/);
+  assert.match(app, /DAILY ACCEPTED/);
+  assert.match(app, /dailyAcceptance\.rule/);
   assert.match(app, /This is calculated structure, not a prediction or entry signal/);
   assert.match(html, /class="mobile-jump-nav"/);
   assert.doesNotMatch(html, /mobile-jump-nav[^]*href="#/);
