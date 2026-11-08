@@ -106,6 +106,7 @@ test("primary chart precedes decision research and paper tracker remains outside
   const path = require("node:path");
   const html = fs.readFileSync(path.join(__dirname, "..", "site", "index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "..", "site", "app.js"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "..", "site", "styles.css"), "utf8");
   assert.ok(html.indexOf('id="chart-container"') < html.indexOf('id="paper-trader"'));
   assert.ok(html.indexOf('id="paper-trader"') < html.indexOf('id="advanced-analysis"'));
   assert.match(html, /id="trade-form-leverage"[^>]+max="100"/);
@@ -133,4 +134,16 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.match(app, /activeRangeLabCandidateKey && activeRangeLabData/);
   assert.match(html, /Research &amp; details/);
   assert.match(html, /Trade checklist/);
+  assert.match(html, /id="quick-guide"/);
+  assert.match(html, /How to use Range Desk/);
+  assert.match(html, /class="mobile-jump-nav"/);
+  assert.doesNotMatch(html, /mobile-jump-nav[^]*href="#/);
+  assert.match(app, /quickGuideStatus\.textContent/);
+  assert.match(app, /document\.getElementById\("quick-guide"\)/);
+  assert.match(app, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
+  assert.match(app, /guide\.hidden = isSpy/);
+  assert.match(app, /isSpy \? "Summary" : "Checklist"/);
+  assert.match(app, /isSpy \? "advanced-analysis" : "paper-trader"/);
+  assert.match(css, /\.mobile-jump-nav\s*\{[\s\S]*position:\s*fixed/);
+  assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.decision-brief\s*\{\s*grid-template-columns:\s*1fr/);
 });

@@ -164,6 +164,31 @@
       </div>
     </section>
 
+    <details id="quick-guide" class="quick-guide">
+      <summary>
+        <span>
+          <strong>How to use Range Desk</strong>
+          <small id="quick-guide-status">Start with price location, then wait for confirmation.</small>
+        </span>
+        <b>3 steps</b>
+      </summary>
+      <div class="quick-guide-steps">
+        <article>
+          <i>1</i>
+          <span><strong>Find the location</strong><small>Use the chart to see whether price is near support, resistance, or still in the middle.</small></span>
+        </article>
+        <article>
+          <i>2</i>
+          <span><strong>Wait for all three checks</strong><small>A boundary touch alone is not enough. Wait for a completed candle to confirm back inside the range.</small></span>
+        </article>
+        <article>
+          <i>3</i>
+          <span><strong>Plan the risk</strong><small>Use the paper planner to define the stop, target, and maximum account loss before considering a real trade.</small></span>
+        </article>
+      </div>
+      <p>Range Desk provides market context, not an automatic buy or sell instruction.</p>
+    </details>
+
     <section id="range-lab" class="range-lab" aria-labelledby="range-lab-title">
       <div class="range-lab-heading">
         <div>
@@ -669,6 +694,12 @@
       </p>
     </section>
   </main>
+
+  <nav class="mobile-jump-nav" aria-label="Page sections">
+    <button type="button" data-jump-target="chart-container">Chart</button>
+    <button type="button" id="mobile-jump-decision" data-jump-target="decision-brief">Checklist</button>
+    <button type="button" id="mobile-jump-third" data-jump-target="paper-trader">Paper trade</button>
+  </nav>
 
   <aside id="patience-alert-toast" class="patience-alert-toast" role="status" aria-live="assertive" hidden>
     <span>

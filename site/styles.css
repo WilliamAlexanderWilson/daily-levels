@@ -130,11 +130,12 @@ main > .controls { order: 1; }
 main > .market-clock { order: 2; }
 main > .meta-row { order: 3; }
 main > .chart-container { order: 4; }
-main > .paper-trader { order: 5; }
-main > .decision-brief { order: 6; }
-main > .range-lab { order: 7; }
-main > .nearby-context { order: 8; }
-main > .advanced-analysis { order: 9; }
+main > .decision-brief { order: 5; }
+main > .quick-guide { order: 6; }
+main > .paper-trader { order: 7; }
+main > .range-lab { order: 8; }
+main > .nearby-context { order: 9; }
+main > .advanced-analysis { order: 10; }
 main > * { min-width: 0; }
 
 .controls {
@@ -2871,6 +2872,77 @@ main { padding-top: 0.75rem; }
 }
 .range-lab { border-radius: 10px; box-shadow: none; background: var(--surface); }
 
+.quick-guide {
+  margin: 0 0 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.quick-guide > summary {
+  display: flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  list-style: none;
+}
+.quick-guide > summary::-webkit-details-marker { display: none; }
+.quick-guide > summary span { display: grid; gap: 0.08rem; }
+.quick-guide > summary strong { font-size: 0.84rem; }
+.quick-guide > summary small { color: var(--text-muted); font-size: 0.7rem; }
+.quick-guide > summary b {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.quick-guide[open] > summary { border-bottom: 1px solid var(--border); }
+.quick-guide-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  padding: 0.85rem 0.9rem 0;
+}
+.quick-guide-steps article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: start;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.quick-guide-steps i {
+  display: grid;
+  width: 1.4rem;
+  height: 1.4rem;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--accent);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 750;
+}
+.quick-guide-steps span { display: grid; gap: 0.18rem; }
+.quick-guide-steps strong { font-size: 0.76rem; }
+.quick-guide-steps small { color: var(--text-muted); font-size: 0.68rem; line-height: 1.4; }
+.quick-guide > p {
+  margin: 0;
+  padding: 0.65rem 0.9rem 0.85rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.mobile-jump-nav { display: none; }
+#chart-container,
+#decision-brief,
+#paper-trader { scroll-margin-top: 66px; }
+
 @media (max-width: 700px) {
   .site-header {
     grid-template-columns: auto minmax(0, 1fr);
@@ -2893,9 +2965,51 @@ main { padding-top: 0.75rem; }
   .market-clock-primary { grid-template-columns: 1fr auto; }
   .market-clock-context { display: none; }
   .chart-container { height: min(64svh, 540px); min-height: 390px; }
-  .decision-brief { padding: 0.9rem; }
+  .decision-brief { grid-template-columns: 1fr; padding: 0.9rem; }
   .decision-source-link { width: 100%; margin-left: 0; }
   .patience-gate { grid-template-columns: 1fr; }
   .trade-form-grid { grid-template-columns: 1fr; }
   .trade-form-field small { min-height: 0; }
+  body { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  main { padding-inline: 0.7rem; padding-bottom: 1.5rem; }
+  .quick-guide > summary { min-height: 48px; padding: 0.65rem 0.75rem; }
+  .quick-guide > summary small { font-size: 0.66rem; }
+  .quick-guide-steps { grid-template-columns: 1fr; padding: 0.75rem 0.75rem 0; }
+  .quick-guide > p { padding-inline: 0.75rem; }
+  .mobile-jump-nav {
+    position: fixed;
+    z-index: 40;
+    right: 0.65rem;
+    bottom: calc(0.55rem + env(safe-area-inset-bottom));
+    left: 0.65rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 0.3rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(14px);
+  }
+  .mobile-jump-nav button {
+    display: grid;
+    min-height: 44px;
+    place-items: center;
+    border-radius: 8px;
+    border: 0;
+    color: var(--text-muted);
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mobile-jump-nav button:active,
+  .mobile-jump-nav button:focus-visible {
+    color: var(--text);
+    background: var(--bg);
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
 }
