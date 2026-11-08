@@ -830,14 +830,14 @@
     const zones = Array.isArray(zonePrices.segments)
       ? zonePrices.segments.map((segment) => ({
           className: `active-range-${segment.kind}`,
-          label: segment.label,
+          label: segment.kind === "short" ? "Resistance area" : segment.kind === "long" ? "Support area" : "Wait",
           top: clampY(candleSeries.priceToCoordinate(segment.high)),
           bottom: clampY(candleSeries.priceToCoordinate(segment.low)),
         }))
       : [
-          { className: "active-range-short", label: "SHORT WATCH", top: clippedTop, bottom: clampY(yShortThreshold) },
-          { className: "active-range-wait", label: "WAIT", top: clampY(yShortThreshold), bottom: clampY(yLongThreshold) },
-          { className: "active-range-long", label: "LONG WATCH", top: clampY(yLongThreshold), bottom: clippedBottom },
+          { className: "active-range-short", label: "Resistance area", top: clippedTop, bottom: clampY(yShortThreshold) },
+          { className: "active-range-wait", label: "Wait", top: clampY(yShortThreshold), bottom: clampY(yLongThreshold) },
+          { className: "active-range-long", label: "Support area", top: clampY(yLongThreshold), bottom: clippedBottom },
         ];
     for (const zone of zones) {
       const zoneElement = document.createElement("span");
@@ -858,7 +858,7 @@
         supportBand.className = "macro-support-zone";
         supportBand.style.top = `${supportTop - clippedTop}px`;
         supportBand.style.height = `${Math.max(1, supportBottom - supportTop)}px`;
-        supportBand.textContent = "DECISION SUPPORT · WAIT FOR RECLAIM";
+        supportBand.textContent = "Decision support · wait for reclaim";
         band.appendChild(supportBand);
       }
     }
@@ -870,7 +870,7 @@
         const midpointLine = document.createElement("span");
         midpointLine.className = "macro-midpoint-line";
         midpointLine.style.top = `${yMidpoint - clippedTop}px`;
-        midpointLine.textContent = `MIDPOINT · ${formatPriceRange(midpointPrice, midpointPrice)}`;
+        midpointLine.textContent = `Midpoint · ${formatPriceRange(midpointPrice, midpointPrice)}`;
         band.appendChild(midpointLine);
       }
     }
@@ -893,7 +893,7 @@
       label.className = `active-range-boundary active-range-boundary-${boundary.side}`;
       label.style.top = `${boundary.y}px`;
       label.style.right = `${axisWidth + 8}px`;
-      label.textContent = `${boundary.name.toUpperCase()} · ${formatPriceRange(boundary.price, boundary.price)}`;
+      label.textContent = `${boundary.name} · ${formatPriceRange(boundary.price, boundary.price)}`;
       label.title = boundary.name;
       container.appendChild(label);
       overlayEls.push(label);
@@ -1149,7 +1149,7 @@
     if (liveEntryButton) liveEntryButton.disabled = !markFresh;
     const paperLiveLabel = document.getElementById("paper-trader-live-label");
     if (paperLiveLabel && state.asset !== "spy") {
-      paperLiveLabel.textContent = markFresh ? "LIVE MARK" : "LAST MARK";
+      paperLiveLabel.textContent = markFresh ? "Live price" : "Last price";
     }
     if (lastRenderedMarkFresh !== markFresh) {
       lastRenderedMarkFresh = markFresh;
@@ -1541,8 +1541,8 @@
 
   function renderDecisionLoading() {
     setDecisionClass("loading");
-    document.getElementById("decision-badge").textContent = "CALCULATING";
-    document.getElementById("decision-method").textContent = state.asset === "btc" ? "Macro range framework" : "Rolling range framework";
+    document.getElementById("decision-badge").textContent = "Loading";
+    document.getElementById("decision-method").textContent = state.asset === "btc" ? "BTC macro range" : "Current rolling range";
     document.getElementById("decision-source-link").hidden = true;
     document.getElementById("decision-title").textContent = "Building the current range read…";
     document.getElementById("decision-summary").textContent = "Waiting for price, levels, and historical context.";
@@ -1554,8 +1554,8 @@
   function renderDecisionUnavailable(message) {
     activeRangeDecision = null;
     setDecisionClass("wait");
-    document.getElementById("decision-badge").textContent = "DATA UNAVAILABLE";
-    document.getElementById("decision-method").textContent = "No decision from partial data";
+    document.getElementById("decision-badge").textContent = "Data unavailable";
+    document.getElementById("decision-method").textContent = "Waiting for complete data";
     document.getElementById("decision-source-link").hidden = true;
     document.getElementById("decision-title").textContent = "The range read could not be built";
     document.getElementById("decision-summary").textContent = message;
@@ -1627,7 +1627,7 @@
   }
 
   function showPatienceToast(title, detail, direction) {
-    showAlertToast(`PATIENCE GATE · 3/3 · ${direction} SETUP`, title, detail);
+    showAlertToast(`Trade checklist · 3 of 3 · ${direction.toLowerCase()} setup`, title, detail);
   }
 
   function maybeSendPaperEventAlerts(data) {
@@ -1729,32 +1729,32 @@
     setPatienceCondition(
       "patience-location",
       hasLocation,
-      hasLocation ? `${decision.label.toLowerCase()} area` : "Middle of range"
+      hasLocation ? (decision.status === "long-watch" ? "Near support" : "Near resistance") : "Not near a boundary"
     );
     setPatienceCondition(
       "patience-touch",
       hasTouch,
-      hasTouch ? `${boundary.name} hit ${boundaryTest.barsAgo === 0 ? `last ${timeframeLabel} close` : `${boundaryTest.barsAgo} ${timeframeLabel} bars ago`}` : hasLocation ? `Waiting for ${boundary.name}` : "No edge selected"
+      hasTouch ? `${boundary.name} was tested ${boundaryTest.barsAgo === 0 ? `on the latest ${timeframeLabel} candle` : `${boundaryTest.barsAgo} ${timeframeLabel} candles ago`}` : hasLocation ? `Waiting for price to reach ${boundary.name}` : "No boundary selected"
     );
     setPatienceCondition(
       "patience-confirmation",
       hasConfirmation,
       hasConfirmation
-        ? "Latest completed candle closed back inside"
+        ? "Latest completed candle closed back inside the range"
         : boundaryTest && boundaryTest.confirmed
-          ? "Prior confirmation expired"
+          ? "Earlier confirmation is no longer current"
           : hasTouch
-            ? "No confirming close"
-            : "Boundary not tested"
+            ? "Waiting for a confirming candle close"
+            : "Waiting for the boundary test"
     );
 
-    document.getElementById("patience-count").textContent = `${readyCount} / 3 ready`;
-    let instruction = "Price is in the middle. Patience is the trade—wait for an edge.";
-    if (hasLocation && !hasTouch) instruction = `Do nothing until price actually tests ${boundary.name}.`;
+    document.getElementById("patience-count").textContent = `${readyCount} of 3 conditions met`;
+    let instruction = "Price is between the important boundaries. Wait for it to reach an edge.";
+    if (hasLocation && !hasTouch) instruction = `Price is in the right area, but it has not tested ${boundary.name} yet.`;
     if (hasTouch && !hasConfirmation) instruction = boundaryTest && boundaryTest.confirmed
-      ? "The prior reclaim is no longer the latest completed candle. Wait for a fresh boundary test instead of chasing it."
-      : "The boundary was hit, but the candle did not close back inside. Do not front-run confirmation.";
-    if (hasConfirmation) instruction = "Location, test, and close are visible. Review the stop and size; this is a setup to assess, not an automatic order.";
+      ? "The earlier confirmation is now stale. Wait for a new test instead of chasing price."
+      : "The boundary was tested, but a completed candle has not closed back inside the range.";
+    if (hasConfirmation) instruction = "All three conditions are visible. Review the stop, target, and position size before making any decision.";
     document.getElementById("patience-instruction").textContent = instruction;
     maybeSendPatienceAlert(decision, gateState);
     return gateState;
@@ -1767,11 +1767,29 @@
     activeRangeDecision = decision;
     const gateState = renderPatienceGate(decision);
     setDecisionClass(decision.status);
+    const isLong = decision.status === "long-watch";
+    const isShort = decision.status === "short-watch";
     document.getElementById("decision-badge").textContent = gateState.isReady
-      ? `${decision.status === "long-watch" ? "LONG" : "SHORT"} SETUP CONFIRMED`
-      : decision.label;
-    document.getElementById("decision-title").textContent = decision.title;
-    document.getElementById("decision-summary").textContent = decision.summary;
+      ? "3 conditions met"
+      : isLong
+        ? "Near support"
+        : isShort
+          ? "Near resistance"
+          : "Wait";
+    document.getElementById("decision-title").textContent = gateState.isReady
+      ? "Conditions met — review the risk before entering"
+      : isLong
+        ? "Support area — wait for a confirmed reclaim"
+        : isShort
+          ? "Resistance area — wait for a confirmed rejection"
+          : "Middle of the range — no location advantage";
+    document.getElementById("decision-summary").textContent = gateState.isReady
+      ? "The latest completed candle confirmed the boundary test. This is context to assess, not an automatic trade."
+      : gateState.hasTouch
+        ? "Price reached the boundary, but the completed candle has not confirmed a move back inside the range."
+        : isLong || isShort
+          ? "Price is near an important boundary. Let the market test and confirm it before planning an entry."
+          : "Price is not close enough to either boundary. Waiting avoids forcing a trade in the least useful part of the range.";
     document.getElementById("decision-range").hidden = !decision.support || !decision.resistance;
     document.getElementById("decision-metrics").hidden = false;
     document.getElementById("decision-rr-label").textContent = "Range geometry";
@@ -1794,10 +1812,10 @@
     const strategyTrackPosition = RangeDecision.strategyTrackPosition(decision, currentPrice);
     const bracketPct = (strategyTrackPosition === null ? decision.bracketPosition : strategyTrackPosition) * 100;
     const macroText = decision.strategyRange
-      ? `${decision.strategyRange.sourceLabel} · ${decision.strategyRange.sourceDate} · ${state.range.toUpperCase()} close gate`
+      ? `BTC macro range · updated ${decision.strategyRange.sourceDate} · ${state.range.toUpperCase()} candle confirmation`
       : decision.macroPosition === null
-        ? `Immediate support/resistance bracket · ${state.range.toUpperCase()} close gate`
-        : `Immediate bracket · ${Math.round(decision.macroPosition * 100)}% through 60-day range · ${state.range.toUpperCase()} close gate`;
+        ? `Nearest support and resistance · ${state.range.toUpperCase()} candle confirmation`
+        : `Nearest range · ${Math.round(decision.macroPosition * 100)}% through the 60-day range · ${state.range.toUpperCase()} candle confirmation`;
     document.getElementById("decision-method").textContent = macroText;
     const sourceLink = document.getElementById("decision-source-link");
     sourceLink.hidden = !decision.strategyRange || !decision.strategyRange.sourceUrl;
@@ -1862,9 +1880,9 @@
       document.getElementById("decision-resistance-odds").textContent = "$82.8k";
       document.getElementById("decision-resistance-note").textContent = "acceptance above changes the lower-bias thesis";
       document.getElementById("decision-caveat").textContent = decision.status === "long-watch"
-        ? "LONG WATCH is not a buy call. Require a sweep/test and a completed close back above the selected support boundary before assessing risk and size."
+        ? "Near support does not mean buy. Wait for a test and a completed candle close back above support before assessing risk and size."
         : decision.status === "short-watch"
-          ? "SHORT WATCH is not a sell call. Require rejection and a completed close back below the upper deviation before assessing risk and size."
+          ? "Near resistance does not mean sell. Wait for rejection and a completed candle close back below resistance before assessing risk and size."
           : "The range supplies location, not certainty. Wait for an edge and completed-candle confirmation instead of trading every nearby level.";
       renderOverlays();
       return;
@@ -2155,7 +2173,15 @@
       button.addEventListener("click", () => selectRangeLabCandidate(candidate.spec.key));
       options.appendChild(button);
     }
-    selectRangeLabCandidate(activeRangeLabCandidateKey || RangeLab.defaultKey(data));
+    // Research ranges are opt-in. Do not add extra price lines to the primary
+    // chart just because the hidden research panel loaded in the background.
+    // Once the user chooses a definition, keep that explicit selection across
+    // later data refreshes.
+    if (activeRangeLabCandidateKey) selectRangeLabCandidate(activeRangeLabCandidateKey);
+    else {
+      clearRangeLabLines();
+      document.getElementById("range-lab-detail").hidden = true;
+    }
   }
 
   async function pollRangeLab() {
@@ -2170,8 +2196,8 @@
 
   function renderSpyDecision(chartData, trades, backtest) {
     setDecisionClass("wait");
-    document.getElementById("decision-badge").textContent = "NO VALIDATED EDGE";
-    document.getElementById("decision-method").textContent = "Out-of-sample result · Oct 11, 2026";
+    document.getElementById("decision-badge").textContent = "No validated edge";
+    document.getElementById("decision-method").textContent = "Holdout result · Oct 11, 2026";
     document.getElementById("decision-source-link").hidden = true;
     document.getElementById("decision-title").textContent = "SPY setup failed its holdout test";
     document.getElementById("decision-summary").textContent =
@@ -2198,7 +2224,7 @@
     document.getElementById("decision-resistance-odds").textContent = "Negative";
     document.getElementById("decision-resistance-note").textContent = "all 24 holdout combinations";
     document.getElementById("decision-caveat").textContent =
-      "SPY remains available for chart and backtest review under Full analysis. It is not presented as a current entry signal.";
+      "SPY remains available for chart and backtest review under Research & details. It is not presented as a current entry signal.";
   }
 
   function renderNearestLevels(levels, scorecard, currentPrice) {
@@ -3394,10 +3420,10 @@
     const paperStatus = document.getElementById("paper-trader-status");
     const paperLiveLabel = document.getElementById("paper-trader-live-label");
     document.getElementById("subtitle").textContent = isSpy
-      ? "One intraday SPY options setup, backtested against ~2 years of real data."
+      ? "Historical SPY setup review with clearly labeled batch data."
       : asset === "btc"
-        ? "BTC’s $60k–$80k macro range, live price, and a patience gate."
-        : "One rolling range, its boundaries, and a patience gate.";
+        ? "Live BTC price, the current macro range, and a clear confirmation checklist."
+        : "Live ETH price, the current rolling range, and a clear confirmation checklist.";
 
     document.getElementById("range-select").hidden = isSpy;
     document.getElementById("spy-timeframe-select").hidden = !isSpy;
@@ -3425,7 +3451,7 @@
     paperStatus.textContent = isSpy
       ? "SPY is batch data on this site, so live paper P&L is disabled rather than presenting a stale mark as real-time."
       : `${asset.toUpperCase()} P&L follows Kraken's real-time trade stream. No order is sent anywhere.`;
-    paperLiveLabel.textContent = isSpy ? "BATCH DATA" : "LIVE MARK";
+    paperLiveLabel.textContent = isSpy ? "Batch data" : "Live price";
     if (isSpy) closeTradeForm();
     renderPaperPositions(asset, isSpy ? null : lastLivePrice);
     if (asset !== "btc") clearRangeLabLines();
@@ -3436,6 +3462,9 @@
     const destination = document.getElementById("advanced-analysis-content");
     if (!destination) return;
     const advancedIds = [
+      "range-open-forward",
+      "range-lab",
+      "nearby-context",
       "futures-context",
       "exhaustion-banner",
       "chart-legend",
@@ -3463,10 +3492,8 @@
       document.getElementById("market-clock"),
       document.querySelector(".meta-row"),
       document.getElementById("chart-container"),
-      document.getElementById("paper-trader"),
       document.getElementById("decision-brief"),
-      document.getElementById("range-lab"),
-      document.getElementById("nearby-context"),
+      document.getElementById("paper-trader"),
       document.getElementById("advanced-analysis"),
     ];
     for (const element of primary) {
@@ -3488,6 +3515,15 @@
     }
     details.addEventListener("toggle", () => {
       clearPriceSnapState();
+      if (!details.open) {
+        // Research overlays are intentionally scoped to the expanded drawer.
+        // Keep the selected definition for comparison, but restore the quiet
+        // primary chart as soon as the drawer closes.
+        clearRangeLabLines();
+      } else if (activeRangeLabCandidateKey && activeRangeLabData) {
+        const candidate = RangeLab.candidateByKey(activeRangeLabData, activeRangeLabCandidateKey);
+        if (candidate) drawRangeLabCandidate(candidate);
+      }
       if (state.asset !== "spy") {
         renderLevels(activeLevels);
         renderRoundProximityBands(lastLivePrice, activeProximity);

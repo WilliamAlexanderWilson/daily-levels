@@ -116,7 +116,7 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.match(html, /id="trade-form-size"[^>]+readonly/);
   assert.match(app, /SPY is batch data|batch SPY data/);
   assert.match(app, /liveEntryButton\.disabled = !markFresh/);
-  assert.match(app, /paperLiveLabel\.textContent = markFresh \? "LIVE MARK" : "LAST MARK"/);
+  assert.match(app, /paperLiveLabel\.textContent = markFresh \? "Live price" : "Last price"/);
   assert.match(app, /" \(last mark\)"/);
   assert.match(app, /"PAPER STOP"/);
   assert.match(app, /"PAPER TARGET"/);
@@ -127,4 +127,10 @@ test("primary chart precedes decision research and paper tracker remains outside
   );
   assert.doesNotMatch(presentationBody, /settleTriggeredTrades/);
   assert.match(app, /source === "stream" && liveMarkIsFresh\(\)/);
+  assert.match(app, /"range-lab",\s+"nearby-context"/);
+  assert.doesNotMatch(app, /selectRangeLabCandidate\(activeRangeLabCandidateKey \|\| RangeLab\.defaultKey/);
+  assert.match(app, /if \(!details\.open\) \{[\s\S]*clearRangeLabLines\(\)/);
+  assert.match(app, /activeRangeLabCandidateKey && activeRangeLabData/);
+  assert.match(html, /Research &amp; details/);
+  assert.match(html, /Trade checklist/);
 });
