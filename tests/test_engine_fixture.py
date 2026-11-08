@@ -53,6 +53,7 @@ def test_engine_runs_end_to_end_on_real_fixture(patched_fetch):
     assert mids == sorted(mids)
 
     assert result["config"]["range_days"] == 60
+    assert result["config"]["structural_reclaim_lookback_days"] == 540
     assert "generated_at_utc" in result
     assert "generated_at_central" in result
 

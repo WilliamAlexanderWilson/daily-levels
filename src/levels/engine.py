@@ -13,6 +13,7 @@ from src.levels.golden_pocket import find_golden_pocket
 from src.levels.liquidation_estimate import estimate_liquidation_bins
 from src.levels.pivots import find_pivots
 from src.levels.reference_levels import get_reference_levels
+from src.levels.structural_reclaim import detect_structural_reclaim
 from src.levels.volume_profile import build_volume_profile
 
 
@@ -47,6 +48,11 @@ def build_asset_levels(pair: str) -> dict:
     ref = get_reference_levels(candles_1d)
     flips = find_flip_levels(pivots, candles_1d, current_price)
     exhaustion_pattern = detect_exhaustion_pattern(candles_1d)
+    structural_reclaim = (
+        detect_structural_reclaim(candles_1d)
+        if pair == "BTC/USD"
+        else None
+    )
 
     # POC/VAH/VAL/range high-low all come from the same RANGE_DAYS lookback
     # of 4h candles - naming that explicitly keeps the labels honest when
@@ -141,6 +147,11 @@ def build_asset_levels(pair: str) -> dict:
             "min_swing_pct": config.MIN_SWING_PCT,
             "golden_pocket_range": [config.GOLDEN_POCKET_LOW, config.GOLDEN_POCKET_HIGH],
             "pivot_lookback_days": config.PIVOT_LOOKBACK_DAYS,
+            "structural_reclaim_lookback_days": config.STRUCTURAL_RECLAIM_LOOKBACK_DAYS,
+            "structural_reclaim_cluster_tolerance_pct": config.STRUCTURAL_RECLAIM_CLUSTER_TOLERANCE_PCT,
+            "structural_reclaim_min_pivots": config.STRUCTURAL_RECLAIM_MIN_PIVOTS,
+            "structural_reclaim_min_span_days": config.STRUCTURAL_RECLAIM_MIN_SPAN_DAYS,
+            "structural_reclaim_acceptance_closes": config.STRUCTURAL_RECLAIM_ACCEPTANCE_CLOSES,
             "confluence_merge_pct": config.CONFLUENCE_MERGE_PCT,
             "liquidation_leverage_tiers": config.LIQUIDATION_LEVERAGE_TIERS,
             "liquidation_max_distance_pct": config.LIQUIDATION_MAX_DISTANCE_PCT,
@@ -150,5 +161,9 @@ def build_asset_levels(pair: str) -> dict:
         "liquidation_estimate": liquidation_bins_out,
         "exhaustion_pattern": exhaustion_pattern,
     }
+
+    if structural_reclaim is not None:
+        structural_reclaim["calculated_at_utc"] = now_utc.isoformat()
+        result["structural_reclaim"] = structural_reclaim
 
     return {"result": result, "candles_4h": candles_4h, "candles_1d": candles_1d}

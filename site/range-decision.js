@@ -10,6 +10,10 @@
   // explicit: the outer 35% on either side is a watch area and the middle
   // 30% is a no-trade area. This is a geometry filter, not a claim of edge.
   const EDGE_FRACTION = 0.35;
+  const STRUCTURAL_RECLAIM_METHOD = "structural-reclaim-pivot-cluster-v1";
+  const STRUCTURAL_RECLAIM_DATA_SOURCE = "Kraken BTC/USD completed Daily candles";
+  const STRUCTURAL_RECLAIM_ACCEPTANCE_RULE = "2 consecutive completed Daily closes";
+  const STRUCTURAL_RECLAIM_ACCEPTANCE_CLOSES = 2;
 
   // This is an explicitly sourced market-structure framework, not a value
   // derived from the daily rolling-level engine. Keeping it as data makes the
@@ -27,6 +31,112 @@
     sourceLabel: "Sourced macro-range framework",
     sourceUrl: "#range-method-sources",
   });
+
+  function structuralRegimeIsUsable(regime, fallback = BTC_MACRO_RANGE) {
+    const boundary = regime && regime.boundary;
+    const exactPrice = boundary && Number(boundary.exact_price);
+    const acceptance = regime && regime.acceptance;
+    const allowedAcceptance = new Set(["accepted-above", "accepted-below", "testing", "insufficient-data"]);
+    const testsAreValid = Array.isArray(boundary && boundary.tests)
+      && boundary.tests.every((test) => test
+        && typeof test.date === "string"
+        && Number.isFinite(Date.parse(test.date))
+        && Number.isFinite(Number(test.high))
+        && Number(test.high) > 0);
+    const closesAreValid = Array.isArray(acceptance && acceptance.closes)
+      && acceptance.closes.every((close) => close
+        && typeof close.date === "string"
+        && Number.isFinite(Date.parse(close.date))
+        && Number.isFinite(Number(close.close))
+        && Number(close.close) > 0);
+    const closeValues = closesAreValid
+      ? acceptance.closes.map((close) => Number(close.close))
+      : [];
+    const hasCompleteAcceptanceEvidence = closeValues.length === STRUCTURAL_RECLAIM_ACCEPTANCE_CLOSES;
+    const acceptanceMatchesEvidence = acceptance && (
+      (acceptance.state === "accepted-above" && hasCompleteAcceptanceEvidence && closeValues.every((close) => close > exactPrice))
+      || (acceptance.state === "accepted-below" && hasCompleteAcceptanceEvidence && closeValues.every((close) => close < exactPrice))
+      || (acceptance.state === "testing" && hasCompleteAcceptanceEvidence
+        && !closeValues.every((close) => close > exactPrice)
+        && !closeValues.every((close) => close < exactPrice))
+      || (acceptance.state === "insufficient-data" && closeValues.length < STRUCTURAL_RECLAIM_ACCEPTANCE_CLOSES)
+    );
+    return Boolean(
+      regime
+      && regime.method_version === STRUCTURAL_RECLAIM_METHOD
+      && regime.quality === "established"
+      && regime.data_source === STRUCTURAL_RECLAIM_DATA_SOURCE
+      && Number.isFinite(Date.parse(regime.calculated_at_utc))
+      && Number.isFinite(exactPrice) && exactPrice > fallback.high
+      && Number.isFinite(Number(boundary.display_price))
+      && typeof boundary.origin_date === "string" && Number.isFinite(Date.parse(boundary.origin_date))
+      && typeof boundary.last_test_date === "string" && Number.isFinite(Date.parse(boundary.last_test_date))
+      && Number(boundary.pivot_count) >= 4
+      && Number(boundary.distinct_months) >= 3
+      && Number(boundary.span_days) >= 90
+      && testsAreValid && boundary.tests.length === Number(boundary.pivot_count)
+      && acceptance && allowedAcceptance.has(acceptance.state)
+      && acceptance.rule === STRUCTURAL_RECLAIM_ACCEPTANCE_RULE
+      && closesAreValid
+      && acceptanceMatchesEvidence
+    );
+  }
+
+  function strategyRangeFromRegime(regime, fallback = BTC_MACRO_RANGE) {
+    if (!structuralRegimeIsUsable(regime, fallback)) return fallback;
+    const boundary = regime.boundary;
+    const exactPrice = Number(boundary.exact_price);
+
+    return Object.freeze({
+      ...fallback,
+      reclaim: exactPrice,
+      reclaimDisplay: Number(boundary.display_price) || exactPrice,
+      reclaimOriginDate: boundary.origin_date || null,
+      reclaimLastTestDate: boundary.last_test_date || null,
+      reclaimPivotCount: Number(boundary.pivot_count) || 0,
+      reclaimDistinctMonths: Number(boundary.distinct_months) || 0,
+      reclaimQuality: regime.quality || "developing",
+      reclaimAcceptance: regime.acceptance || null,
+      reclaimMethodVersion: regime.method_version || null,
+      reclaimCalculatedAt: regime.calculated_at_utc || null,
+      reclaimDataSource: regime.data_source || null,
+      sourceLabel: "Calculated structural reclaim with dated source framework",
+      isCalculatedReclaim: true,
+    });
+  }
+
+  function reclaimBiasPresentation(range, currentPrice) {
+    const price = range && Number(range.reclaim);
+    const priceText = Number.isFinite(price)
+      ? price.toLocaleString(undefined, { maximumFractionDigits: 0 })
+      : "unavailable";
+    if (!range || !range.isCalculatedReclaim) {
+      return {
+        label: `DATED SOURCE · ${priceText}`,
+        note: "Calculated Daily acceptance unavailable; dated fallback only",
+      };
+    }
+    const acceptance = range.reclaimAcceptance;
+    const rule = acceptance && acceptance.rule
+      ? `${acceptance.rule} · descriptive, not a trade instruction`
+      : "Calculated Daily acceptance unavailable";
+    if (acceptance && acceptance.state === "accepted-above") {
+      return { label: `DAILY ACCEPTED > ${priceText}`, note: rule };
+    }
+    if (acceptance && acceptance.state === "accepted-below") {
+      return { label: `DAILY BELOW < ${priceText}`, note: rule };
+    }
+    if (acceptance && acceptance.state === "testing") {
+      return { label: `DAILY TESTING ${priceText}`, note: rule };
+    }
+    if (acceptance && acceptance.state === "insufficient-data") {
+      return { label: "DAILY DATA INCOMPLETE", note: rule };
+    }
+    return {
+      label: Number.isFinite(currentPrice) ? `STATUS UNAVAILABLE · ${priceText}` : "STATUS UNAVAILABLE",
+      note: "Calculated Daily acceptance unavailable",
+    };
+  }
 
   function midpoint(level) {
     return (level.price_low + level.price_high) / 2;
@@ -388,5 +498,11 @@
     rangeZonePrices,
     buildStrategyRange,
     BTC_MACRO_RANGE,
+    STRUCTURAL_RECLAIM_METHOD,
+    STRUCTURAL_RECLAIM_DATA_SOURCE,
+    STRUCTURAL_RECLAIM_ACCEPTANCE_RULE,
+    structuralRegimeIsUsable,
+    strategyRangeFromRegime,
+    reclaimBiasPresentation,
   };
 });

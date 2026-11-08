@@ -2,8 +2,8 @@
 
 A focused range-trading workspace. BTC's default screen is organized around
 Mathieu's November 4, 2026 higher-timeframe framework: a $60k floor, $80k
-ceiling, $80k-$82.8k upper deviation/reclaim, and $72k-$77k decision-support
-zone. Live candles and price move with Kraken's per-trade WebSocket stream;
+ceiling, an automatically reconstructed structural reclaim near $82.8k, and
+$72k-$77k decision-support zone. Live candles and price move with Kraken's per-trade WebSocket stream;
 the REST poll is only a reconnect fallback. Rolling calculated
 levels are optional context, not mislabeled as the macro range. The full level
 map, liquidity model, scorecards, explanations, and local trade journal remain
@@ -25,12 +25,16 @@ of Mathieu's current market videos established the missing framework:
   $72k-$77k support, and the risk of moving toward the floor if support fails.
 - https://youtu.be/HBKEvXjDbS0 repeats the $20k range and identifies roughly
   $74k as an important anchored-VWAP failure area.
-- https://youtu.be/v3fXVye-TVg keeps $82.8k as the reclaim required to change
-  the lower higher-timeframe bias.
+- https://youtu.be/v3fXVye-TVg?t=64 explains that $82.8k is the May range high
+  below which the lower higher-timeframe bias remained intact.
 
-Those levels are a dated discretionary framework, not an objective or
-backtested signal. `site/range-decision.js` stores the source date alongside
-the prices so the UI cannot silently present them as timeless.
+The surrounding levels remain a dated discretionary framework, not an
+objective or backtested signal. The structural reclaim is now independently
+reconstructed once a day from completed Kraken Daily candles: repeated pivot
+highs within 2% form a candidate cluster, and the strongest durable cluster's
+exact high becomes the boundary. The current result traces `$82,790.90` to
+May 6, 2026, with later tests retained as evidence. Its full frozen method and
+limitations are in [`docs/STRUCTURAL-RECLAIM.md`](docs/STRUCTURAL-RECLAIM.md).
 
 The **Patience gate** then requires three visible facts before calling the
 chart a setup worth reviewing:
@@ -95,7 +99,8 @@ Coincident sessions such as London and Frankfurt remain visible as separate
 rows but count as one opening cohort toward the evidence gate.
 
 The BTC chart marks the complete macro range behind the candles, including
-the $70k midpoint, $72k-$77k support zone, $80k ceiling, and $82.8k reclaim.
+the $70k midpoint, $72k-$77k support zone, $80k ceiling, and calculated
+structural reclaim (currently `$82,790.90`, displayed near `$82.8k`).
 Nearby rolling levels sit in the closed **Research & details** panel. Opening it
 restores the broader level radar, order-book walls, and evidence-labeled
 liquidation model. A persistent ticker shows the latest Kraken price and the
@@ -110,8 +115,9 @@ age of the last successful update.
 2. The engine (`src/levels/engine.py`) fetches 4h and daily OHLC candles
    from Kraken's public API for `BTC/USD` and `ETH/USD`, runs the volume
    profile / pivot / golden pocket / reference-level / flip-level
-   calculations, merges nearby levels into confluence zones, and writes the
-   result as JSON into `site/data/`.
+   calculations, merges nearby levels into confluence zones, reconstructs the
+   BTC structural reclaim from repeat-tested Daily pivot highs, and writes the
+   result with its provenance as JSON into `site/data/`.
 3. The same Action run also replays history day by day (`src/backtest/`)
    to build a hold-rate scorecard — how often each level type has
    historically held vs. broken when touched — and writes that alongside.

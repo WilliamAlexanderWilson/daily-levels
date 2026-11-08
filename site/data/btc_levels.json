@@ -2,6 +2,42 @@
   "generated_at_utc": "2026-11-07T06:49:25.380374+00:00",
   "generated_at_central": "2026-11-07T00:49:25.380374-06:00",
   "price": 75803.8,
+  "structural_reclaim": {
+    "method_version": "structural-reclaim-pivot-cluster-v1",
+    "data_source": "Kraken BTC/USD completed Daily candles",
+    "lookback_days": 540,
+    "pivot_window_bars": 5,
+    "cluster_tolerance_pct": 2.0,
+    "selection_rule": "strongest cluster by pivots, distinct months, span, then recency",
+    "quality": "established",
+    "boundary": {
+      "exact_price": 82790.9,
+      "display_price": 82800,
+      "origin_date": "2026-05-06",
+      "origin_high": 82790.9,
+      "first_test_date": "2026-05-06",
+      "last_test_date": "2026-10-29",
+      "pivot_count": 4,
+      "distinct_months": 4,
+      "span_days": 176,
+      "tests": [
+        { "date": "2026-05-06", "high": 82790.9 },
+        { "date": "2026-08-28", "high": 81461.0 },
+        { "date": "2026-09-03", "high": 82288.1 },
+        { "date": "2026-10-29", "high": 81882.0 }
+      ]
+    },
+    "acceptance": {
+      "state": "accepted-below",
+      "rule": "2 consecutive completed Daily closes",
+      "closes": [
+        { "date": "2026-11-05", "close": 75979.9 },
+        { "date": "2026-11-06", "close": 75741.6 }
+      ]
+    },
+    "caveat": "Calculated structure, not a prediction, signal, or guarantee.",
+    "calculated_at_utc": "2026-11-07T06:49:25.380374+00:00"
+  },
   "config": {
     "range_days": 60,
     "volume_bin_pct": 0.0025,
@@ -13,6 +49,11 @@
       0.65
     ],
     "pivot_lookback_days": 365,
+    "structural_reclaim_lookback_days": 540,
+    "structural_reclaim_cluster_tolerance_pct": 2.0,
+    "structural_reclaim_min_pivots": 3,
+    "structural_reclaim_min_span_days": 30,
+    "structural_reclaim_acceptance_closes": 2,
     "confluence_merge_pct": 0.005,
     "liquidation_leverage_tiers": [
       10,

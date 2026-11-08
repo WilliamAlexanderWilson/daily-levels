@@ -2504,6 +2504,20 @@ tr.low-confidence-row {
   margin: 0;
 }
 
+.method-sources .structural-reclaim-proof {
+  margin: 0.7rem 0 0.8rem;
+  padding: 0.75rem 0.85rem;
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  line-height: 1.55;
+}
+
+.structural-reclaim-proof span {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
 .method-sources ul {
   margin-bottom: 0;
 }

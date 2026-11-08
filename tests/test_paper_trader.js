@@ -136,6 +136,11 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.match(html, /Trade checklist/);
   assert.match(html, /id="quick-guide"/);
   assert.match(html, /How to use Range Desk/);
+  assert.match(html, /id="structural-reclaim-proof"/);
+  assert.match(app, /Calculated structural reclaim/);
+  assert.match(app, /reclaimPivotCount/);
+  assert.match(app, /reclaimBiasPresentation/);
+  assert.match(app, /This is calculated structure, not a prediction or entry signal/);
   assert.match(html, /class="mobile-jump-nav"/);
   assert.doesNotMatch(html, /mobile-jump-nav[^]*href="#/);
   assert.match(app, /quickGuideStatus\.textContent/);

@@ -300,6 +300,7 @@
   let previousLivePrice = null; // gives the on-chart ticker a quiet up/down cue without implying a signal
   let lastLiveTickAt = null; // latest WebSocket trade-event time, used to expose freshness instead of just saying "Live"
   let activeRangeDecision = null; // sourced BTC macro range (or rolling fallback for other assets) drawn behind the candles
+  let activeStrategyRange = RangeDecision.BTC_MACRO_RANGE; // daily-calculated structural reclaim layered onto the dated macro framework
   let activeRangeLabData = null;
   let activeRangeLabCandidateKey = null;
   const rangeLabPriceLines = [];
@@ -879,7 +880,7 @@
 
     const boundaries = decision.strategyRange
       ? [
-          { y: candleSeries.priceToCoordinate(decision.strategyRange.reclaim), side: "reclaim", price: decision.strategyRange.reclaim, name: "Bias-changing reclaim" },
+          { y: candleSeries.priceToCoordinate(decision.strategyRange.reclaim), side: "reclaim", price: decision.strategyRange.reclaim, name: decision.strategyRange.isCalculatedReclaim ? "Calculated structural reclaim" : "Bias-changing reclaim" },
           { y: candleSeries.priceToCoordinate(decision.strategyRange.high), side: "high", price: decision.strategyRange.high, name: "Macro range ceiling" },
           { y: candleSeries.priceToCoordinate(decision.strategyRange.low), side: "low", price: decision.strategyRange.low, name: "Macro range floor" },
         ]
@@ -1768,7 +1769,7 @@
 
   function renderRangeDecision(levels, scorecard, currentPrice) {
     const decision = state.asset === "btc"
-      ? RangeDecision.buildStrategyRange(currentPrice, RangeDecision.BTC_MACRO_RANGE, activeCandles)
+      ? RangeDecision.buildStrategyRange(currentPrice, activeStrategyRange, activeCandles)
       : RangeDecision.build(levels, scorecard, currentPrice);
     activeRangeDecision = decision;
     const gateState = renderPatienceGate(decision);
@@ -1818,7 +1819,9 @@
     const strategyTrackPosition = RangeDecision.strategyTrackPosition(decision, currentPrice);
     const bracketPct = (strategyTrackPosition === null ? decision.bracketPosition : strategyTrackPosition) * 100;
     const macroText = decision.strategyRange
-      ? `BTC macro range · updated ${decision.strategyRange.sourceDate} · ${state.range.toUpperCase()} candle confirmation`
+      ? decision.strategyRange.isCalculatedReclaim
+        ? `BTC macro framework · reclaim calculated from Daily pivots · ${state.range.toUpperCase()} candle confirmation`
+        : `BTC macro range · sourced ${decision.strategyRange.sourceDate} · ${state.range.toUpperCase()} candle confirmation`
       : decision.macroPosition === null
         ? `Nearest support and resistance · ${state.range.toUpperCase()} candle confirmation`
         : `Nearest range · ${Math.round(decision.macroPosition * 100)}% through the 60-day range · ${state.range.toUpperCase()} candle confirmation`;
@@ -1845,7 +1848,7 @@
     document.getElementById("decision-marker").style.left = `${bracketPct}%`;
 
     if (decision.strategyRange) {
-      const frameKey = `${state.asset}|${state.range}|${decision.strategyRange.sourceDate}`;
+      const frameKey = `${state.asset}|${state.range}|${decision.strategyRange.sourceDate}|${decision.strategyRange.reclaim}`;
       if (state.range === "4h" && macroRangeFramedKey !== frameKey && candleSeries && activeCandles.length) {
         const recentBars = activeCandles.slice(-Math.max(1, (activeLevelsWindowDays || 60) * 6));
         const recentHigh = Math.max(...recentBars.map((candle) => candle.high));
@@ -1871,20 +1874,22 @@
       }
       document.getElementById("decision-rr-label").textContent = "Higher-timeframe bias";
       document.getElementById("decision-support-label").textContent = "Decision support";
-      document.getElementById("decision-resistance-label").textContent = "Bias-changing reclaim";
-      const reclaimAccepted = RangeDecision.completedCloseAbove(activeCandles, decision.strategyRange.reclaim);
-      document.getElementById("decision-rr").textContent = currentPrice < decision.strategyRange.reclaim
-        ? "LOWER < 82.8k"
-        : reclaimAccepted
-          ? "ACCEPTED > 82.8k"
-          : "TESTING 82.8k";
-      document.getElementById("decision-rr-note").textContent = currentPrice >= decision.strategyRange.reclaim && !reclaimAccepted
-        ? `wait for a completed ${state.range.toUpperCase()} close`
-        : "framework bias; not a trade instruction";
+      const reclaimText = compactPrice(decision.strategyRange.reclaim);
+      const reclaimExactText = decision.strategyRange.isCalculatedReclaim
+        ? decision.strategyRange.reclaim.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : reclaimText;
+      document.getElementById("decision-resistance-label").textContent = decision.strategyRange.isCalculatedReclaim
+        ? "Calculated structural reclaim"
+        : "Bias-changing reclaim";
+      const biasPresentation = RangeDecision.reclaimBiasPresentation(decision.strategyRange, currentPrice);
+      document.getElementById("decision-rr").textContent = biasPresentation.label;
+      document.getElementById("decision-rr-note").textContent = biasPresentation.note;
       document.getElementById("decision-support-odds").textContent = "$72k–$77k";
       document.getElementById("decision-support-note").textContent = `loss of ~$${compactPrice(decision.strategyRange.failureLevel)} raises sub-$70k risk`;
-      document.getElementById("decision-resistance-odds").textContent = "$82.8k";
-      document.getElementById("decision-resistance-note").textContent = "acceptance above changes the lower-bias thesis";
+      document.getElementById("decision-resistance-odds").textContent = `$${reclaimExactText}`;
+      document.getElementById("decision-resistance-note").textContent = decision.strategyRange.isCalculatedReclaim
+        ? `${decision.strategyRange.reclaimPivotCount} Daily pivot highs · origin ${decision.strategyRange.reclaimOriginDate}`
+        : "acceptance above changes the lower-bias thesis";
       document.getElementById("decision-caveat").textContent = decision.status === "long-watch"
         ? "Near support does not mean buy. Wait for a test and a completed candle close back above support before assessing risk and size."
         : decision.status === "short-watch"
@@ -3296,6 +3301,31 @@
     }
   }
 
+  function renderStructuralReclaimProof(regime) {
+    const el = document.getElementById("structural-reclaim-proof");
+    if (!el) return;
+    const boundary = regime && regime.boundary;
+    if (!RangeDecision.structuralRegimeIsUsable(regime)) {
+      el.innerHTML = "<strong>Structural reclaim:</strong> calculated evidence unavailable; the dated creator-sourced fallback remains visible.";
+      return;
+    }
+    const acceptance = regime.acceptance && regime.acceptance.state
+      ? regime.acceptance.state.replaceAll("-", " ")
+      : "not classified";
+    const calculated = regime.calculated_at_utc
+      ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "America/Chicago" }).format(new Date(regime.calculated_at_utc))
+      : "unknown date";
+    el.innerHTML = `
+      <strong>Calculated structural reclaim:</strong>
+      $${Number(boundary.exact_price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      from the ${boundary.origin_date} Daily high · ${boundary.pivot_count} confirmed pivot highs across
+      ${boundary.distinct_months} months · last retest ${boundary.last_test_date} · ${acceptance} by
+      ${escapeHtml(regime.acceptance ? regime.acceptance.rule : "no acceptance rule")} · ${escapeHtml(regime.quality || "unrated")} structure · calculated ${calculated} ·
+      <span>${escapeHtml(regime.method_version || "unversioned method")}</span>.
+      This is calculated structure, not a prediction or entry signal.
+    `;
+  }
+
   // Kraken Futures' open-interest/funding endpoint has no CORS header at
   // all (checked the raw response headers directly) - can't be polled
   // live from the browser like everything else, so this comes from the
@@ -3859,6 +3889,10 @@
           : levelsData.price;
 
         renderHeader(levelsData, initialLivePrice);
+        activeStrategyRange = asset === "btc"
+          ? RangeDecision.strategyRangeFromRegime(levelsData.structural_reclaim)
+          : RangeDecision.BTC_MACRO_RANGE;
+        renderStructuralReclaimProof(asset === "btc" ? levelsData.structural_reclaim : null);
         renderFuturesContext(levelsData.futures_context);
         // set before renderChart(): its zoom call can trigger the time-axis
         // subscription straight into renderOverlays() (which draws the
