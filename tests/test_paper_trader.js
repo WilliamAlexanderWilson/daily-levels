@@ -121,4 +121,10 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.match(app, /"PAPER STOP"/);
   assert.match(app, /"PAPER TARGET"/);
   assert.ok(app.indexOf('settleTriggeredTrades(asset, candle.close)') < app.indexOf('scheduleDerivedLiveState(asset, candle.close)'));
+  const presentationBody = app.slice(
+    app.indexOf("function updateLiveTradePnlCells"),
+    app.indexOf("function startClosingTrade"),
+  );
+  assert.doesNotMatch(presentationBody, /settleTriggeredTrades/);
+  assert.match(app, /source === "stream" && liveMarkIsFresh\(\)/);
 });

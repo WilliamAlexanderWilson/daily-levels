@@ -2722,11 +2722,6 @@
 
   function updateLiveTradePnlCells(asset, currentPrice) {
     if (state.asset !== asset) return;
-    if (liveMarkIsFresh() && settleTriggeredTrades(asset, currentPrice)) {
-      renderTradeMarkers(asset, state.range, activeCandles);
-      renderTradesTable(asset, currentPrice);
-      return;
-    }
     const tradesById = new Map(loadTrades(asset).map((trade) => [String(trade.id), trade]));
     document.querySelectorAll(".trade-pnl-cell[data-trade-id]").forEach((cell) => {
       const trade = tradesById.get(cell.dataset.tradeId);
