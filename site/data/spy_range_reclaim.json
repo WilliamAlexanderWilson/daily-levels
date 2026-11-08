@@ -1,7 +1,10 @@
 {
   "method_version": "spy-or-reclaim-v1",
   "source": "Alpaca IEX 5-minute raw bars",
-  "bars": 41857,
+  "source_snapshot": "research/spy_or_reclaim_v1_source.csv.gz",
+  "source_snapshot_sha256": "62af3f9eba5bdca73f800e845db3208b2762ef62177efe7b6ded8fe441faf8fe",
+  "raw_bars": 41857,
+  "regular_session_bars": 38689,
   "coverage_start_utc": "2024-11-08T14:30:00+00:00",
   "coverage_end_utc": "2026-11-06T21:55:00+00:00",
   "selected_key": null,
@@ -19,10 +22,10 @@
         "longs": 40,
         "shorts": 27,
         "win_rate_pct": 26.865671641791046,
-        "expectancy_pct": -0.10458651994319636,
-        "profit_factor": 0.18576664703724258,
+        "expectancy_pct": -0.10464620587360884,
+        "profit_factor": 0.18554909830927924,
         "profit_factor_infinite": false,
-        "max_drawdown_pct": 7.225692300328233,
+        "max_drawdown_pct": 7.229407757020052,
         "direction": {
           "long": {
             "trades": 40,
@@ -30,7 +33,7 @@
           },
           "short": {
             "trades": 27,
-            "expectancy_pct": -0.10105099354729734
+            "expectancy_pct": -0.10119910307832092
           }
         }
       },
@@ -39,10 +42,10 @@
         "longs": 15,
         "shorts": 28,
         "win_rate_pct": 34.883720930232556,
-        "expectancy_pct": -0.08805132630958776,
-        "profit_factor": 0.20611123940221282,
+        "expectancy_pct": -0.088162813837763,
+        "profit_factor": 0.2053943226343166,
         "profit_factor_infinite": false,
-        "max_drawdown_pct": 3.720169652732974,
+        "max_drawdown_pct": 3.7247854420656368,
         "direction": {
           "long": {
             "trades": 15,
@@ -50,7 +53,7 @@
           },
           "short": {
             "trades": 28,
-            "expectancy_pct": -0.07073191104791504
+            "expectancy_pct": -0.07090312403761274
           }
         }
       },
@@ -59,10 +62,10 @@
         "longs": 15,
         "shorts": 28,
         "win_rate_pct": 37.2093023255814,
-        "expectancy_pct": -0.04805132630958775,
-        "profit_factor": 0.438633171851325,
+        "expectancy_pct": -0.048162813837763004,
+        "profit_factor": 0.43759508045437795,
         "profit_factor_infinite": false,
-        "max_drawdown_pct": 2.048682999999807,
+        "max_drawdown_pct": 2.0533770450418154,
         "direction": {
           "long": {
             "trades": 15,
@@ -70,7 +73,7 @@
           },
           "short": {
             "trades": 28,
-            "expectancy_pct": -0.03073191104791504
+            "expectancy_pct": -0.030903124037612747
           }
         }
       },
@@ -89,10 +92,10 @@
         "longs": 57,
         "shorts": 49,
         "win_rate_pct": 35.84905660377358,
-        "expectancy_pct": -0.07416583182582358,
-        "profit_factor": 0.3827578086328178,
+        "expectancy_pct": -0.07429082761036172,
+        "profit_factor": 0.38209142521194084,
         "profit_factor_infinite": false,
-        "max_drawdown_pct": 8.048140696338253,
+        "max_drawdown_pct": 8.060346973770383,
         "direction": {
           "long": {
             "trades": 57,
@@ -100,7 +103,7 @@
           },
           "short": {
             "trades": 49,
-            "expectancy_pct": -0.09566692573416247
+            "expectancy_pct": -0.09593732477826539
           }
         }
       },
@@ -109,10 +112,10 @@
         "longs": 31,
         "shorts": 32,
         "win_rate_pct": 31.746031746031743,
-        "expectancy_pct": -0.09724802075275459,
-        "profit_factor": 0.26289808546928095,
+        "expectancy_pct": -0.09739443149090353,
+        "profit_factor": 0.262082083086974,
         "profit_factor_infinite": false,
-        "max_drawdown_pct": 5.960018935219669,
+        "max_drawdown_pct": 5.968657418942824,
         "direction": {
           "long": {
             "trades": 31,
@@ -120,7 +123,7 @@
           },
           "short": {
             "trades": 32,
-            "expectancy_pct": -0.07873085809448391
+            "expectancy_pct": -0.07901910423521465
           }
         }
       },
@@ -129,10 +132,10 @@
         "longs": 31,
         "shorts": 32,
         "win_rate_pct": 31.746031746031743,
-        "expectancy_pct": -0.057248020752754585,
-        "profit_factor": 0.45285977200153615,
+        "expectancy_pct": -0.057394431490903536,
+        "profit_factor": 0.4517356576210565,
         "profit_factor_infinite": false,
-        "max_drawdown_pct": 3.6543557972383067,
+        "max_drawdown_pct": 3.663202541906052,
         "direction": {
           "long": {
             "trades": 31,
@@ -140,7 +143,7 @@
           },
           "short": {
             "trades": 32,
-            "expectancy_pct": -0.03873085809448392
+            "expectancy_pct": -0.03901910423521466
           }
         }
       },
@@ -159,10 +162,10 @@
         "longs": 48,
         "shorts": 31,
         "win_rate_pct": 39.24050632911392,
-        "expectancy_pct": -0.06476040826938942,
-        "profit_factor": 0.452423801417563,
+        "expectancy_pct": -0.06488109810256854,
+        "profit_factor": 0.45166143261579283,
         "profit_factor_infinite": false,
-        "max_drawdown_pct": 5.470094154178728,
+        "max_drawdown_pct": 5.479114055384526,
         "direction": {
           "long": {
             "trades": 48,
@@ -170,7 +173,7 @@
           },
           "short": {
             "trades": 31,
-            "expectancy_pct": -0.07267769818550052
+            "expectancy_pct": -0.07298526259908601
           }
         }
       },
@@ -179,10 +182,10 @@
         "longs": 22,
         "shorts": 24,
         "win_rate_pct": 34.78260869565217,
-        "expectancy_pct": -0.08424342587050784,
-        "profit_factor": 0.3503298295526811,
+        "expectancy_pct": -0.08440941013946818,
+        "profit_factor": 0.3493176470514499,
         "profit_factor_infinite": false,
-        "max_drawdown_pct": 3.9614602862714343,
+        "max_drawdown_pct": 3.9687865421478286,
         "direction": {
           "long": {
             "trades": 22,
@@ -190,7 +193,7 @@
           },
           "short": {
             "trades": 24,
-            "expectancy_pct": -0.07256560923860624
+            "expectancy_pct": -0.07288374575411355
           }
         }
       },
@@ -199,10 +202,10 @@
         "longs": 22,
         "shorts": 24,
         "win_rate_pct": 34.78260869565217,
-        "expectancy_pct": -0.04424342587050785,
-        "profit_factor": 0.572874405466831,
+        "expectancy_pct": -0.04440941013946818,
+        "profit_factor": 0.5714928179477361,
         "profit_factor_infinite": false,
-        "max_drawdown_pct": 2.2549807991334214,
+        "max_drawdown_pct": 2.262434254276713,
         "direction": {
           "long": {
             "trades": 22,
@@ -210,7 +213,7 @@
           },
           "short": {
             "trades": 24,
-            "expectancy_pct": -0.03256560923860625
+            "expectancy_pct": -0.032883745754113555
           }
         }
       },
@@ -229,10 +232,10 @@
         "longs": 66,
         "shorts": 61,
         "win_rate_pct": 29.92125984251969,
-        "expectancy_pct": -0.09813568684670763,
-        "profit_factor": 0.3854126329366662,
+        "expectancy_pct": -0.09844917986033641,
+        "profit_factor": 0.38414441758180795,
         "profit_factor_infinite": false,
-        "max_drawdown_pct": 11.755935600327128,
+        "max_drawdown_pct": 11.791198447856644,
         "direction": {
           "long": {
             "trades": 66,
@@ -240,7 +243,7 @@
           },
           "short": {
             "trades": 61,
-            "expectancy_pct": -0.1005626501998438
+            "expectancy_pct": -0.10121533237575946
           }
         }
       },
@@ -249,10 +252,10 @@
         "longs": 33,
         "shorts": 33,
         "win_rate_pct": 24.242424242424242,
-        "expectancy_pct": -0.10433401780988026,
-        "profit_factor": 0.3371147305058414,
+        "expectancy_pct": -0.10457699461621252,
+        "profit_factor": 0.335887393472821,
         "profit_factor_infinite": false,
-        "max_drawdown_pct": 6.836461633755375,
+        "max_drawdown_pct": 6.850852354237224,
         "direction": {
           "long": {
             "trades": 33,
@@ -260,7 +263,7 @@
           },
           "short": {
             "trades": 33,
-            "expectancy_pct": -0.08399157781887776
+            "expectancy_pct": -0.08447753143154224
           }
         }
       },
@@ -269,10 +272,10 @@
         "longs": 33,
         "shorts": 33,
         "win_rate_pct": 24.242424242424242,
-        "expectancy_pct": -0.06433401780988027,
-        "profit_factor": 0.4937946442508837,
+        "expectancy_pct": -0.06457699461621251,
+        "profit_factor": 0.4921824440582168,
         "profit_factor_infinite": false,
-        "max_drawdown_pct": 4.494881233317738,
+        "max_drawdown_pct": 4.509627763136804,
         "direction": {
           "long": {
             "trades": 33,
@@ -280,7 +283,7 @@
           },
           "short": {
             "trades": 33,
-            "expectancy_pct": -0.043991577818877754
+            "expectancy_pct": -0.04447753143154225
           }
         }
       },

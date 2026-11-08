@@ -1,9 +1,17 @@
 import pandas as pd
 import pytest
 
-from src.spy.range_reclaim import CANDIDATES, generate_trades, historical_holdout_passes, summarize
+from src.spy import range_reclaim_research
+from src.spy.range_reclaim import CANDIDATES, _return, generate_trades, historical_holdout_passes, summarize
 
 ET = "America/New_York"
+
+
+def test_long_and_short_returns_use_entry_capital_as_the_denominator():
+    assert _return("long", 100, 110) == pytest.approx(0.10)
+    assert _return("long", 100, 90) == pytest.approx(-0.10)
+    assert _return("short", 100, 90) == pytest.approx(0.10)
+    assert _return("short", 100, 110) == pytest.approx(-0.10)
 
 
 def _day(date: str, signal_side: str = "long", both_hit: bool = False) -> pd.DataFrame:
@@ -67,3 +75,31 @@ def test_summary_keeps_direction_counts_and_cost_stress_explicit():
 def test_small_or_one_sided_sample_cannot_pass_historical_gate():
     long_trade = generate_trades(_day("2026-08-05"), CANDIDATES[1])[0]
     assert historical_holdout_passes([long_trade] * 30) is False
+
+
+def test_non_selected_candidates_never_process_holdout_timestamps(tmp_path, monkeypatch):
+    snapshot = tmp_path / "source.csv.gz"
+    snapshot.write_bytes(b"frozen-source")
+    monkeypatch.setattr(range_reclaim_research, "SOURCE_SNAPSHOT", snapshot)
+    index = pd.DatetimeIndex([
+        pd.Timestamp("2026-05-07 15:00", tz=ET),
+        pd.Timestamp("2026-06-01 15:00", tz=ET),
+    ]).tz_convert("UTC")
+    bars = pd.DataFrame({
+        "open": [100.0, 101.0],
+        "high": [101.0, 102.0],
+        "low": [99.0, 100.0],
+        "close": [100.5, 101.5],
+        "volume": [1000.0, 1000.0],
+    }, index=index)
+    received = []
+
+    def fake_generator(frame, candidate):
+        received.append((candidate.key, frame.index.max()))
+        return []
+
+    payload = range_reclaim_research.build_payload(bars, fake_generator)
+
+    assert payload["selected_key"] is None
+    assert len(received) == len(CANDIDATES)
+    assert all(timestamp.tz_convert(ET) < range_reclaim_research.VALIDATION_END for _, timestamp in received)

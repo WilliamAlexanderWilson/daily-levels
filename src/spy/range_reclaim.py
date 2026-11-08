@@ -70,7 +70,7 @@ def _regular_session(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def _return(direction: str, entry: float, exit_price: float) -> float:
-    return exit_price / entry - 1 if direction == "long" else entry / exit_price - 1
+    return exit_price / entry - 1 if direction == "long" else 1 - exit_price / entry
 
 
 def _simulate_exit(day: pd.DataFrame, entry_position: int, direction: str, stop: float, target: float):

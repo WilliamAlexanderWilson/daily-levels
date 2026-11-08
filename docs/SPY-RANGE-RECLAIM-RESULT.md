@@ -18,16 +18,19 @@ filter is not enough to justify a SPY trade prompt on this dataset.
 
 ## Evidence
 
-The source contained 41,857 regular-session 5-minute SPY bars from Alpaca IEX,
-covering 2024-11-08 through 2026-11-06. Results below include the frozen
-8-basis-point cost stress unless marked otherwise.
+The frozen source snapshot contains 41,857 raw 5-minute SPY bars from Alpaca
+IEX, including 38,689 regular-session bars after the preregistered session
+filter, covering 2024-11-08 through 2026-11-06. Its SHA-256 is
+`62af3f9eba5bdca73f800e845db3208b2762ef62177efe7b6ded8fe441faf8fe`.
+Results below include the frozen 8-basis-point cost stress unless marked
+otherwise.
 
 | Candidate | Validation trades | Long / short | Expectancy at 8 bps | Expectancy at 4 bps | Profit factor | Validation result |
 |---|---:|---:|---:|---:|---:|---|
 | 15m range, midpoint, 1.00x volume | 43 | 15 / 28 | -0.088% | -0.048% | 0.21 | Fail |
 | 30m range, midpoint, 1.00x volume | 63 | 31 / 32 | -0.097% | -0.057% | 0.26 | Fail |
 | 30m range, midpoint, 1.25x volume | 46 | 22 / 24 | -0.084% | -0.044% | 0.35 | Fail |
-| 30m range, opposite edge, 1.25x volume | 66 | 33 / 33 | -0.104% | -0.064% | 0.34 | Fail |
+| 30m range, opposite edge, 1.25x volume | 66 | 33 / 33 | -0.105% | -0.065% | 0.34 | Fail |
 
 Even the least-negative result lost about 0.044% per trade under the lighter
 4-basis-point assumption. Long and short subsets were both negative for every
