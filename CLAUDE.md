@@ -278,6 +278,19 @@ default overlay draws the full macro structure; nearby rolling levels are
 closed optional context. A `LONG WATCH` or `SHORT WATCH` remains only a
 location state and still requires the completed-candle Patience gate.
 
+Structural-reclaim follow-up (2026-11-07): `$82.8k` is no longer only a
+hard-coded video number. `src/levels/structural_reclaim.py` reconstructs the
+underlying reason from completed Kraken BTC/USD Daily candles: the strongest
+repeat-tested pivot-high cluster over 540 days. The current established
+cluster resolves to the exact May 6 high of `$82,790.90`, with four confirmed
+pivots across four months and a last test on October 29. The site uses the
+exact calculated price and displays its origin, tests, method version, and a
+clearly labeled two-completed-Daily-close acceptance proxy. The surrounding
+`$60k-$80k` framework and support zone remain dated source material; never
+claim the detector automatically derives that whole discretionary framework.
+The frozen method and interpretation boundary live in
+`docs/STRUCTURAL-RECLAIM.md`. Material changes require a new method version.
+
 Follow-up the same day: the user specifically wanted the page to reinforce
 patience and show what happened at the exact range boundary. Added a
 three-condition **Patience gate**. It remains incomplete until (1) price is

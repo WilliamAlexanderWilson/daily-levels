@@ -11,6 +11,7 @@ const {
   rangeZonePrices,
   recentBoundaryTest,
   strategyTrackPosition,
+  strategyRangeFromRegime,
 } = require("../site/range-decision.js");
 
 const levels = [
@@ -167,6 +168,37 @@ test("uses the sourced BTC macro range instead of the nearest-level bracket", ()
   assert.equal(decision.strategyRange.low, 60000);
   assert.equal(decision.strategyRange.high, 80000);
   assert.ok(Math.abs(decision.macroPosition - 0.795) < 0.001);
+});
+
+test("layers a calculated structural reclaim onto the dated macro framework", () => {
+  const range = strategyRangeFromRegime({
+    method_version: "structural-reclaim-pivot-cluster-v1",
+    quality: "established",
+    calculated_at_utc: "2026-11-07T12:00:00Z",
+    data_source: "Kraken BTC/USD completed Daily candles",
+    boundary: {
+      exact_price: 82790.9,
+      display_price: 82800,
+      origin_date: "2026-05-06",
+      last_test_date: "2026-10-29",
+      pivot_count: 4,
+      distinct_months: 4,
+    },
+    acceptance: { state: "accepted-below", rule: "2 consecutive completed Daily closes" },
+  });
+
+  assert.equal(range.low, 60000);
+  assert.equal(range.high, 80000);
+  assert.equal(range.reclaim, 82790.9);
+  assert.equal(range.reclaimDisplay, 82800);
+  assert.equal(range.reclaimOriginDate, "2026-05-06");
+  assert.equal(range.reclaimPivotCount, 4);
+  assert.equal(range.isCalculatedReclaim, true);
+});
+
+test("rejects an incomplete calculated reclaim and keeps the sourced fallback", () => {
+  assert.equal(strategyRangeFromRegime(null), BTC_MACRO_RANGE);
+  assert.equal(strategyRangeFromRegime({ boundary: { exact_price: 79000 } }), BTC_MACRO_RANGE);
 });
 
 test("marks only the upper deviation as a short watch", () => {

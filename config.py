@@ -36,6 +36,22 @@ GOLDEN_POCKET_LOW = 0.618   # retracement zone lower bound
 GOLDEN_POCKET_HIGH = 0.65   # retracement zone upper bound
 PIVOT_LOOKBACK_DAYS = 365   # how far back into daily candles to search for pivots/legs
 
+# --- Structural reclaim detector ---
+# This is deliberately separate from the rolling 60-day range. It looks for
+# a price area that produced repeated confirmed Daily pivot highs across
+# different months, matching the market-structure reason behind the sourced
+# May 6, 2026 $82,790.90 high. The output is evidence about a boundary, not a
+# prediction or entry signal.
+STRUCTURAL_RECLAIM_LOOKBACK_DAYS = 540
+STRUCTURAL_RECLAIM_CLUSTER_TOLERANCE_PCT = 2.0
+STRUCTURAL_RECLAIM_MIN_PIVOTS = 3
+STRUCTURAL_RECLAIM_MIN_SPAN_DAYS = 30
+STRUCTURAL_RECLAIM_ESTABLISHED_PIVOTS = 4
+STRUCTURAL_RECLAIM_ESTABLISHED_MONTHS = 3
+STRUCTURAL_RECLAIM_ESTABLISHED_SPAN_DAYS = 90
+STRUCTURAL_RECLAIM_ACCEPTANCE_CLOSES = 2
+STRUCTURAL_RECLAIM_DISPLAY_INCREMENT = 100
+
 # --- Confluence ---
 CONFLUENCE_MERGE_PCT = 0.005  # merge levels within 0.5% of each other into one zone
 

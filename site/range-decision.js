@@ -28,6 +28,29 @@
     sourceUrl: "#range-method-sources",
   });
 
+  function strategyRangeFromRegime(regime, fallback = BTC_MACRO_RANGE) {
+    const boundary = regime && regime.boundary;
+    const exactPrice = boundary && Number(boundary.exact_price);
+    if (!Number.isFinite(exactPrice) || exactPrice <= fallback.high) return fallback;
+
+    return Object.freeze({
+      ...fallback,
+      reclaim: exactPrice,
+      reclaimDisplay: Number(boundary.display_price) || exactPrice,
+      reclaimOriginDate: boundary.origin_date || null,
+      reclaimLastTestDate: boundary.last_test_date || null,
+      reclaimPivotCount: Number(boundary.pivot_count) || 0,
+      reclaimDistinctMonths: Number(boundary.distinct_months) || 0,
+      reclaimQuality: regime.quality || "developing",
+      reclaimAcceptance: regime.acceptance || null,
+      reclaimMethodVersion: regime.method_version || null,
+      reclaimCalculatedAt: regime.calculated_at_utc || null,
+      reclaimDataSource: regime.data_source || null,
+      sourceLabel: "Calculated structural reclaim with dated source framework",
+      isCalculatedReclaim: true,
+    });
+  }
+
   function midpoint(level) {
     return (level.price_low + level.price_high) / 2;
   }
@@ -388,5 +411,6 @@
     rangeZonePrices,
     buildStrategyRange,
     BTC_MACRO_RANGE,
+    strategyRangeFromRegime,
   };
 });
