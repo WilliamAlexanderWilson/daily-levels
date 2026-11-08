@@ -7,7 +7,7 @@ zone. Live candles and price move with Kraken's per-trade WebSocket stream;
 the REST poll is only a reconnect fallback. Rolling calculated
 levels are optional context, not mislabeled as the macro range. The full level
 map, liquidity model, scorecards, explanations, and local trade journal remain
-available under **Full analysis**.
+available under **Research & details**.
 
 **A watch area is not an entry signal.** The UI labels a setup confirmed only
 when the latest completed candle supplies all three visible facts below. That
@@ -96,7 +96,7 @@ rows but count as one opening cohort toward the evidence gate.
 
 The BTC chart marks the complete macro range behind the candles, including
 the $70k midpoint, $72k-$77k support zone, $80k ceiling, and $82.8k reclaim.
-Nearby rolling levels sit in a closed optional panel. Opening **Full analysis**
+Nearby rolling levels sit in the closed **Research & details** panel. Opening it
 restores the broader level radar, order-book walls, and evidence-labeled
 liquidation model. A persistent ticker shows the latest Kraken price and the
 age of the last successful update.

@@ -124,13 +124,13 @@ test("the shared dashboard clock is present on every asset and discloses holiday
   const siteRoot = path.join(__dirname, "..", "site");
   const html = fs.readFileSync(path.join(siteRoot, "index.html"), "utf8");
   const app = fs.readFileSync(path.join(siteRoot, "app.js"), "utf8");
-  assert.match(html, /GLOBAL MARKET CLOCK · DALLAS TIME/);
+  assert.match(html, /Market clock · Dallas time/);
   assert.match(html, /All seven major market opens/);
   assert.match(html, /Regular sessions only/);
   assert.match(html, /Exchange holidays, half-days, severe weather, or emergency closures can override/);
   assert.match(html, /past movement—not direction, a prediction, or a trade signal/);
   assert.match(html, /market-reaction-coverage/);
-  assert.match(html, /RANGE × OPEN · FORWARD TEST/);
+  assert.match(html, /Range and market-open research/);
   assert.match(html, /Only post-cutoff observations count/);
   assert.match(html, /role="timer" aria-live="off"/);
   assert.match(html, /market-sessions\.js/);

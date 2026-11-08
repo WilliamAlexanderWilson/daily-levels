@@ -9,10 +9,15 @@
 </head>
 <body>
   <header class="site-header">
-    <p class="brand-kicker">WILLIAM WILSON · PRICE LOCATION · RISK · EVIDENCE</p>
-    <h1>Range Desk</h1>
-    <p class="brand-owner">by William Wilson</p>
-    <p class="subtitle" id="subtitle">A clean range read for BTC &amp; ETH — without pretending location is certainty.</p>
+    <div class="brand-mark" aria-hidden="true">R</div>
+    <div class="brand-copy">
+      <div class="brand-title-row">
+        <h1>Range Desk</h1>
+        <span class="brand-owner">by William Wilson</span>
+      </div>
+      <p class="subtitle" id="subtitle">Live range context and risk planning for BTC, ETH, and SPY.</p>
+    </div>
+    <p class="brand-purpose">Price location <span>·</span> Confirmation <span>·</span> Risk</p>
   </header>
 
   <div id="stale-banner" class="stale-banner" hidden></div>
@@ -44,7 +49,7 @@
     <section id="market-clock" class="market-clock" aria-labelledby="market-clock-title">
       <div class="market-clock-primary">
         <div>
-          <span class="market-clock-kicker">GLOBAL MARKET CLOCK · DALLAS TIME</span>
+          <span class="market-clock-kicker">Market clock · Dallas time</span>
           <h2 id="market-clock-title"><span id="market-next-name">Calculating next open…</span> <strong id="market-next-countdown" role="timer" aria-live="off">—</strong></h2>
           <p id="market-next-time">Checking regular exchange hours…</p>
         </div>
@@ -60,8 +65,8 @@
       </details>
       <div id="range-open-forward" class="range-open-forward" aria-live="polite">
         <div>
-          <span>RANGE × OPEN · FORWARD TEST</span>
-          <strong id="range-open-forward-status">LOADING FORWARD RECORD…</strong>
+          <span>Range and market-open research</span>
+          <strong id="range-open-forward-status">Loading forward record…</strong>
           <small id="range-open-forward-note">Only post-cutoff observations count.</small>
         </div>
         <div class="range-open-forward-counts">
@@ -86,9 +91,9 @@
     <section id="decision-brief" class="decision-brief is-loading" aria-live="polite">
       <div class="decision-copy-block">
         <div class="decision-heading-row">
-          <span id="decision-badge" class="decision-badge">CALCULATING</span>
-          <span id="decision-method" class="decision-method">Macro range framework</span>
-          <a id="decision-source-link" class="decision-source-link" href="#range-method-sources" hidden>Method sources ↗</a>
+          <span id="decision-badge" class="decision-badge">Loading</span>
+          <span id="decision-method" class="decision-method">Current range</span>
+          <a id="decision-source-link" class="decision-source-link" href="#range-method-sources" hidden>How this is calculated</a>
         </div>
         <h2 id="decision-title">Building the current range read…</h2>
         <p id="decision-summary">Waiting for price, levels, and historical context.</p>
@@ -119,8 +124,8 @@
 
       <div class="patience-gate" id="patience-gate">
         <div class="patience-gate-copy">
-          <span class="metric-label">Patience gate</span>
-          <strong id="patience-count">0 / 3 ready</strong>
+          <span class="metric-label">Trade checklist</span>
+          <strong id="patience-count">0 of 3 conditions met</strong>
           <p id="patience-instruction">Wait for the range data before considering a position.</p>
           <div class="patience-alert-controls">
             <button type="button" id="patience-alert-toggle" class="patience-alert-toggle" aria-pressed="false">Enable ready alert</button>
@@ -129,13 +134,13 @@
         </div>
         <ol class="patience-conditions">
           <li id="patience-location">
-            <i>1</i><span><strong>Location</strong><small>Price is at a range edge</small></span><b>Waiting</b>
+            <i>1</i><span><strong>Price location</strong><small>Price is close to an important range boundary</small></span><b>Not met</b>
           </li>
           <li id="patience-touch">
-            <i>2</i><span><strong>Test</strong><small>The specific boundary was hit</small></span><b>Waiting</b>
+            <i>2</i><span><strong>Boundary test</strong><small>Price actually reached the selected boundary</small></span><b>Not met</b>
           </li>
           <li id="patience-confirmation">
-            <i>3</i><span><strong>Close</strong><small>A completed candle closed back inside</small></span><b>Waiting</b>
+            <i>3</i><span><strong>Candle confirmation</strong><small>A completed candle closed back inside the range</small></span><b>Not met</b>
           </li>
         </ol>
       </div>
@@ -324,11 +329,11 @@
     <section id="paper-trader" class="paper-trader" aria-labelledby="paper-trader-title">
       <div class="paper-trader-heading">
         <div>
-          <span class="paper-trader-kicker">PAPER ONLY · SAVED ON THIS DEVICE</span>
-          <h2 id="paper-trader-title">Track a position against the live chart</h2>
-          <p id="paper-trader-status">BTC and ETH P&amp;L follows Kraken's real-time trade stream. No order is sent anywhere.</p>
+          <span class="paper-trader-kicker">Practice only · saved on this device</span>
+          <h2 id="paper-trader-title">Paper trade planner</h2>
+          <p id="paper-trader-status">Plan and follow a position using the live Kraken price. This never sends a real order.</p>
         </div>
-        <span class="paper-trader-live"><i class="live-dot"></i><span id="paper-trader-live-label">LIVE MARK</span></span>
+        <span class="paper-trader-live"><i class="live-dot"></i><span id="paper-trader-live-label">Live price</span></span>
       </div>
 
       <div class="trade-controls" id="trade-controls">
@@ -353,26 +358,32 @@
         <div class="trade-form-grid">
           <label class="trade-form-field">
             Account balance ($)
+            <small>Used only to calculate your planned risk.</small>
             <input type="number" id="trade-form-account" placeholder="e.g. 10000" min="1" step="any" inputmode="decimal" />
           </label>
           <label class="trade-form-field">
             Risk per trade (0.1–5%)
+            <small>Maximum account loss if the stop is reached.</small>
             <input type="number" id="trade-form-risk-pct" value="1" min="0.1" max="5" step="0.1" inputmode="decimal" />
           </label>
           <label class="trade-form-field">
             Leverage (1–100×)
+            <small>Changes margin required, not planned loss.</small>
             <input type="number" id="trade-form-leverage" placeholder="e.g. 10" min="1" max="100" step="1" inputmode="numeric" />
           </label>
           <label class="trade-form-field">
             Stop price
+            <small>The paper position closes here.</small>
             <input type="number" id="trade-form-stop" placeholder="Required" min="0" step="any" inputmode="decimal" />
           </label>
           <label class="trade-form-field">
             Target price
+            <small>Your planned take-profit price.</small>
             <input type="number" id="trade-form-target" placeholder="Required" min="0" step="any" inputmode="decimal" />
           </label>
           <label class="trade-form-field">
-            Calculated margin ($)
+            Estimated margin ($)
+            <small>Calculated from risk, stop distance, and leverage.</small>
             <input type="number" id="trade-form-size" placeholder="Calculated" readonly aria-readonly="true" />
           </label>
         </div>
@@ -380,8 +391,8 @@
           Choose a side and complete the risk fields to calculate position size.
         </div>
         <div class="trade-form-risk">
-          <strong>The stop defines position size; leverage only changes required margin.</strong>
-          <span>Risk is capped at 5%. The paper position closes automatically at stop, target, or estimated liquidation.</span>
+          <strong>Your stop determines position size.</strong>
+          <span>Leverage changes required margin, not the amount you planned to lose. Risk is capped at 5%.</span>
         </div>
         <textarea id="trade-form-description" class="trade-form-description" placeholder="Trade plan or reason (optional)" rows="2"></textarea>
         <div class="trade-form-actions">
@@ -424,8 +435,8 @@
     <details id="advanced-analysis" class="advanced-analysis">
       <summary>
         <span>
-          <strong>Full analysis</strong>
-          <small>Levels, liquidity, backtests, and methodology</small>
+          <strong>Research &amp; details</strong>
+          <small>Range tests, nearby levels, liquidity, methodology, and historical evidence</small>
         </span>
         <span class="advanced-summary-action">Open details</span>
       </summary>
@@ -661,7 +672,7 @@
 
   <aside id="patience-alert-toast" class="patience-alert-toast" role="status" aria-live="assertive" hidden>
     <span>
-      <small id="patience-alert-toast-label">PATIENCE GATE · 3/3</small>
+      <small id="patience-alert-toast-label">Trade checklist · 3 of 3</small>
       <strong id="patience-alert-toast-title">Setup ready to assess</strong>
       <b id="patience-alert-toast-detail">Location, test, and completed close agree.</b>
     </span>

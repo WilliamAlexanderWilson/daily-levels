@@ -242,7 +242,7 @@ The UI now makes the live chart the first major surface, followed by a
 prominent local paper-position tracker; the decision brief and research
 panels follow below. The existing nearest-level cards, futures context,
 liquidity overlays, scorecards, and explainers remain available under
-**Full analysis**, not deleted. BTC/ETH positions can be opened from the
+**Research & details**, not deleted. BTC/ETH positions can be opened from the
 live Kraken mark, a chart point, or a manual fill. The risk-first ticket requires
 account balance, 0.1–5% risk, stop, target, and 1–100x leverage; it derives
 notional and required margin from stop distance, tracks live P&L and R, and
@@ -290,13 +290,13 @@ the static page must remain open for the live stream to evaluate a setup.
 Final visual acceptance caught that the default chart still contradicted
 the simplified brief: every level, order-book wall, proximity band, and
 liquidation row was still visible even though their explanatory controls
-had moved under Full analysis. Fixed the actual chart, not just the cards.
+had moved under Research & details. Fixed the actual chart, not just the cards.
 When the details panel is closed, `renderLevels()` draws only the nearest
 support and resistance that form the active bracket; walls, round-number
-bands, and the liquidation heatmap are suppressed. Opening Full analysis
+bands, and the liquidation heatmap are suppressed. Opening Research & details
 restores them, and closing it collapses the chart back to the active range.
 
-Noise follow-up: Full analysis is now a live **level radar**, not an all-labels
+Noise follow-up: Research & details is now a live **level radar**, not an all-labels
 dump. Every calculated level remains as a faint line for context, while only
 the nearest support/resistance bracket, the 60-day range edges, the tightest
 round-number band, and the nearest bid/ask wall receive strong styling and

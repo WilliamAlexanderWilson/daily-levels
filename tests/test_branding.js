@@ -17,7 +17,7 @@ test("product branding stays separate from the range method provenance", () => {
   assert.match(source, /sourceLabel: "Sourced macro-range framework"/);
   assert.match(source, /sourceUrl: "#range-method-sources"/);
   assert.doesNotMatch(source, /sourceLabel:\s*["']William Wilson/);
-  assert.match(html, /Method sources ↗/);
+  assert.match(html, /How this is calculated/);
   for (const sourceId of ["cOxjsDvGRTA", "HBKEvXjDbS0", "v3fXVye-TVg"]) {
     assert.match(html, new RegExp(`https:\\/\\/youtu\\.be\\/${sourceId}`));
   }
