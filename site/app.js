@@ -1221,13 +1221,19 @@
     previousLivePrice = lastLivePrice;
     lastLivePrice = candle.close;
     lastLiveTickAt = Date.now();
-    if (source === "stream") {
+    if (source === "stream" || source === "snapshot") {
       liveStreamStatus = "live";
       setLiveBadge("live");
     } else {
       liveStreamStatus = "reconnecting";
       renderChartLiveTicker("reconnecting");
     }
+    // Terminal paper events are state, not presentation. Evaluate every
+    // accepted Kraken update before the 400ms rendering throttle so a quick
+    // stop/target touch followed by a recovery cannot be overwritten by the
+    // later pendingDerivedPrice. Subscription snapshots never settle trades:
+    // they may contain historical candles rather than a new market event.
+    if (source === "stream" && liveMarkIsFresh()) settleTriggeredTrades(asset, candle.close);
     scheduleDerivedLiveState(asset, candle.close);
     return true;
   }
@@ -1352,7 +1358,8 @@
         setLiveBadge("live");
         return;
       }
-      for (const candle of message.candles) applyLiveCandle(candle, asset, range);
+      const source = message.type === "snapshot" ? "snapshot" : "stream";
+      for (const candle of message.candles) applyLiveCandle(candle, asset, range, source);
     });
     socket.addEventListener("error", () => {
       if (generation === liveSocketGeneration) socket.close();
@@ -2659,19 +2666,9 @@
 
   function settleTriggeredTrades(asset, currentPrice) {
     if (asset === "spy" || !Number.isFinite(currentPrice)) return false;
-    const trades = loadTrades(asset);
-    let changed = false;
-    for (const trade of trades) {
-      const exit = window.PaperTrader.triggeredExit(trade, currentPrice);
-      if (!exit) continue;
-      trade.exitPrice = exit.price;
-      trade.exitTime = Math.floor(Date.now() / 1000);
-      trade.exitReason = exit.reason;
-      trade.liquidated = exit.reason === "liquidation";
-      changed = true;
-    }
-    if (changed) saveTrades(asset, trades);
-    return changed;
+    const result = window.PaperTrader.settleTrades(loadTrades(asset), currentPrice);
+    if (result.changed) saveTrades(asset, result.trades);
+    return result.changed;
   }
 
   function estimatedLiquidationPrice(trade) {

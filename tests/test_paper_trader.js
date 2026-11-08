@@ -85,6 +85,22 @@ test("paper stops and targets are terminal and R is based on planned dollars at 
   assert.ok(Math.abs(PaperTrader.rMultiple(trade, 102) - 1) < 1e-9);
 });
 
+test("a stop touch cannot be erased by a recovery tick inside the render throttle", () => {
+  const open = [{
+    id: "fast-stop", direction: "long", price: 100, stopPrice: 98,
+    targetPrice: 106, size: 1000, leverage: 5, riskDollars: 100,
+  }];
+  const crossed = PaperTrader.settleTrades(open, 97.5, 1000);
+  assert.equal(crossed.changed, true);
+  assert.equal(crossed.trades[0].exitPrice, 98);
+  assert.equal(crossed.trades[0].exitReason, "stop");
+
+  const recovered = PaperTrader.settleTrades(crossed.trades, 101, 1001);
+  assert.equal(recovered.changed, false);
+  assert.equal(recovered.trades[0].exitPrice, 98);
+  assert.equal(recovered.trades[0].exitTime, 1000);
+});
+
 test("primary chart precedes decision research and paper tracker remains outside collapsed analysis", () => {
   const fs = require("node:fs");
   const path = require("node:path");
@@ -104,4 +120,5 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.match(app, /" \(last mark\)"/);
   assert.match(app, /"PAPER STOP"/);
   assert.match(app, /"PAPER TARGET"/);
+  assert.ok(app.indexOf('settleTriggeredTrades(asset, candle.close)') < app.indexOf('scheduleDerivedLiveState(asset, candle.close)'));
 });

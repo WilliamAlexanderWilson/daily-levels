@@ -123,5 +123,25 @@
     return null;
   }
 
-  return { normalizeLeverage, pnl, estimatedLiquidationPrice, isLiquidationCrossed, riskPlan, rMultiple, triggeredExit };
+  function settleTrades(trades, currentPrice, exitTime = Math.floor(Date.now() / 1000)) {
+    if (!Array.isArray(trades) || !Number.isFinite(Number(currentPrice))) {
+      return { trades: Array.isArray(trades) ? trades : [], changed: false };
+    }
+    let changed = false;
+    const settled = trades.map((trade) => {
+      const exit = triggeredExit(trade, currentPrice);
+      if (!exit) return trade;
+      changed = true;
+      return {
+        ...trade,
+        exitPrice: exit.price,
+        exitTime,
+        exitReason: exit.reason,
+        liquidated: exit.reason === "liquidation",
+      };
+    });
+    return { trades: settled, changed };
+  }
+
+  return { normalizeLeverage, pnl, estimatedLiquidationPrice, isLiquidationCrossed, riskPlan, rMultiple, triggeredExit, settleTrades };
 });
