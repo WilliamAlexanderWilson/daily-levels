@@ -236,6 +236,16 @@
     });
   }
 
+  function topVolatilitySessions(sessions, data, count = 2) {
+    const evidence = reactionByKey(data);
+    return rankSessions(sessions, data).slice(0, count).map((session, index) => ({
+      ...session,
+      evidence: evidence.get(session.key) || null,
+      displayRank: index + 1,
+      measured: Number.isFinite(evidence.get(session.key)?.observed_rank),
+    }));
+  }
+
   function evidenceLabel(evidence) {
     const hour = evidence?.horizons?.["60"];
     if (!hour || !hour.n) return "Not enough complete candles to measure";
@@ -352,6 +362,54 @@
       reactionSource.href = data.source.url;
       reactionSource.title = data.source.note || data.source.name || "Reaction data source";
     }
+    const leaderList = mountedDocument.getElementById("market-leader-list");
+    leaderList.innerHTML = "";
+    for (const session of topVolatilitySessions(snapshot.sessions, data)) {
+      const hour = session.evidence?.horizons?.["60"];
+      const sampleCount = Number(hour?.n) || 0;
+      const move = Number(hour?.median_abs_move_pct);
+      const card = mountedDocument.createElement("article");
+      card.className = `market-leader ${session.status.isOpen ? "is-open" : "is-closed"} ${session.measured ? "is-measured" : "is-provisional"}`;
+
+      const header = mountedDocument.createElement("div");
+      header.className = "market-leader-card-heading";
+      const badge = mountedDocument.createElement("span");
+      badge.className = "market-leader-badge";
+      badge.textContent = session.measured ? `OBSERVED #${session.evidence.observed_rank}` : `PROVISIONAL #${session.displayRank}`;
+      const state = mountedDocument.createElement("span");
+      state.className = "market-leader-state";
+      state.textContent = session.status.isOpen ? "OPEN" : session.status.isBreak ? "MIDDAY BREAK" : "CLOSED";
+      header.append(badge, state);
+
+      const identity = mountedDocument.createElement("div");
+      identity.className = "market-leader-identity";
+      const name = mountedDocument.createElement("strong");
+      name.textContent = session.name;
+      const exchange = mountedDocument.createElement("small");
+      exchange.textContent = session.exchange;
+      identity.append(name, exchange);
+
+      const metrics = mountedDocument.createElement("div");
+      metrics.className = "market-leader-metrics";
+      const movement = mountedDocument.createElement("span");
+      movement.innerHTML = session.measured && Number.isFinite(move)
+        ? `<small>Median |60m| move</small><strong>${move.toFixed(2)}%</strong><em>n=${sampleCount}</em>`
+        : `<small>Median |60m| move</small><strong>Collecting</strong><em>${sampleCount} of 20 minimum</em>`;
+      const timing = mountedDocument.createElement("span");
+      timing.innerHTML = session.status.isOpen
+        ? `<small>${session.status.pausesAtBreak ? "Pauses" : "Closes"} in</small><strong>${countdown(session.status.closesAt, now)}</strong><em>Next open ${localTimeLabel(session.status.nextOpen)}</em>`
+        : `<small>${session.status.isBreak ? "Reopens" : "Opens"} in</small><strong>${countdown(session.status.nextOpen, now)}</strong><em>${localTimeLabel(session.status.nextOpen)}</em>`;
+      metrics.append(movement, timing);
+
+      if (!session.measured) {
+        const note = mountedDocument.createElement("p");
+        note.textContent = "Shown by source priority while this session collects enough complete opens for a volatility rank.";
+        card.append(header, identity, metrics, note);
+      } else {
+        card.append(header, identity, metrics);
+      }
+      leaderList.appendChild(card);
+    }
     const forwardPanel = mountedDocument.getElementById("range-open-forward");
     forwardPanel.classList.toggle("is-qualified", forward.qualified);
     mountedDocument.getElementById("range-open-forward-status").textContent = forward.status;
@@ -428,6 +486,7 @@
     coverageLabel,
     forwardDisplay,
     rankSessions,
+    topVolatilitySessions,
     marketSnapshot,
     mount,
     nextWeekdayDate,
