@@ -459,7 +459,11 @@ The open-position card shows entry, current mark, notional, running P&L,
 and a deliberately rough liquidation estimate. The 100x ceiling is
 enforced in both the UI and the calculation module. The estimate excludes
 maintenance margin, fees, funding, and exchange-specific liquidation
-rules, so it is a risk warning rather than a quote.
+rules, so it is a risk warning rather than a quote. If the live stream
+crosses that estimate, the local paper position closes there at -100% of
+margin and cannot later appear to recover after it should have liquidated.
+While Kraken is reconnecting, new live-mark entries are disabled and open
+P&L is labeled `last mark`, not `live`.
 
 **Margin and leverage are optional, and turn on live P&L tracking.** Fill
 them in and the trades table shows a running P&L next to that trade,

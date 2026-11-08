@@ -14,6 +14,16 @@
     if (!trade || !Number.isFinite(trade.price) || trade.price <= 0 || !Number.isFinite(trade.size) || trade.size <= 0 || !leverage) return null;
     const referencePrice = trade.exitPrice != null ? Number(trade.exitPrice) : Number(currentPrice);
     if (!Number.isFinite(referencePrice) || referencePrice <= 0) return null;
+    const liquidation = estimatedLiquidationPrice(trade);
+    const liquidated = trade.liquidated === true || (
+      liquidation != null && (
+        (trade.direction === "long" && referencePrice <= liquidation) ||
+        (trade.direction === "short" && referencePrice >= liquidation)
+      )
+    );
+    if (liquidated) {
+      return { usd: -trade.size, pct: -100, isRealized: trade.exitPrice != null, isLiquidated: true };
+    }
     const change = trade.direction === "long"
       ? (referencePrice - trade.price) / trade.price
       : (trade.price - referencePrice) / trade.price;
@@ -21,6 +31,7 @@
       usd: trade.size * leverage * change,
       pct: leverage * change * 100,
       isRealized: trade.exitPrice != null,
+      isLiquidated: false,
     };
   }
 
@@ -33,5 +44,12 @@
     return price > 0 ? price : null;
   }
 
-  return { normalizeLeverage, pnl, estimatedLiquidationPrice };
+  function isLiquidationCrossed(trade, currentPrice) {
+    const liquidation = estimatedLiquidationPrice(trade);
+    const mark = Number(currentPrice);
+    if (liquidation == null || !Number.isFinite(mark) || mark <= 0) return false;
+    return trade.direction === "long" ? mark <= liquidation : mark >= liquidation;
+  }
+
+  return { normalizeLeverage, pnl, estimatedLiquidationPrice, isLiquidationCrossed };
 });

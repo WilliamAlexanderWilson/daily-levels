@@ -1114,6 +1114,7 @@
     badge.classList.toggle("is-stale", status === "reconnecting");
     badge.querySelector(".live-label").textContent = status === "reconnecting" ? "Reconnecting" : "Live";
     renderChartLiveTicker(status);
+    if (Number.isFinite(lastLivePrice)) updateLiveTradePnlCells(state.asset, lastLivePrice);
   }
 
   function liveAgeLabel() {
@@ -1139,11 +1140,20 @@
       ? `${liveAgeLabel()} · reconnecting`
       : liveAgeLabel();
     const liveEntryButton = document.getElementById("trade-live-btn");
-    if (liveEntryButton) liveEntryButton.disabled = state.asset === "spy" || !Number.isFinite(lastLivePrice);
+    if (liveEntryButton) liveEntryButton.disabled = !liveMarkIsFresh();
     const paperLiveLabel = document.getElementById("paper-trader-live-label");
     if (paperLiveLabel && state.asset !== "spy") {
       paperLiveLabel.textContent = status === "reconnecting" ? "RECONNECTING" : "LIVE MARK";
     }
+  }
+
+  function liveMarkIsFresh(now = Date.now()) {
+    return state.asset !== "spy" && liveStreamStatus === "live" && KrakenLive.isStreamFresh(
+      liveStreamSubscribed,
+      lastLiveMessageAt,
+      now,
+      LIVE_STREAM_STALE_MS
+    );
   }
 
   function renderDerivedLiveState(asset, price) {
@@ -2514,11 +2524,32 @@
     const pnl = tradePnl(trade, currentPrice);
     if (!pnl) return { text: "—", color: "var(--text-muted)" };
     const sign = pnl.usd >= 0 ? "+" : "";
-    const suffix = pnl.isRealized ? "" : " (live)";
+    const suffix = pnl.isLiquidated
+      ? " (est. liquidated)"
+      : pnl.isRealized
+        ? ""
+        : liveMarkIsFresh()
+          ? " (live)"
+          : " (last mark)";
     return {
       text: `${sign}$${pnl.usd.toLocaleString(undefined, { maximumFractionDigits: 2 })} (${sign}${pnl.pct.toFixed(1)}%)${suffix}`,
       color: pnl.usd >= 0 ? "var(--support)" : "var(--resistance)",
     };
+  }
+
+  function settleLiquidatedTrades(asset, currentPrice) {
+    if (asset === "spy" || !Number.isFinite(currentPrice)) return false;
+    const trades = loadTrades(asset);
+    let changed = false;
+    for (const trade of trades) {
+      if (trade.exitPrice != null || !window.PaperTrader.isLiquidationCrossed(trade, currentPrice)) continue;
+      trade.exitPrice = window.PaperTrader.estimatedLiquidationPrice(trade);
+      trade.exitTime = Math.floor(Date.now() / 1000);
+      trade.liquidated = true;
+      changed = true;
+    }
+    if (changed) saveTrades(asset, trades);
+    return changed;
   }
 
   function estimatedLiquidationPrice(trade) {
@@ -2566,6 +2597,11 @@
 
   function updateLiveTradePnlCells(asset, currentPrice) {
     if (state.asset !== asset) return;
+    if (liveMarkIsFresh() && settleLiquidatedTrades(asset, currentPrice)) {
+      renderTradeMarkers(asset, state.range, activeCandles);
+      renderTradesTable(asset, currentPrice);
+      return;
+    }
     const tradesById = new Map(loadTrades(asset).map((trade) => [String(trade.id), trade]));
     document.querySelectorAll(".trade-pnl-cell[data-trade-id]").forEach((cell) => {
       const trade = tradesById.get(cell.dataset.tradeId);
@@ -2705,7 +2741,7 @@
   }
 
   function useLiveTradePrice() {
-    if (state.asset === "spy" || !Number.isFinite(lastLivePrice)) return;
+    if (!liveMarkIsFresh()) return;
     setMarkingMode(false);
     pendingTrade = { time: Math.floor(Date.now() / 1000), price: lastLivePrice };
     openTradeForm();
