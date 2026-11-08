@@ -137,8 +137,13 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.match(html, /id="quick-guide"/);
   assert.match(html, /How to use Range Desk/);
   assert.match(html, /class="mobile-jump-nav"/);
+  assert.doesNotMatch(html, /mobile-jump-nav[^]*href="#/);
   assert.match(app, /quickGuideStatus\.textContent/);
   assert.match(app, /document\.getElementById\("quick-guide"\)/);
+  assert.match(app, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
+  assert.match(app, /guide\.hidden = isSpy/);
+  assert.match(app, /isSpy \? "Summary" : "Checklist"/);
+  assert.match(app, /isSpy \? "advanced-analysis" : "paper-trader"/);
   assert.match(css, /\.mobile-jump-nav\s*\{[\s\S]*position:\s*fixed/);
   assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.decision-brief\s*\{\s*grid-template-columns:\s*1fr/);
 });

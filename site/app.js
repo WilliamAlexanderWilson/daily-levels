@@ -3453,6 +3453,7 @@
     document.getElementById("spy-explainer").hidden = !isSpy;
     document.getElementById("chart-live-ticker").hidden = isSpy;
     document.getElementById("range-lab").hidden = asset !== "btc";
+    syncAssetGuidance(asset);
     paperTrader.classList.toggle("is-unavailable", isSpy);
     paperStatus.textContent = isSpy
       ? "SPY is batch data on this site, so live paper P&L is disabled rather than presenting a stale mark as real-time."
@@ -3462,6 +3463,22 @@
     renderPaperPositions(asset, isSpy ? null : lastLivePrice);
     if (asset !== "btc") clearRangeLabLines();
     if (isSpy) document.getElementById("live-badge").hidden = true;
+  }
+
+  function syncAssetGuidance(asset) {
+    const isSpy = asset === "spy";
+    const guide = document.getElementById("quick-guide");
+    const decisionJump = document.getElementById("mobile-jump-decision");
+    const thirdJump = document.getElementById("mobile-jump-third");
+    if (guide) {
+      guide.hidden = isSpy;
+      if (isSpy) guide.open = false;
+    }
+    if (decisionJump) decisionJump.textContent = isSpy ? "Summary" : "Checklist";
+    if (thirdJump) {
+      thirdJump.textContent = isSpy ? "Research" : "Paper trade";
+      thirdJump.dataset.jumpTarget = isSpy ? "advanced-analysis" : "paper-trader";
+    }
   }
 
   function organizeAdvancedAnalysis() {
@@ -3506,6 +3523,15 @@
     for (const element of primary) {
       if (element) main.appendChild(element);
     }
+  }
+
+  function wireMobileJumpNav() {
+    document.querySelectorAll(".mobile-jump-nav [data-jump-target]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = document.getElementById(button.dataset.jumpTarget);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
   }
 
   function wireAdvancedAnalysis() {
@@ -3927,6 +3953,7 @@
 
   organizeAdvancedAnalysis();
   organizePrimaryLayout();
+  wireMobileJumpNav();
   wireAdvancedAnalysis();
   wireNearbyContext();
   readHash();

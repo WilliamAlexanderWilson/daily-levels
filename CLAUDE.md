@@ -262,7 +262,11 @@ price location, three-condition confirmation, then risk planning. Its summary
 reflects the current checklist count without turning that count into a trade
 instruction. On screens up to 700px, a fixed bottom navigation provides direct
 44px touch targets for Chart, Checklist, and Paper trade; keep the desktop view
-free of that navigation and preserve mobile safe-area padding.
+free of that navigation and preserve mobile safe-area padding. These controls
+must scroll with JavaScript instead of fragment links because the URL hash owns
+the selected asset and timeframe. On SPY, hide the crypto guide and relabel the
+mobile destinations to Chart, Summary, and Research; never show the live crypto
+checklist or paper-trade workflow as applicable to SPY's batch-only review.
 
 Correction after reviewing the creator's strategy-focused videos rather than
 only the original exchange tutorial: for BTC, the nearest calculated bracket

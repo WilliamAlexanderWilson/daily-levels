@@ -2992,18 +2992,21 @@ main { padding-top: 0.75rem; }
     box-shadow: var(--shadow);
     backdrop-filter: blur(14px);
   }
-  .mobile-jump-nav a {
+  .mobile-jump-nav button {
     display: grid;
     min-height: 44px;
     place-items: center;
     border-radius: 8px;
+    border: 0;
     color: var(--text-muted);
+    background: transparent;
+    font-family: inherit;
     font-size: 0.72rem;
     font-weight: 700;
-    text-decoration: none;
+    cursor: pointer;
   }
-  .mobile-jump-nav a:active,
-  .mobile-jump-nav a:focus-visible {
+  .mobile-jump-nav button:active,
+  .mobile-jump-nav button:focus-visible {
     color: var(--text);
     background: var(--bg);
     outline: 2px solid var(--accent);
