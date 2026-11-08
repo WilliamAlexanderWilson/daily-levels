@@ -3581,7 +3581,12 @@
       ? "SPY is batch data on this site, so live paper P&L is disabled rather than presenting a stale mark as real-time."
       : `${asset.toUpperCase()} P&L follows Kraken's real-time trade stream. No order is sent anywhere.`;
     paperLiveLabel.textContent = isSpy ? "Batch data" : "Live price";
-    if (isSpy) closeTradeForm();
+    if (isSpy) {
+      closeTradeForm();
+      // Clear crypto paper entry/stop/target/liquidation lines immediately,
+      // before the asynchronous SPY batch request finishes.
+      renderTradeRiskLines("spy");
+    }
     renderPaperPositions(asset, isSpy ? null : lastLivePrice);
     if (asset !== "btc") clearRangeLabLines();
     if (isSpy) document.getElementById("live-badge").hidden = true;
@@ -3706,6 +3711,10 @@
     // over a chart they no longer describe.
     clearPriceLines();
     clearOverlays();
+    // Reassert the clean SPY chart on initial load, refresh, and every
+    // Heikin-Ashi timeframe change. This is intentionally separate from
+    // the crypto trade-marker path.
+    renderTradeRiskLines("spy");
     activeRangeDecision = null;
     activeLiquidationBins = [];
     // Order book walls are drawn separately from activePriceLines (they
