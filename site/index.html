@@ -350,19 +350,38 @@
             <button type="button" class="trade-dir-btn trade-dir-short" data-direction="short">Short</button>
           </div>
         </div>
-        <div class="trade-form-row trade-form-size-row">
+        <div class="trade-form-grid">
           <label class="trade-form-field">
-            Margin ($)
-            <input type="number" id="trade-form-size" placeholder="e.g. 500" min="0" step="any" inputmode="decimal" />
+            Account balance ($)
+            <input type="number" id="trade-form-account" placeholder="e.g. 10000" min="1" step="any" inputmode="decimal" />
+          </label>
+          <label class="trade-form-field">
+            Risk per trade (0.1–5%)
+            <input type="number" id="trade-form-risk-pct" value="1" min="0.1" max="5" step="0.1" inputmode="decimal" />
           </label>
           <label class="trade-form-field">
             Leverage (1–100×)
             <input type="number" id="trade-form-leverage" placeholder="e.g. 10" min="1" max="100" step="1" inputmode="numeric" />
           </label>
-          <div class="trade-form-risk">
-            <strong>100× can liquidate near a 1% adverse move.</strong>
-            <span>The paper position stops at that estimate. It excludes maintenance margin, fees, funding, and exchange rules.</span>
-          </div>
+          <label class="trade-form-field">
+            Stop price
+            <input type="number" id="trade-form-stop" placeholder="Required" min="0" step="any" inputmode="decimal" />
+          </label>
+          <label class="trade-form-field">
+            Target price
+            <input type="number" id="trade-form-target" placeholder="Required" min="0" step="any" inputmode="decimal" />
+          </label>
+          <label class="trade-form-field">
+            Calculated margin ($)
+            <input type="number" id="trade-form-size" placeholder="Calculated" readonly aria-readonly="true" />
+          </label>
+        </div>
+        <div id="trade-risk-preview" class="trade-risk-preview" role="status">
+          Choose a side and complete the risk fields to calculate position size.
+        </div>
+        <div class="trade-form-risk">
+          <strong>The stop defines position size; leverage only changes required margin.</strong>
+          <span>Risk is capped at 5%. The paper position closes automatically at stop, target, or estimated liquidation.</span>
         </div>
         <textarea id="trade-form-description" class="trade-form-description" placeholder="Trade plan or reason (optional)" rows="2"></textarea>
         <div class="trade-form-actions">
@@ -388,6 +407,9 @@
                 <th>Exit</th>
                 <th>Margin</th>
                 <th>Leverage</th>
+                <th>Stop</th>
+                <th>Target</th>
+                <th>R</th>
                 <th>P&amp;L</th>
                 <th>Plan</th>
                 <th></th>

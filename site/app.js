@@ -271,6 +271,8 @@
   let volumeSeries = null;
   const activePriceLines = [];
   const orderBookPriceLines = []; // separate from activePriceLines - these redraw on their own 10s order-book refresh, not every trade tick
+  const tradeRiskPriceLines = [];
+  let tradeRiskLineSignature = "";
   const overlayEls = [];
   let currentMarkers = []; // {key, low, high, mid, color, label, isZone} for repositioning on redraw
   // native IPriceLine objects, keyed by the same marker key, so "isolate"
@@ -1219,13 +1221,19 @@
     previousLivePrice = lastLivePrice;
     lastLivePrice = candle.close;
     lastLiveTickAt = Date.now();
-    if (source === "stream") {
+    if (source === "stream" || source === "snapshot") {
       liveStreamStatus = "live";
       setLiveBadge("live");
     } else {
       liveStreamStatus = "reconnecting";
       renderChartLiveTicker("reconnecting");
     }
+    // Terminal paper events are state, not presentation. Evaluate every
+    // accepted Kraken update before the 400ms rendering throttle so a quick
+    // stop/target touch followed by a recovery cannot be overwritten by the
+    // later pendingDerivedPrice. Subscription snapshots never settle trades:
+    // they may contain historical candles rather than a new market event.
+    if (source === "stream" && liveMarkIsFresh()) settleTriggeredTrades(asset, candle.close);
     scheduleDerivedLiveState(asset, candle.close);
     return true;
   }
@@ -1350,7 +1358,8 @@
         setLiveBadge("live");
         return;
       }
-      for (const candle of message.candles) applyLiveCandle(candle, asset, range);
+      const source = message.type === "snapshot" ? "snapshot" : "stream";
+      for (const candle of message.candles) applyLiveCandle(candle, asset, range, source);
     });
     socket.addEventListener("error", () => {
       if (generation === liveSocketGeneration) socket.close();
@@ -2375,17 +2384,85 @@
     hint.hidden = !on;
   }
 
+  const PAPER_RISK_SETTINGS_KEY = "daily-levels-paper-risk-settings";
+
+  function loadPaperRiskSettings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PAPER_RISK_SETTINGS_KEY) || "null");
+      return saved && typeof saved === "object" ? saved : { riskPct: 1, leverage: 1 };
+    } catch (_) {
+      return { riskPct: 1, leverage: 1 };
+    }
+  }
+
+  function savePaperRiskSettings() {
+    const accountBalance = parseFloat(document.getElementById("trade-form-account").value);
+    const riskPct = parseFloat(document.getElementById("trade-form-risk-pct").value);
+    const leverage = parseFloat(document.getElementById("trade-form-leverage").value);
+    try {
+      localStorage.setItem(PAPER_RISK_SETTINGS_KEY, JSON.stringify({
+        accountBalance: Number.isFinite(accountBalance) && accountBalance > 0 ? accountBalance : null,
+        riskPct: Number.isFinite(riskPct) && riskPct >= 0.1 && riskPct <= 5 ? riskPct : 1,
+        leverage: window.PaperTrader.normalizeLeverage(leverage) || 1,
+      }));
+    } catch (_) {
+      // The position itself already reports storage failures; settings are optional convenience only.
+    }
+  }
+
+  function currentTradeRiskPlan() {
+    if (!pendingTrade) return { valid: false, error: "Choose an entry price first." };
+    return window.PaperTrader.riskPlan({
+      direction: document.getElementById("trade-form-save").dataset.direction,
+      entry: pendingTrade.price,
+      stop: parseFloat(document.getElementById("trade-form-stop").value),
+      target: parseFloat(document.getElementById("trade-form-target").value),
+      accountBalance: parseFloat(document.getElementById("trade-form-account").value),
+      riskPct: parseFloat(document.getElementById("trade-form-risk-pct").value),
+      leverage: parseFloat(document.getElementById("trade-form-leverage").value),
+    });
+  }
+
+  function updateTradeRiskPreview() {
+    const preview = document.getElementById("trade-risk-preview");
+    const sizeInput = document.getElementById("trade-form-size");
+    const saveBtn = document.getElementById("trade-form-save");
+    const plan = currentTradeRiskPlan();
+    const fieldsComplete = ["trade-form-account", "trade-form-risk-pct", "trade-form-leverage", "trade-form-stop", "trade-form-target"]
+      .every((id) => document.getElementById(id).value !== "") && Boolean(saveBtn.dataset.direction);
+    preview.classList.toggle("is-valid", plan.valid);
+    preview.classList.toggle("is-invalid", !plan.valid && fieldsComplete);
+    sizeInput.value = plan.valid ? plan.margin.toFixed(2) : "";
+    saveBtn.disabled = !plan.valid;
+    if (!plan.valid) {
+      preview.textContent = fieldsComplete ? plan.error : "Choose a side and complete the risk fields to calculate position size.";
+      return plan;
+    }
+    preview.innerHTML = `
+      <strong>Risk $${plan.riskDollars.toLocaleString(undefined, { maximumFractionDigits: 2 })} · ${plan.rewardRisk.toFixed(2)}R plan</strong>
+      <span>$${plan.notional.toLocaleString(undefined, { maximumFractionDigits: 2 })} notional · $${plan.margin.toLocaleString(undefined, { maximumFractionDigits: 2 })} margin at ${plan.leverage}× · stop ${(plan.stopFraction * 100).toFixed(2)}% from entry</span>
+      <span>Estimated liquidation: ${plan.liquidation ? formatPriceRange(plan.liquidation, plan.liquidation) : "not applicable at this leverage"}</span>`;
+    savePaperRiskSettings();
+    return plan;
+  }
+
   function openTradeForm() {
     if (!pendingTrade) return;
     const saveBtn = document.getElementById("trade-form-save");
     document.getElementById("trade-form-price").textContent = `Entry: ${formatPriceRange(pendingTrade.price, pendingTrade.price)}`;
     document.getElementById("trade-form-description").value = "";
+    const settings = loadPaperRiskSettings();
+    document.getElementById("trade-form-account").value = settings.accountBalance || "";
+    document.getElementById("trade-form-risk-pct").value = settings.riskPct || 1;
     document.getElementById("trade-form-size").value = "";
-    document.getElementById("trade-form-leverage").value = "1";
+    document.getElementById("trade-form-leverage").value = settings.leverage || 1;
+    document.getElementById("trade-form-stop").value = "";
+    document.getElementById("trade-form-target").value = "";
     document.querySelectorAll(".trade-dir-btn").forEach((b) => b.classList.remove("active"));
     saveBtn.disabled = true;
     saveBtn.dataset.direction = "";
     document.getElementById("trade-form").hidden = false;
+    updateTradeRiskPreview();
   }
 
   function closeTradeForm() {
@@ -2449,6 +2526,7 @@
     const trades = loadTrades(asset);
     if (!candles.length) {
       tradeMarkersPlugin.setMarkers([]);
+      renderTradeRiskLines(asset);
       return;
     }
 
@@ -2486,18 +2564,58 @@
       if (t.exitPrice != null && t.exitTime != null && inRange(t.exitTime)) {
         const pnl = tradePnl(t, null);
         const profitable = pnl ? pnl.usd >= 0 : null;
+        const exitLabel = {
+          stop: "Stop",
+          target: "Target",
+          liquidation: "Est. liquidation",
+          manual: "Manual exit",
+        }[t.exitReason] || "Exit";
         markers.push({
           time: toTimePoint({ time: t.exitTime }, range),
           position: t.direction === "long" ? "aboveBar" : "belowBar",
           color: profitable === null ? cssVar("--accent") : profitable ? cssVar("--support") : cssVar("--resistance"),
           shape: "circle",
-          text: "Exit",
+          text: exitLabel,
         });
       }
     }
     markers.sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0));
 
     tradeMarkersPlugin.setMarkers(markers);
+    renderTradeRiskLines(asset);
+  }
+
+  function renderTradeRiskLines(asset) {
+    if (!candleSeries) return;
+    const trade = asset === "spy"
+      ? null
+      : loadTrades(asset).filter((item) => item.exitPrice == null).sort((a, b) => b.time - a.time)[0] || null;
+    const liquidation = trade ? estimatedLiquidationPrice(trade) : null;
+    const signature = trade
+      ? [asset, trade.id, trade.price, trade.stopPrice, trade.targetPrice, liquidation].join(":")
+      : `${asset}:none`;
+    if (signature === tradeRiskLineSignature) return;
+    for (const line of tradeRiskPriceLines) candleSeries.removePriceLine(line);
+    tradeRiskPriceLines.length = 0;
+    tradeRiskLineSignature = signature;
+    if (!trade) return;
+
+    const add = (price, title, color, style, width = 2) => {
+      if (!Number.isFinite(price)) return;
+      tradeRiskPriceLines.push(candleSeries.createPriceLine({
+        price,
+        title,
+        color,
+        lineWidth: width,
+        lineStyle: style,
+        lineVisible: true,
+        axisLabelVisible: true,
+      }));
+    };
+    add(trade.price, "PAPER ENTRY", cssVar("--accent"), LightweightCharts.LineStyle.Solid, 2);
+    add(trade.stopPrice, "PAPER STOP", cssVar("--resistance"), LightweightCharts.LineStyle.Dashed, 2);
+    add(trade.targetPrice, "PAPER TARGET", cssVar("--support"), LightweightCharts.LineStyle.Dashed, 2);
+    add(liquidation, "EST. LIQ.", cssVar("--flip"), LightweightCharts.LineStyle.Dotted, 1);
   }
 
   function startDeletingTrade(id) {
@@ -2546,19 +2664,11 @@
     };
   }
 
-  function settleLiquidatedTrades(asset, currentPrice) {
+  function settleTriggeredTrades(asset, currentPrice) {
     if (asset === "spy" || !Number.isFinite(currentPrice)) return false;
-    const trades = loadTrades(asset);
-    let changed = false;
-    for (const trade of trades) {
-      if (trade.exitPrice != null || !window.PaperTrader.isLiquidationCrossed(trade, currentPrice)) continue;
-      trade.exitPrice = window.PaperTrader.estimatedLiquidationPrice(trade);
-      trade.exitTime = Math.floor(Date.now() / 1000);
-      trade.liquidated = true;
-      changed = true;
-    }
-    if (changed) saveTrades(asset, trades);
-    return changed;
+    const result = window.PaperTrader.settleTrades(loadTrades(asset), currentPrice);
+    if (result.changed) saveTrades(asset, result.trades);
+    return result.changed;
   }
 
   function estimatedLiquidationPrice(trade) {
@@ -2587,6 +2697,7 @@
       const leverage = window.PaperTrader.normalizeLeverage(trade.leverage);
       const notional = trade.size && leverage ? trade.size * leverage : null;
       const liquidation = estimatedLiquidationPrice(trade);
+      const currentR = window.PaperTrader.rMultiple(trade, currentPrice);
       const liveMark = Number.isFinite(currentPrice) ? formatPriceRange(currentPrice, currentPrice) : "Connecting…";
       return `
         <article class="paper-position-card">
@@ -2597,6 +2708,11 @@
           <div class="paper-position-card-metrics">
             <span>ENTRY<strong>${formatPriceRange(trade.price, trade.price)}</strong></span>
             <span>LIVE MARK<strong>${liveMark}</strong></span>
+            <span>STOP<strong>${Number.isFinite(trade.stopPrice) ? formatPriceRange(trade.stopPrice, trade.stopPrice) : "—"}</strong></span>
+            <span>TARGET<strong>${Number.isFinite(trade.targetPrice) ? formatPriceRange(trade.targetPrice, trade.targetPrice) : "—"}</strong></span>
+            <span>R NOW<strong>${currentR == null ? "—" : `${currentR >= 0 ? "+" : ""}${currentR.toFixed(2)}R`}</strong></span>
+            <span>PLAN<strong>${Number.isFinite(trade.rewardRisk) ? `${trade.rewardRisk.toFixed(2)}R` : "—"}</strong></span>
+            <span>RISK<strong>${Number.isFinite(trade.riskDollars) ? `$${trade.riskDollars.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "—"}</strong></span>
             <span>NOTIONAL<strong>${notional ? `$${notional.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "—"}</strong></span>
             <span>EST. LIQ.<strong>${liquidation ? formatPriceRange(liquidation, liquidation) : "—"}</strong></span>
           </div>
@@ -2606,11 +2722,6 @@
 
   function updateLiveTradePnlCells(asset, currentPrice) {
     if (state.asset !== asset) return;
-    if (liveMarkIsFresh() && settleLiquidatedTrades(asset, currentPrice)) {
-      renderTradeMarkers(asset, state.range, activeCandles);
-      renderTradesTable(asset, currentPrice);
-      return;
-    }
     const tradesById = new Map(loadTrades(asset).map((trade) => [String(trade.id), trade]));
     document.querySelectorAll(".trade-pnl-cell[data-trade-id]").forEach((cell) => {
       const trade = tradesById.get(cell.dataset.tradeId);
@@ -2618,6 +2729,13 @@
       const display = tradePnlDisplay(trade, currentPrice);
       cell.textContent = display.text;
       cell.style.color = display.color;
+    });
+    document.querySelectorAll(".trade-r-cell[data-trade-id]").forEach((cell) => {
+      const trade = tradesById.get(cell.dataset.tradeId);
+      if (!trade) return;
+      const r = window.PaperTrader.rMultiple(trade, currentPrice);
+      cell.textContent = r == null ? "—" : `${r >= 0 ? "+" : ""}${r.toFixed(2)}R`;
+      cell.style.color = r == null ? "var(--text-muted)" : r >= 0 ? "var(--support)" : "var(--resistance)";
     });
     renderPaperPositions(asset, currentPrice);
   }
@@ -2639,6 +2757,7 @@
     if (!trade) return;
     trade.exitPrice = exitPrice;
     trade.exitTime = Math.floor(Date.now() / 1000);
+    trade.exitReason = "manual";
     saveTrades(asset, trades);
     closingTradeId = null;
     renderTradeMarkers(state.asset, state.range, activeCandles);
@@ -2652,7 +2771,7 @@
     const trades = [...loadTrades(asset)].sort((a, b) => b.time - a.time);
     renderPaperPositions(asset, currentPrice);
     if (!trades.length) {
-      tbody.innerHTML = `<tr><td colspan="9">No trades marked yet for ${asset.toUpperCase()}.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="12">No trades marked yet for ${asset.toUpperCase()}.</td></tr>`;
       return;
     }
 
@@ -2663,9 +2782,21 @@
         timeStyle: "short",
       });
       const directionColor = trade.direction === "long" ? "var(--support)" : "var(--resistance)";
-      const exitText = trade.exitPrice != null ? formatPriceRange(trade.exitPrice, trade.exitPrice) : "—";
+      const exitReason = {
+        stop: "stop",
+        target: "target",
+        liquidation: "est. liquidation",
+        manual: "manual",
+      }[trade.exitReason] || "";
+      const exitText = trade.exitPrice != null
+        ? `${formatPriceRange(trade.exitPrice, trade.exitPrice)}${exitReason ? ` · ${exitReason}` : ""}`
+        : "—";
       const sizeText = trade.size ? `$${trade.size.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "—";
       const leverageText = trade.leverage ? `${trade.leverage}x` : "—";
+      const stopText = Number.isFinite(trade.stopPrice) ? formatPriceRange(trade.stopPrice, trade.stopPrice) : "—";
+      const targetText = Number.isFinite(trade.targetPrice) ? formatPriceRange(trade.targetPrice, trade.targetPrice) : "—";
+      const r = window.PaperTrader.rMultiple(trade, currentPrice);
+      const rText = r == null ? "—" : `${r >= 0 ? "+" : ""}${r.toFixed(2)}R`;
 
       const pnlDisplay = tradePnlDisplay(trade, currentPrice);
 
@@ -2676,6 +2807,9 @@
         <td>${exitText}</td>
         <td>${sizeText}</td>
         <td>${leverageText}</td>
+        <td>${stopText}</td>
+        <td>${targetText}</td>
+        <td class="trade-r-cell" data-trade-id="${escapeHtml(String(trade.id))}" style="color: ${r == null ? "var(--text-muted)" : r >= 0 ? "var(--support)" : "var(--resistance)"}">${rText}</td>
         <td class="trade-pnl-cell" data-trade-id="${escapeHtml(String(trade.id))}" style="color: ${pnlDisplay.color}">${pnlDisplay.text}</td>
         <td class="trade-note-cell">${trade.description ? escapeHtml(trade.description) : "—"}</td>
         <td></td>
@@ -2778,30 +2912,26 @@
         btn.classList.add("active");
         const saveBtn = document.getElementById("trade-form-save");
         saveBtn.dataset.direction = btn.dataset.direction;
-        saveBtn.disabled = false;
+        updateTradeRiskPreview();
       });
     });
 
     document.getElementById("trade-form-cancel").addEventListener("click", closeTradeForm);
 
     const leverageInput = document.getElementById("trade-form-leverage");
-    leverageInput.addEventListener("input", () => leverageInput.setCustomValidity(""));
+    for (const id of ["trade-form-account", "trade-form-risk-pct", "trade-form-leverage", "trade-form-stop", "trade-form-target"]) {
+      document.getElementById(id).addEventListener("input", () => {
+        leverageInput.setCustomValidity("");
+        updateTradeRiskPreview();
+      });
+    }
 
     document.getElementById("trade-form-save").addEventListener("click", (e) => {
       const direction = e.currentTarget.dataset.direction;
       if (!pendingTrade || !direction) return;
 
-      // Size/leverage are optional - a trade with neither still saves fine,
-      // it just won't show a live P&L (nothing to compute one from).
-      const sizeRaw = parseFloat(document.getElementById("trade-form-size").value);
-      const leverageRaw = parseFloat(leverageInput.value);
-      const size = Number.isFinite(sizeRaw) && sizeRaw > 0 ? sizeRaw : null;
-      if (Number.isFinite(leverageRaw) && (leverageRaw < 1 || leverageRaw > 100 || !Number.isInteger(leverageRaw))) {
-        leverageInput.setCustomValidity("Choose a whole-number leverage from 1× to 100×.");
-        leverageInput.reportValidity();
-        return;
-      }
-      const leverage = Number.isFinite(leverageRaw) ? leverageRaw : null;
+      const plan = updateTradeRiskPreview();
+      if (!plan.valid) return;
 
       const trades = loadTrades(state.asset);
       trades.push({
@@ -2809,8 +2939,15 @@
         time: pendingTrade.time,
         price: pendingTrade.price,
         direction,
-        size,
-        leverage,
+        size: plan.margin,
+        leverage: plan.leverage,
+        accountBalance: plan.accountBalance,
+        riskPct: plan.riskPct,
+        riskDollars: plan.riskDollars,
+        notional: plan.notional,
+        stopPrice: plan.stop,
+        targetPrice: plan.target,
+        rewardRisk: plan.rewardRisk,
         description: document.getElementById("trade-form-description").value.trim(),
         createdAt: new Date().toISOString(),
       });

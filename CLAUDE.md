@@ -243,8 +243,10 @@ prominent local paper-position tracker; the decision brief and research
 panels follow below. The existing nearest-level cards, futures context,
 liquidity overlays, scorecards, and explainers remain available under
 **Full analysis**, not deleted. BTC/ETH positions can be opened from the
-live Kraken mark, a chart point, or a manual fill, with 1–100x leverage,
-live P&L, notional, and a rough liquidation estimate. SPY tracking is
+live Kraken mark, a chart point, or a manual fill. The risk-first ticket requires
+account balance, 0.1–5% risk, stop, target, and 1–100x leverage; it derives
+notional and required margin from stop distance, tracks live P&L and R, and
+automatically freezes stop, target, or estimated-liquidation exits. SPY tracking is
 disabled and labeled batch-only rather than pretending its baked chart is
 live. `site/paper-trader.js` owns the tested calculations and
 `site/range-decision.js` owns the pure range
@@ -714,9 +716,11 @@ Also built, beyond the original Phase 1/2 spec, in response to live usage:
   the user to require the live order-book wall plus price reaction as
   confirmation. Keep the pure functions in this module so the important
   no-fake-hotspot behavior remains covered by Node tests.
-- **Position tracking: size, leverage, live P&L, and closing a trade.**
-  The trade form gained two optional fields (`trade-form-size`,
-  `trade-form-leverage`); a trade with both set gets a live P&L column in
+- **Risk-first position tracking: stop, target, sizing, live R, and closing.**
+  The trade form requires account balance, risk percentage, stop, target, and
+  leverage. `trade-form-size` is readonly calculated margin; `riskPlan()` in
+  `site/paper-trader.js` derives notional from risk dollars and stop distance.
+  A valid trade gets live P&L and R columns in
   the trades table (`tradePnl()` in `site/app.js`), re-rendered from the
   streamed price the same way the nearest-level cards already are. Same
   mental model as the liquidation estimate: `size` is margin, `size x
