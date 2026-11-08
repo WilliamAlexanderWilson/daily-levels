@@ -224,22 +224,45 @@
     return new Map(data.sessions.map((session) => [session.key, session]));
   }
 
+  function qualifiedEvidence(evidence) {
+    const hour = evidence?.horizons?.["60"];
+    return Boolean(
+      evidence?.evidence_status === "measured"
+      && Number.isFinite(evidence.observed_rank)
+      && Number.isFinite(hour?.n)
+      && hour.n >= 20
+      && Number.isFinite(hour?.median_abs_move_pct)
+    );
+  }
+
   function rankSessions(sessions, data) {
     const byKey = reactionByKey(data);
     return sessions.slice().sort((left, right) => {
-      const leftObserved = byKey.get(left.key)?.observed_rank;
-      const rightObserved = byKey.get(right.key)?.observed_rank;
-      if (Number.isFinite(leftObserved) && Number.isFinite(rightObserved)) return leftObserved - rightObserved;
-      if (Number.isFinite(leftObserved)) return -1;
-      if (Number.isFinite(rightObserved)) return 1;
+      const leftEvidence = byKey.get(left.key);
+      const rightEvidence = byKey.get(right.key);
+      const leftObserved = qualifiedEvidence(leftEvidence) ? leftEvidence.observed_rank : null;
+      const rightObserved = qualifiedEvidence(rightEvidence) ? rightEvidence.observed_rank : null;
+      if (leftObserved !== null && rightObserved !== null) return leftObserved - rightObserved;
+      if (leftObserved !== null) return -1;
+      if (rightObserved !== null) return 1;
       return left.rank - right.rank;
     });
+  }
+
+  function topVolatilitySessions(sessions, data, count = 2) {
+    const evidence = reactionByKey(data);
+    return rankSessions(sessions, data).slice(0, count).map((session, index) => ({
+      ...session,
+      evidence: evidence.get(session.key) || null,
+      displayRank: index + 1,
+      measured: qualifiedEvidence(evidence.get(session.key)),
+    }));
   }
 
   function evidenceLabel(evidence) {
     const hour = evidence?.horizons?.["60"];
     if (!hour || !hour.n) return "Not enough complete candles to measure";
-    if (evidence.evidence_status !== "measured") return `Early sample · n=${hour.n} (need 20)`;
+    if (!qualifiedEvidence(evidence)) return `Not qualified · n=${hour.n} (need measured 20+)`;
     return `Observed #${evidence.observed_rank} · median |60m| ${hour.median_abs_move_pct.toFixed(2)}% · n=${hour.n}`;
   }
 
@@ -339,7 +362,7 @@
       `${localTimeLabel(next.status.nextOpen)} Dallas · ${exchangeOpenLabel(next, next.status.nextOpen)}`;
     mountedDocument.getElementById("market-open-count").textContent = `${snapshot.openCount} of ${snapshot.sessions.length} open now`;
     const rankingBasis = mountedDocument.getElementById("market-ranking-basis");
-    const measuredCount = data?.sessions?.filter((session) => session.observed_rank != null).length || 0;
+    const measuredCount = data?.sessions?.filter(qualifiedEvidence).length || 0;
     rankingBasis.textContent = measuredCount
       ? `${activeAsset.toUpperCase()} observed ranking · median absolute 60m move · ${measuredCount} sessions qualified`
       : "Source-priority order · observed ranking needs at least 20 complete samples";
@@ -351,6 +374,54 @@
     if (data?.source?.url) {
       reactionSource.href = data.source.url;
       reactionSource.title = data.source.note || data.source.name || "Reaction data source";
+    }
+    const leaderList = mountedDocument.getElementById("market-leader-list");
+    leaderList.innerHTML = "";
+    for (const session of topVolatilitySessions(snapshot.sessions, data)) {
+      const hour = session.evidence?.horizons?.["60"];
+      const sampleCount = Number(hour?.n) || 0;
+      const move = Number(hour?.median_abs_move_pct);
+      const card = mountedDocument.createElement("article");
+      card.className = `market-leader ${session.status.isOpen ? "is-open" : "is-closed"} ${session.measured ? "is-measured" : "is-provisional"}`;
+
+      const header = mountedDocument.createElement("div");
+      header.className = "market-leader-card-heading";
+      const badge = mountedDocument.createElement("span");
+      badge.className = "market-leader-badge";
+      badge.textContent = session.measured ? `OBSERVED #${session.evidence.observed_rank}` : `PROVISIONAL #${session.displayRank}`;
+      const state = mountedDocument.createElement("span");
+      state.className = "market-leader-state";
+      state.textContent = session.status.isOpen ? "OPEN" : session.status.isBreak ? "MIDDAY BREAK" : "CLOSED";
+      header.append(badge, state);
+
+      const identity = mountedDocument.createElement("div");
+      identity.className = "market-leader-identity";
+      const name = mountedDocument.createElement("strong");
+      name.textContent = session.name;
+      const exchange = mountedDocument.createElement("small");
+      exchange.textContent = session.exchange;
+      identity.append(name, exchange);
+
+      const metrics = mountedDocument.createElement("div");
+      metrics.className = "market-leader-metrics";
+      const movement = mountedDocument.createElement("span");
+      movement.innerHTML = session.measured && Number.isFinite(move)
+        ? `<small>Median |60m| move</small><strong>${move.toFixed(2)}%</strong><em>n=${sampleCount}</em>`
+        : `<small>Median |60m| move</small><strong>Collecting</strong><em>${sampleCount} of 20 minimum</em>`;
+      const timing = mountedDocument.createElement("span");
+      timing.innerHTML = session.status.isOpen
+        ? `<small>${session.status.pausesAtBreak ? "Pauses" : "Closes"} in</small><strong>${countdown(session.status.closesAt, now)}</strong><em>Next open ${localTimeLabel(session.status.nextOpen)}</em>`
+        : `<small>${session.status.isBreak ? "Reopens" : "Opens"} in</small><strong>${countdown(session.status.nextOpen, now)}</strong><em>${localTimeLabel(session.status.nextOpen)}</em>`;
+      metrics.append(movement, timing);
+
+      if (!session.measured) {
+        const note = mountedDocument.createElement("p");
+        note.textContent = "Shown by source priority while this session collects enough complete opens for a volatility rank.";
+        card.append(header, identity, metrics, note);
+      } else {
+        card.append(header, identity, metrics);
+      }
+      leaderList.appendChild(card);
     }
     const forwardPanel = mountedDocument.getElementById("range-open-forward");
     forwardPanel.classList.toggle("is-qualified", forward.qualified);
@@ -427,7 +498,9 @@
     evidenceTitle,
     coverageLabel,
     forwardDisplay,
+    qualifiedEvidence,
     rankSessions,
+    topVolatilitySessions,
     marketSnapshot,
     mount,
     nextWeekdayDate,

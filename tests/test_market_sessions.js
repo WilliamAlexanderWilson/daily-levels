@@ -21,7 +21,7 @@ test("observed reaction evidence replaces opinion ranking only for qualified ses
   const ranked = MarketSessions.rankSessions(MarketSessions.SESSIONS, data);
   assert.deepEqual(ranked.slice(0, 3).map((session) => session.key), ["london", "new-york", "cme-equity"]);
   assert.match(MarketSessions.evidenceLabel(data.sessions[0]), /Observed #1.*0\.50%.*n=42/);
-  assert.match(MarketSessions.evidenceLabel({ horizons: { "60": { n: 8 } }, evidence_status: "limited" }), /need 20/);
+  assert.match(MarketSessions.evidenceLabel({ horizons: { "60": { n: 8 } }, evidence_status: "limited" }), /need measured 20\+/);
   assert.match(MarketSessions.coverageLabel({
     asset: "btc",
     coverage_start_utc: "2026-09-08T00:00:00Z",
@@ -32,6 +32,49 @@ test("observed reaction evidence replaces opinion ranking only for qualified ses
     coverage_start_utc: "2024-11-07T00:00:00Z",
     coverage_end_utc: "2026-11-06T00:00:00Z",
   }), /Alpaca IEX · one U\.S\. exchange · 729-day sample/);
+});
+
+test("keeps two volatility leaders expanded while clearly marking a fallback as provisional", () => {
+  const measured = {
+    sessions: [
+      { key: "london", observed_rank: 1, evidence_status: "measured", horizons: { "60": { n: 42, median_abs_move_pct: 0.5 } } },
+      { key: "new-york", observed_rank: 2, evidence_status: "measured", horizons: { "60": { n: 42, median_abs_move_pct: 0.4 } } },
+    ],
+  };
+  const leaders = MarketSessions.topVolatilitySessions(MarketSessions.SESSIONS, measured);
+  assert.deepEqual(leaders.map((session) => [session.key, session.measured]), [["london", true], ["new-york", true]]);
+
+  const oneQualified = {
+    sessions: [
+      { key: "new-york", observed_rank: 1, evidence_status: "measured", horizons: { "60": { n: 498, median_abs_move_pct: 0.22 } } },
+    ],
+  };
+  const provisional = MarketSessions.topVolatilitySessions(MarketSessions.SESSIONS, oneQualified);
+  assert.deepEqual(provisional.map((session) => [session.key, session.measured]), [["new-york", true], ["cme-equity", false]]);
+
+  const malformed = {
+    sessions: [
+      { key: "tokyo", observed_rank: 1, evidence_status: "limited", horizons: { "60": { n: 8, median_abs_move_pct: 9.99 } } },
+      { key: "new-york", observed_rank: 2, evidence_status: "measured", horizons: { "60": { n: 42, median_abs_move_pct: 0.4 } } },
+    ],
+  };
+  const failedClosed = MarketSessions.topVolatilitySessions(MarketSessions.SESSIONS, malformed);
+  assert.deepEqual(failedClosed.map((session) => [session.key, session.measured]), [["new-york", true], ["cme-equity", false]]);
+  assert.equal(MarketSessions.qualifiedEvidence(malformed.sessions[0]), false);
+  for (const invalidMove of [null, "", "0.5"]) {
+    assert.equal(MarketSessions.qualifiedEvidence({
+      key: "tokyo",
+      observed_rank: 1,
+      evidence_status: "measured",
+      horizons: { "60": { n: 42, median_abs_move_pct: invalidMove } },
+    }), false);
+  }
+  assert.equal(MarketSessions.qualifiedEvidence({
+    key: "tokyo",
+    observed_rank: 1,
+    evidence_status: "measured",
+    horizons: { "60": { n: "42", median_abs_move_pct: 0.5 } },
+  }), false);
 });
 
 test("forward tracker stays collecting until the frozen balanced gate passes", () => {
@@ -126,6 +169,8 @@ test("the shared dashboard clock is present on every asset and discloses holiday
   const app = fs.readFileSync(path.join(siteRoot, "app.js"), "utf8");
   assert.match(html, /Market clock · Dallas time/);
   assert.match(html, /All seven major market opens/);
+  assert.match(html, /Two volatility leaders/);
+  assert.match(html, /market-leader-list/);
   assert.match(html, /Regular sessions only/);
   assert.match(html, /Exchange holidays, half-days, severe weather, or emergency closures can override/);
   assert.match(html, /past movement—not direction, a prediction, or a trade signal/);
