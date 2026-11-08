@@ -300,6 +300,7 @@
   let previousLivePrice = null; // gives the on-chart ticker a quiet up/down cue without implying a signal
   let lastLiveTickAt = null; // latest WebSocket trade-event time, used to expose freshness instead of just saying "Live"
   let activeRangeDecision = null; // sourced BTC macro range (or rolling fallback for other assets) drawn behind the candles
+  let activePatienceGate = null;
   let activeStrategyRange = RangeDecision.BTC_MACRO_RANGE; // daily-calculated structural reclaim layered onto the dated macro framework
   let activeRangeLabData = null;
   let activeRangeLabCandidateKey = null;
@@ -1541,6 +1542,10 @@
   }
 
   function renderDecisionLoading() {
+    activeRangeDecision = null;
+    activePatienceGate = null;
+    const tradeForm = document.getElementById("trade-form");
+    if (tradeForm && !tradeForm.hidden && pendingTrade) updateTradeRiskPreview();
     setDecisionClass("loading");
     document.getElementById("decision-badge").textContent = "Loading";
     document.getElementById("decision-method").textContent = state.asset === "btc" ? "BTC macro range" : "Current rolling range";
@@ -1554,6 +1559,7 @@
 
   function renderDecisionUnavailable(message) {
     activeRangeDecision = null;
+    activePatienceGate = null;
     setDecisionClass("wait");
     document.getElementById("decision-badge").textContent = "Data unavailable";
     document.getElementById("decision-method").textContent = "Waiting for complete data";
@@ -1724,6 +1730,7 @@
     const gate = document.getElementById("patience-gate");
     gate.hidden = false;
     const gateState = RangeDecision.patienceState(decision, activeCandles);
+    activePatienceGate = gateState;
     const { hasLocation, hasTouch, hasConfirmation, readyCount, boundary, boundaryTest } = gateState;
     const timeframeLabel = state.range === "1d" ? "Daily" : state.range.toUpperCase();
 
@@ -1764,6 +1771,8 @@
     if (hasConfirmation) instruction = "All three conditions are visible. Review the stop, target, and position size before making any decision.";
     document.getElementById("patience-instruction").textContent = instruction;
     maybeSendPatienceAlert(decision, gateState);
+    const tradeForm = document.getElementById("trade-form");
+    if (tradeForm && !tradeForm.hidden && pendingTrade) updateTradeRiskPreview();
     return gateState;
   }
 
@@ -1903,12 +1912,12 @@
       document.getElementById("decision-rr").textContent = `${decision.longRewardRisk.toFixed(2)}:1 long geometry`;
       document.getElementById("decision-rr-note").textContent = "target distance vs. boundary; not position R";
       document.getElementById("decision-caveat").textContent =
-        `Invalidation: sustained trade below ${decision.support.name}. First range target: ${decision.resistance.name}. Transcript risk frame: isolated margin, a real stop, and 1–5% risk (5% called aggressive).`;
+        `Invalidation: sustained trade below ${decision.support.name}. First range target: ${decision.resistance.name}. The source discussed 1–5% risk and called 5% aggressive; this paper tool applies a stricter 2% ceiling.`;
     } else if (decision.status === "short-watch") {
       document.getElementById("decision-rr").textContent = `${decision.shortRewardRisk.toFixed(2)}:1 short geometry`;
       document.getElementById("decision-rr-note").textContent = "target distance vs. boundary; not position R";
       document.getElementById("decision-caveat").textContent =
-        `Invalidation: sustained trade above ${decision.resistance.name}. First range target: ${decision.support.name}. Transcript risk frame: isolated margin, a real stop, and 1–5% risk (5% called aggressive).`;
+        `Invalidation: sustained trade above ${decision.resistance.name}. First range target: ${decision.support.name}. The source discussed 1–5% risk and called 5% aggressive; this paper tool applies a stricter 2% ceiling.`;
     } else {
       document.getElementById("decision-rr").textContent =
         `${decision.longRewardRisk.toFixed(2)}:1 L · ${decision.shortRewardRisk.toFixed(2)}:1 S`;
@@ -2439,7 +2448,7 @@
     try {
       localStorage.setItem(PAPER_RISK_SETTINGS_KEY, JSON.stringify({
         accountBalance: Number.isFinite(accountBalance) && accountBalance > 0 ? accountBalance : null,
-        riskPct: Number.isFinite(riskPct) && riskPct >= 0.1 && riskPct <= 5 ? riskPct : 1,
+        riskPct: Number.isFinite(riskPct) && riskPct >= 0.1 && riskPct <= 2 ? riskPct : 1,
         leverage: window.PaperTrader.normalizeLeverage(leverage) || 1,
       }));
     } catch (_) {
@@ -2460,6 +2469,20 @@
     });
   }
 
+  function renderDecisionLock(lock) {
+    const el = document.getElementById("decision-lock");
+    if (!el) return;
+    el.className = `decision-lock is-${lock.status}`;
+    el.querySelector("span").textContent = `DECISION LOCK · ${lock.passedCount} OF 5`;
+    el.querySelector("strong").textContent = lock.title;
+    document.getElementById("decision-lock-checks").innerHTML = lock.checks.map((check) => `
+      <li class="${check.passed ? "is-passed" : "is-blocked"}">
+        <i>${check.passed ? "✓" : "×"}</i>
+        <span><b>${escapeHtml(check.label)}</b><small>${escapeHtml(check.detail)}</small></span>
+      </li>
+    `).join("");
+  }
+
   function updateTradeRiskPreview() {
     const preview = document.getElementById("trade-risk-preview");
     const sizeInput = document.getElementById("trade-form-size");
@@ -2467,20 +2490,28 @@
     const plan = currentTradeRiskPlan();
     const fieldsComplete = ["trade-form-account", "trade-form-risk-pct", "trade-form-leverage", "trade-form-stop", "trade-form-target"]
       .every((id) => document.getElementById(id).value !== "") && Boolean(saveBtn.dataset.direction);
+    const decisionLock = window.DecisionLock.evaluate({
+      decision: activeRangeDecision,
+      gate: activePatienceGate,
+      direction: saveBtn.dataset.direction,
+      plan,
+      minRewardRisk: parseFloat(document.getElementById("trade-form-min-r").value),
+    });
+    renderDecisionLock(decisionLock);
     preview.classList.toggle("is-valid", plan.valid);
     preview.classList.toggle("is-invalid", !plan.valid && fieldsComplete);
     sizeInput.value = plan.valid ? plan.margin.toFixed(2) : "";
-    saveBtn.disabled = !plan.valid;
+    saveBtn.disabled = !plan.valid || !decisionLock.eligible;
     if (!plan.valid) {
       preview.textContent = fieldsComplete ? plan.error : "Choose a side and complete the risk fields to calculate position size.";
-      return plan;
+      return { ...plan, decisionEligible: decisionLock.eligible };
     }
     preview.innerHTML = `
       <strong>Risk $${plan.riskDollars.toLocaleString(undefined, { maximumFractionDigits: 2 })} · ${plan.rewardRisk.toFixed(2)}R plan</strong>
       <span>$${plan.notional.toLocaleString(undefined, { maximumFractionDigits: 2 })} notional · $${plan.margin.toLocaleString(undefined, { maximumFractionDigits: 2 })} margin at ${plan.leverage}× · stop ${(plan.stopFraction * 100).toFixed(2)}% from entry</span>
       <span>Estimated liquidation: ${plan.liquidation ? formatPriceRange(plan.liquidation, plan.liquidation) : "not applicable at this leverage"}</span>`;
     savePaperRiskSettings();
-    return plan;
+    return { ...plan, decisionEligible: decisionLock.eligible };
   }
 
   function openTradeForm() {
@@ -2495,6 +2526,7 @@
     document.getElementById("trade-form-leverage").value = settings.leverage || 1;
     document.getElementById("trade-form-stop").value = "";
     document.getElementById("trade-form-target").value = "";
+    document.getElementById("trade-form-min-r").value = "2";
     document.querySelectorAll(".trade-dir-btn").forEach((b) => b.classList.remove("active"));
     saveBtn.disabled = true;
     saveBtn.dataset.direction = "";
@@ -2956,7 +2988,7 @@
     document.getElementById("trade-form-cancel").addEventListener("click", closeTradeForm);
 
     const leverageInput = document.getElementById("trade-form-leverage");
-    for (const id of ["trade-form-account", "trade-form-risk-pct", "trade-form-leverage", "trade-form-stop", "trade-form-target"]) {
+    for (const id of ["trade-form-account", "trade-form-risk-pct", "trade-form-leverage", "trade-form-stop", "trade-form-target", "trade-form-min-r"]) {
       document.getElementById(id).addEventListener("input", () => {
         leverageInput.setCustomValidity("");
         updateTradeRiskPreview();
@@ -2968,7 +3000,7 @@
       if (!pendingTrade || !direction) return;
 
       const plan = updateTradeRiskPreview();
-      if (!plan.valid) return;
+      if (!plan.valid || !plan.decisionEligible) return;
 
       const trades = loadTrades(state.asset);
       trades.push({
