@@ -1,9 +1,9 @@
 # SPY opening-range reclaim result
 
-Status: **rejected in validation; no live candidate**  
-Method: `spy-or-reclaim-v1`  
-Frozen protocol: `docs/SPY-RANGE-RECLAIM-PREREGISTRATION.md`  
-Result artifact: `research/spy_or_reclaim_v1.json`
+- Status: **rejected in validation; no live candidate**
+- Method: `spy-or-reclaim-v1`
+- Frozen protocol: `docs/SPY-RANGE-RECLAIM-PREREGISTRATION.md`
+- Result artifact: `research/spy_or_reclaim_v1.json`
 
 ## Decision
 
