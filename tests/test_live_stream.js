@@ -81,3 +81,9 @@ test("treats an acknowledged but silent stream as stale", () => {
   assert.equal(KrakenLive.isStreamFresh(false, 1000, 1001, 15000), false);
   assert.equal(KrakenLive.isStreamFresh(true, null, 1001, 15000), false);
 });
+
+test("a live status becomes a stale mark at the same freshness boundary", () => {
+  assert.equal(KrakenLive.markIsFresh("live", true, 1000, 15999, 15000), true);
+  assert.equal(KrakenLive.markIsFresh("live", true, 1000, 16001, 15000), false);
+  assert.equal(KrakenLive.markIsFresh("reconnecting", true, 1000, 1001, 15000), false);
+});

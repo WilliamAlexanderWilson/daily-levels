@@ -1102,6 +1102,7 @@
   let liveStreamStatus = "reconnecting";
   let liveStreamSubscribed = false;
   let lastLiveMessageAt = null;
+  let lastRenderedMarkFresh = null;
   let derivedRenderTimer = null;
   let pendingDerivedAsset = null;
   let pendingDerivedPrice = null;
@@ -1114,7 +1115,6 @@
     badge.classList.toggle("is-stale", status === "reconnecting");
     badge.querySelector(".live-label").textContent = status === "reconnecting" ? "Reconnecting" : "Live";
     renderChartLiveTicker(status);
-    if (Number.isFinite(lastLivePrice)) updateLiveTradePnlCells(state.asset, lastLivePrice);
   }
 
   function liveAgeLabel() {
@@ -1128,7 +1128,13 @@
   function renderChartLiveTicker(status = liveStreamStatus) {
     const ticker = document.getElementById("chart-live-ticker");
     if (!ticker) return;
-    ticker.classList.toggle("is-reconnecting", status === "reconnecting");
+    const markFresh = liveMarkIsFresh();
+    const headerBadge = document.getElementById("live-badge");
+    if (headerBadge && state.asset !== "spy") {
+      headerBadge.classList.toggle("is-stale", !markFresh);
+      headerBadge.querySelector(".live-label").textContent = markFresh ? "Live" : "Last mark";
+    }
+    ticker.classList.toggle("is-reconnecting", !markFresh);
     ticker.classList.toggle("is-connecting", !Number.isFinite(lastLivePrice));
     ticker.classList.toggle("is-up", Number.isFinite(previousLivePrice) && lastLivePrice > previousLivePrice);
     ticker.classList.toggle("is-down", Number.isFinite(previousLivePrice) && lastLivePrice < previousLivePrice);
@@ -1136,19 +1142,22 @@
     document.getElementById("chart-live-price").textContent = Number.isFinite(lastLivePrice)
       ? lastLivePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })
       : "—";
-    document.getElementById("chart-live-age").textContent = status === "reconnecting"
-      ? `${liveAgeLabel()} · reconnecting`
-      : liveAgeLabel();
+    document.getElementById("chart-live-age").textContent = markFresh ? liveAgeLabel() : `${liveAgeLabel()} · last mark`;
     const liveEntryButton = document.getElementById("trade-live-btn");
-    if (liveEntryButton) liveEntryButton.disabled = !liveMarkIsFresh();
+    if (liveEntryButton) liveEntryButton.disabled = !markFresh;
     const paperLiveLabel = document.getElementById("paper-trader-live-label");
     if (paperLiveLabel && state.asset !== "spy") {
-      paperLiveLabel.textContent = status === "reconnecting" ? "RECONNECTING" : "LIVE MARK";
+      paperLiveLabel.textContent = markFresh ? "LIVE MARK" : "LAST MARK";
+    }
+    if (lastRenderedMarkFresh !== markFresh) {
+      lastRenderedMarkFresh = markFresh;
+      if (Number.isFinite(lastLivePrice)) updateLiveTradePnlCells(state.asset, lastLivePrice);
     }
   }
 
   function liveMarkIsFresh(now = Date.now()) {
-    return state.asset !== "spy" && liveStreamStatus === "live" && KrakenLive.isStreamFresh(
+    return state.asset !== "spy" && KrakenLive.markIsFresh(
+      liveStreamStatus,
       liveStreamSubscribed,
       lastLiveMessageAt,
       now,

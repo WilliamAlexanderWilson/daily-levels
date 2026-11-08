@@ -62,6 +62,7 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.ok(html.indexOf('id="paper-trader"') < html.indexOf('id="advanced-analysis"'));
   assert.match(html, /id="trade-form-leverage"[^>]+max="100"/);
   assert.match(app, /SPY is batch data|batch SPY data/);
-  assert.match(app, /liveEntryButton\.disabled = !liveMarkIsFresh\(\)/);
+  assert.match(app, /liveEntryButton\.disabled = !markFresh/);
+  assert.match(app, /paperLiveLabel\.textContent = markFresh \? "LIVE MARK" : "LAST MARK"/);
   assert.match(app, /" \(last mark\)"/);
 });

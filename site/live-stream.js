@@ -47,6 +47,10 @@
     );
   }
 
+  function markIsFresh(status, subscribed, lastMessageAt, now, staleAfterMs) {
+    return status === "live" && isStreamFresh(subscribed, lastMessageAt, now, staleAfterMs);
+  }
+
   function parseMessage(message, expectedSymbol, expectedInterval) {
     let payload = message;
     if (typeof payload === "string") {
@@ -87,5 +91,5 @@
     return candles.length ? { kind: "candles", type: payload.type, candles } : null;
   }
 
-  return { URL, subscriptionRequest, normalizeCandle, isStreamFresh, parseMessage };
+  return { URL, subscriptionRequest, normalizeCandle, isStreamFresh, markIsFresh, parseMessage };
 });
