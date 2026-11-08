@@ -10,7 +10,24 @@
       : null;
   }
 
-  function evaluate({ decision, gate, direction, plan, minRewardRisk = 2 }) {
+  function entryIsCurrent(entry, currentPrice, nowMs, maxAgeMs = 15000) {
+    const entryPrice = Number(entry && entry.price);
+    const entryTimeMs = Number(entry && entry.time) * 1000;
+    const mark = Number(currentPrice);
+    const ageMs = Number(nowMs) - entryTimeMs;
+    const driftFraction = Number.isFinite(mark) && mark > 0
+      ? Math.abs(entryPrice - mark) / mark
+      : Infinity;
+    return Boolean(
+      entry && entry.source === "live"
+      && Number.isFinite(entryPrice) && entryPrice > 0
+      && Number.isFinite(entryTimeMs)
+      && Number.isFinite(ageMs) && ageMs >= 0 && ageMs <= maxAgeMs
+      && driftFraction <= 0.0025
+    );
+  }
+
+  function evaluate({ decision, gate, direction, plan, minRewardRisk = 2, entry, currentPrice, nowMs = Date.now(), markFresh = true }) {
     const expectedDirection = decision && decision.status === "long-watch"
       ? "long"
       : decision && decision.status === "short-watch"
@@ -38,14 +55,20 @@
       : planValid && direction === "short"
         ? hasRange && Number(plan.target) >= supportHigh
         : false;
+    const currentEntry = entryIsCurrent(entry, currentPrice, nowMs);
+    const confirmationReady = Boolean(gate && gate.isReady && markFresh && currentEntry);
     const checks = [
       {
         id: "confirmation",
-        passed: Boolean(gate && gate.isReady),
-        label: "Current market confirmation",
-        detail: gate && gate.isReady
-          ? "Location, boundary test, and latest completed close agree."
-          : "Wait for all three live checklist conditions; an old or partial setup stays locked.",
+        passed: confirmationReady,
+        label: "Current confirmation and live entry",
+        detail: !markFresh
+          ? "The live mark is stale or reconnecting. Wait for a fresh stream."
+          : !(gate && gate.isReady)
+            ? "Wait for all three live checklist conditions; an old or partial setup stays locked."
+            : !currentEntry
+              ? "Use Open at live price again. Manual, historical, old, or drifted entries stay locked."
+              : "Location, boundary test, latest completed close, and this fresh live entry agree.",
       },
       {
         id: "direction",
@@ -98,10 +121,10 @@
     const eligible = checks.every((check) => check.passed);
     let status = "wait";
     let title = "WAIT — market confirmation is incomplete";
-    if (gate && gate.isReady && (!direction || !planValid)) {
+    if (confirmationReady && (!direction || !planValid)) {
       status = "incomplete";
       title = "BUILD THE PLAN — confirmation is ready, risk is not";
-    } else if (gate && gate.isReady && !eligible) {
+    } else if (confirmationReady && !eligible) {
       status = "revise";
       title = "REVISE — the plan conflicts with your rules";
     } else if (eligible) {
@@ -121,5 +144,31 @@
     };
   }
 
-  return { evaluate };
+  function evaluateCurrent({
+    asset,
+    price,
+    levels,
+    scorecard,
+    strategyRange,
+    candles,
+    direction,
+    plan,
+    minRewardRisk,
+    entry,
+    markFresh,
+    nowMs = Date.now(),
+    rangeDecision,
+  }) {
+    const decision = asset === "btc"
+      ? rangeDecision.buildStrategyRange(price, strategyRange, candles)
+      : rangeDecision.build(levels, scorecard, price);
+    const gate = rangeDecision.patienceState(decision, candles);
+    return {
+      ...evaluate({ decision, gate, direction, plan, minRewardRisk, entry, currentPrice: price, nowMs, markFresh }),
+      decision,
+      gate,
+    };
+  }
+
+  return { evaluate, evaluateCurrent, entryIsCurrent };
 });

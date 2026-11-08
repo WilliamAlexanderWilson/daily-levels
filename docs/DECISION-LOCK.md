@@ -8,7 +8,9 @@ risk ticket. It is a consistency gate, not a prediction or trading signal.
 An entry becomes **paper-eligible** only when all five statements are true:
 
 1. The current price location, boundary test, and latest completed-candle
-   confirmation are all ready.
+   confirmation are all ready, and the ticket uses a fresh live entry. Manual,
+   historical, stale, and materially drifted entries can be inspected but
+   cannot be saved as paper-eligible positions.
 2. The selected direction matches the confirmed edge: long at confirmed
    support or short at confirmed resistance.
 3. The stop is beyond the mapped invalidation boundary.
@@ -23,7 +25,7 @@ would occur before the stop.
 
 Primary risk references:
 
-- CME Group, [Proper Position Size](https://www.cmegroup.com/education/courses/trade-and-risk-management/proper-position-size.hideSubnav.educationIframe.html.html?hideAddThisExt=y&hideFooter=y&hideHeader=y&hideRightRail=y)
+- CME Group, [Proper Position Size](https://www.cmegroup.com/education/courses/trade-and-risk-management/proper-position-size)
 - CFTC, [Understand the Risks of Virtual Currency Trading](https://www.cftc.gov/LearnAndProtect/AdvisoriesAndArticles/understand_risks_of_virtual_currency.html)
 - FINRA Regulatory Notice 16-19, [stop-order execution risk](https://www.finra.org/sites/default/files/notice_other_file_ref/Regulatory-Notice-16-19.pdf)
 

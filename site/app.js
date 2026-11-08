@@ -2473,7 +2473,8 @@
     const el = document.getElementById("decision-lock");
     if (!el) return;
     el.className = `decision-lock is-${lock.status}`;
-    el.querySelector("span").textContent = `DECISION LOCK · ${lock.passedCount} OF 5`;
+    document.getElementById("decision-lock-status").textContent = `DECISION LOCK · ${lock.passedCount} OF 5 · ${lock.title}`;
+    el.querySelector(".decision-lock-heading > span:not(#decision-lock-status)").textContent = `DECISION LOCK · ${lock.passedCount} OF 5`;
     el.querySelector("strong").textContent = lock.title;
     document.getElementById("decision-lock-checks").innerHTML = lock.checks.map((check) => `
       <li class="${check.passed ? "is-passed" : "is-blocked"}">
@@ -2490,12 +2491,19 @@
     const plan = currentTradeRiskPlan();
     const fieldsComplete = ["trade-form-account", "trade-form-risk-pct", "trade-form-leverage", "trade-form-stop", "trade-form-target"]
       .every((id) => document.getElementById(id).value !== "") && Boolean(saveBtn.dataset.direction);
-    const decisionLock = window.DecisionLock.evaluate({
-      decision: activeRangeDecision,
-      gate: activePatienceGate,
+    const decisionLock = window.DecisionLock.evaluateCurrent({
+      asset: state.asset,
+      price: lastLivePrice,
+      levels: activeLevels,
+      scorecard: activeScorecard,
+      strategyRange: activeStrategyRange,
+      candles: activeCandles,
       direction: saveBtn.dataset.direction,
       plan,
       minRewardRisk: parseFloat(document.getElementById("trade-form-min-r").value),
+      entry: pendingTrade,
+      markFresh: liveMarkIsFresh(),
+      rangeDecision: RangeDecision,
     });
     renderDecisionLock(decisionLock);
     preview.classList.toggle("is-valid", plan.valid);
@@ -2575,7 +2583,7 @@
       const unixTime = resolveClickTimeToUnix(param.time, state.range);
       if (price === null || unixTime === null) return;
 
-      pendingTrade = { time: unixTime, price };
+      pendingTrade = { time: unixTime, price, source: "chart" };
       setMarkingMode(false);
       openTradeForm();
       return;
@@ -2947,7 +2955,7 @@
     setMarkingMode(false);
     // typed entries aren't tied to a chart bar - stamp them "now" so they
     // sort and plot (once a candle at this time exists) like any other trade.
-    pendingTrade = { time: Math.floor(Date.now() / 1000), price };
+    pendingTrade = { time: Math.floor(Date.now() / 1000), price, source: "manual" };
     input.value = "";
     openTradeForm();
   }
@@ -2955,7 +2963,7 @@
   function useLiveTradePrice() {
     if (!liveMarkIsFresh()) return;
     setMarkingMode(false);
-    pendingTrade = { time: Math.floor(Date.now() / 1000), price: lastLivePrice };
+    pendingTrade = { time: Math.floor(Date.now() / 1000), price: lastLivePrice, source: "live" };
     openTradeForm();
   }
 

@@ -388,7 +388,7 @@
           </label>
           <label class="trade-form-field">
             Risk per trade (0.1–2%)
-            <small>Maximum account loss if the stop is reached.</small>
+            <small>Planned loss if filled at the stop, before fees and slippage.</small>
             <input type="number" id="trade-form-risk-pct" value="1" min="0.1" max="2" step="0.1" inputmode="decimal" />
           </label>
           <label class="trade-form-field">
@@ -424,16 +424,17 @@
           <strong>Your stop determines position size.</strong>
           <span>Leverage changes required margin, not planned loss. This paper tool caps planned loss at 2%, but fast markets can fill worse than the stop and actual loss can be larger.</span>
         </div>
-        <section id="decision-lock" class="decision-lock is-wait" aria-live="polite">
+        <section id="decision-lock" class="decision-lock is-wait">
           <div class="decision-lock-heading">
             <span>DECISION LOCK · 0 OF 5</span>
             <strong>WAIT — complete the current market and risk checks</strong>
+            <span id="decision-lock-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true">Decision Lock waiting.</span>
           </div>
           <ol id="decision-lock-checks"></ol>
           <p>“Paper-eligible” means your stated rules agree; it does not mean the trade will win or should be placed with real money.</p>
           <small>
             Risk references:
-            <a href="https://www.cmegroup.com/education/courses/trade-and-risk-management/proper-position-size.hideSubnav.educationIframe.html.html?hideAddThisExt=y&amp;hideFooter=y&amp;hideHeader=y&amp;hideRightRail=y" target="_blank" rel="noopener noreferrer">CME position sizing ↗</a>
+            <a href="https://www.cmegroup.com/education/courses/trade-and-risk-management/proper-position-size" target="_blank" rel="noopener noreferrer">CME position sizing ↗</a>
             · <a href="https://www.cftc.gov/LearnAndProtect/AdvisoriesAndArticles/understand_risks_of_virtual_currency.html" target="_blank" rel="noopener noreferrer">CFTC leverage risk ↗</a>
             · <a href="https://www.finra.org/sites/default/files/notice_other_file_ref/Regulatory-Notice-16-19.pdf" target="_blank" rel="noopener noreferrer">FINRA stop-fill risk ↗</a>
           </small>
