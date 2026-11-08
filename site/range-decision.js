@@ -10,6 +10,7 @@
   // explicit: the outer 35% on either side is a watch area and the middle
   // 30% is a no-trade area. This is a geometry filter, not a claim of edge.
   const EDGE_FRACTION = 0.35;
+  const STRUCTURAL_RECLAIM_METHOD = "structural-reclaim-pivot-cluster-v1";
 
   // This is an explicitly sourced market-structure framework, not a value
   // derived from the daily rolling-level engine. Keeping it as data makes the
@@ -28,10 +29,35 @@
     sourceUrl: "#range-method-sources",
   });
 
-  function strategyRangeFromRegime(regime, fallback = BTC_MACRO_RANGE) {
+  function structuralRegimeIsUsable(regime, fallback = BTC_MACRO_RANGE) {
     const boundary = regime && regime.boundary;
     const exactPrice = boundary && Number(boundary.exact_price);
-    if (!Number.isFinite(exactPrice) || exactPrice <= fallback.high) return fallback;
+    const acceptance = regime && regime.acceptance;
+    const allowedAcceptance = new Set(["accepted-above", "accepted-below", "testing", "insufficient-data"]);
+    return Boolean(
+      regime
+      && regime.method_version === STRUCTURAL_RECLAIM_METHOD
+      && regime.quality === "established"
+      && typeof regime.data_source === "string" && regime.data_source.length > 0
+      && Number.isFinite(Date.parse(regime.calculated_at_utc))
+      && Number.isFinite(exactPrice) && exactPrice > fallback.high
+      && Number.isFinite(Number(boundary.display_price))
+      && typeof boundary.origin_date === "string" && Number.isFinite(Date.parse(boundary.origin_date))
+      && typeof boundary.last_test_date === "string" && Number.isFinite(Date.parse(boundary.last_test_date))
+      && Number(boundary.pivot_count) >= 4
+      && Number(boundary.distinct_months) >= 3
+      && Number(boundary.span_days) >= 90
+      && Array.isArray(boundary.tests) && boundary.tests.length >= Number(boundary.pivot_count)
+      && acceptance && allowedAcceptance.has(acceptance.state)
+      && typeof acceptance.rule === "string" && acceptance.rule.length > 0
+      && Array.isArray(acceptance.closes)
+    );
+  }
+
+  function strategyRangeFromRegime(regime, fallback = BTC_MACRO_RANGE) {
+    if (!structuralRegimeIsUsable(regime, fallback)) return fallback;
+    const boundary = regime.boundary;
+    const exactPrice = Number(boundary.exact_price);
 
     return Object.freeze({
       ...fallback,
@@ -49,6 +75,39 @@
       sourceLabel: "Calculated structural reclaim with dated source framework",
       isCalculatedReclaim: true,
     });
+  }
+
+  function reclaimBiasPresentation(range, currentPrice) {
+    const price = range && Number(range.reclaim);
+    const priceText = Number.isFinite(price)
+      ? price.toLocaleString(undefined, { maximumFractionDigits: 0 })
+      : "unavailable";
+    if (!range || !range.isCalculatedReclaim) {
+      return {
+        label: `DATED SOURCE · ${priceText}`,
+        note: "Calculated Daily acceptance unavailable; dated fallback only",
+      };
+    }
+    const acceptance = range.reclaimAcceptance;
+    const rule = acceptance && acceptance.rule
+      ? `${acceptance.rule} · descriptive, not a trade instruction`
+      : "Calculated Daily acceptance unavailable";
+    if (acceptance && acceptance.state === "accepted-above") {
+      return { label: `DAILY ACCEPTED > ${priceText}`, note: rule };
+    }
+    if (acceptance && acceptance.state === "accepted-below") {
+      return { label: `DAILY BELOW < ${priceText}`, note: rule };
+    }
+    if (acceptance && acceptance.state === "testing") {
+      return { label: `DAILY TESTING ${priceText}`, note: rule };
+    }
+    if (acceptance && acceptance.state === "insufficient-data") {
+      return { label: "DAILY DATA INCOMPLETE", note: rule };
+    }
+    return {
+      label: Number.isFinite(currentPrice) ? `STATUS UNAVAILABLE · ${priceText}` : "STATUS UNAVAILABLE",
+      note: "Calculated Daily acceptance unavailable",
+    };
   }
 
   function midpoint(level) {
@@ -411,6 +470,9 @@
     rangeZonePrices,
     buildStrategyRange,
     BTC_MACRO_RANGE,
+    STRUCTURAL_RECLAIM_METHOD,
+    structuralRegimeIsUsable,
     strategyRangeFromRegime,
+    reclaimBiasPresentation,
   };
 });

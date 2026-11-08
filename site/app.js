@@ -1881,16 +1881,9 @@
       document.getElementById("decision-resistance-label").textContent = decision.strategyRange.isCalculatedReclaim
         ? "Calculated structural reclaim"
         : "Bias-changing reclaim";
-      const dailyAcceptance = decision.strategyRange.reclaimAcceptance;
-      const dailyAcceptanceState = dailyAcceptance && dailyAcceptance.state;
-      document.getElementById("decision-rr").textContent = dailyAcceptanceState === "accepted-above"
-        ? `DAILY ACCEPTED > ${reclaimText}`
-        : dailyAcceptanceState === "accepted-below"
-          ? `DAILY BELOW < ${reclaimText}`
-          : `DAILY TESTING ${reclaimText}`;
-      document.getElementById("decision-rr-note").textContent = dailyAcceptance && dailyAcceptance.rule
-        ? `${dailyAcceptance.rule} · descriptive, not a trade instruction`
-        : "framework bias; not a trade instruction";
+      const biasPresentation = RangeDecision.reclaimBiasPresentation(decision.strategyRange, currentPrice);
+      document.getElementById("decision-rr").textContent = biasPresentation.label;
+      document.getElementById("decision-rr-note").textContent = biasPresentation.note;
       document.getElementById("decision-support-odds").textContent = "$72k–$77k";
       document.getElementById("decision-support-note").textContent = `loss of ~$${compactPrice(decision.strategyRange.failureLevel)} raises sub-$70k risk`;
       document.getElementById("decision-resistance-odds").textContent = `$${reclaimExactText}`;
@@ -3312,7 +3305,7 @@
     const el = document.getElementById("structural-reclaim-proof");
     if (!el) return;
     const boundary = regime && regime.boundary;
-    if (!boundary || !Number.isFinite(Number(boundary.exact_price))) {
+    if (!RangeDecision.structuralRegimeIsUsable(regime)) {
       el.innerHTML = "<strong>Structural reclaim:</strong> calculated evidence unavailable; the dated creator-sourced fallback remains visible.";
       return;
     }

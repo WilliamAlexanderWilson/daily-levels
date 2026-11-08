@@ -9,7 +9,9 @@ const {
   patienceAlertFingerprint,
   patienceState,
   rangeZonePrices,
+  reclaimBiasPresentation,
   recentBoundaryTest,
+  structuralRegimeIsUsable,
   strategyTrackPosition,
   strategyRangeFromRegime,
 } = require("../site/range-decision.js");
@@ -171,7 +173,7 @@ test("uses the sourced BTC macro range instead of the nearest-level bracket", ()
 });
 
 test("layers a calculated structural reclaim onto the dated macro framework", () => {
-  const range = strategyRangeFromRegime({
+  const regime = {
     method_version: "structural-reclaim-pivot-cluster-v1",
     quality: "established",
     calculated_at_utc: "2026-11-07T12:00:00Z",
@@ -183,10 +185,23 @@ test("layers a calculated structural reclaim onto the dated macro framework", ()
       last_test_date: "2026-10-29",
       pivot_count: 4,
       distinct_months: 4,
+      span_days: 176,
+      tests: [
+        { date: "2026-05-06", high: 82790.9 },
+        { date: "2026-08-28", high: 81461 },
+        { date: "2026-09-03", high: 82288.1 },
+        { date: "2026-10-29", high: 81882 },
+      ],
     },
-    acceptance: { state: "accepted-below", rule: "2 consecutive completed Daily closes" },
-  });
+    acceptance: {
+      state: "accepted-below",
+      rule: "2 consecutive completed Daily closes",
+      closes: [{ date: "2026-11-05", close: 75979.9 }, { date: "2026-11-06", close: 75741.6 }],
+    },
+  };
+  const range = strategyRangeFromRegime(regime);
 
+  assert.equal(structuralRegimeIsUsable(regime), true);
   assert.equal(range.low, 60000);
   assert.equal(range.high, 80000);
   assert.equal(range.reclaim, 82790.9);
@@ -199,6 +214,32 @@ test("layers a calculated structural reclaim onto the dated macro framework", ()
 test("rejects an incomplete calculated reclaim and keeps the sourced fallback", () => {
   assert.equal(strategyRangeFromRegime(null), BTC_MACRO_RANGE);
   assert.equal(strategyRangeFromRegime({ boundary: { exact_price: 79000 } }), BTC_MACRO_RANGE);
+  assert.equal(strategyRangeFromRegime({ boundary: { exact_price: 81000 } }), BTC_MACRO_RANGE);
+  assert.equal(strategyRangeFromRegime({
+    method_version: "structural-reclaim-pivot-cluster-v1",
+    quality: "developing",
+    boundary: { exact_price: 81000 },
+  }), BTC_MACRO_RANGE);
+});
+
+test("distinguishes dated fallback, testing, and insufficient Daily evidence", () => {
+  const fallback = reclaimBiasPresentation(BTC_MACRO_RANGE, 82000);
+  assert.match(fallback.label, /DATED SOURCE/);
+  assert.match(fallback.note, /unavailable/);
+
+  const testing = reclaimBiasPresentation({
+    ...BTC_MACRO_RANGE,
+    isCalculatedReclaim: true,
+    reclaimAcceptance: { state: "testing", rule: "2 consecutive completed Daily closes" },
+  }, 82800);
+  assert.match(testing.label, /DAILY TESTING/);
+
+  const incomplete = reclaimBiasPresentation({
+    ...BTC_MACRO_RANGE,
+    isCalculatedReclaim: true,
+    reclaimAcceptance: { state: "insufficient-data", rule: "2 consecutive completed Daily closes" },
+  }, 82800);
+  assert.equal(incomplete.label, "DAILY DATA INCOMPLETE");
 });
 
 test("marks only the upper deviation as a short watch", () => {
