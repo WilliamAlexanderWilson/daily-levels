@@ -257,7 +257,7 @@
     const headline = status.isOpen
       ? `OPEN · ${status.pausesAtBreak ? "pauses" : "closes"} in ${countdown(status.closesAt, now)}`
       : status.isBreak
-        ? `${status.breakKind === "maintenance" ? "MAINTENANCE" : "BREAK"} · reopens in ${countdown(status.nextOpen, now)}`
+        ? `${status.breakKind === "maintenance" ? "MAINTENANCE" : status.breakKind === "midday" ? "MIDDAY BREAK" : "BREAK"} · reopens in ${countdown(status.nextOpen, now)}`
         : `CLOSED · opens in ${countdown(status.nextRegularOpen, now)}`;
     const activity = `${status.openedAt ? "Opened" : "Last opened"} ${elapsed(openedAt, now)} ago · ${localTimeLabel(openedAt)} Dallas`;
     let schedule;

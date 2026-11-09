@@ -152,6 +152,10 @@ test("Tokyo and Hong Kong midday recesses are not counted as open", () => {
   assert.equal(tokyoBreak.nextOpen.toISOString(), "2026-11-09T03:30:00.000Z");
   assert.equal(tokyoBreak.finalCloseAt.toISOString(), "2026-11-09T06:30:00.000Z");
   assert.equal(tokyoBreak.nextRegularOpen.toISOString(), "2026-11-10T00:00:00.000Z");
+  assert.match(
+    MarketSessions.sessionTimingText(tokyo, tokyoBreak, new Date("2026-11-09T03:00:00Z")).headline,
+    /^MIDDAY BREAK · reopens in 0h 30m 00s$/
+  );
   assert.equal(hongKongBreak.isOpen, false);
   assert.equal(hongKongBreak.isBreak, true);
   assert.equal(hongKongBreak.nextOpen.toISOString(), "2026-11-09T05:00:00.000Z");
