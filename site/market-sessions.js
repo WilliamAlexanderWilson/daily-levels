@@ -92,6 +92,14 @@
     throw new Error("Unable to locate the next regular trading weekday");
   }
 
+  function previousWeekdayDate(parts, maximumOffset = -1) {
+    for (let offset = maximumOffset; offset >= maximumOffset - 7; offset -= 1) {
+      const candidate = calendarDate(parts, offset);
+      if (candidate.weekday >= 1 && candidate.weekday <= 5) return candidate;
+    }
+    throw new Error("Unable to locate the previous regular trading weekday");
+  }
+
   function sessionStatus(session, now = new Date()) {
     if (session.kind === "cme-equity-futures") return cmeEquityFuturesStatus(session, now);
     const local = zonedParts(now, session.timeZone);
@@ -105,35 +113,52 @@
     const breakEnd = Number.isFinite(session.breakEndHour)
       ? zonedDateTimeToUtc({ ...today, hour: session.breakEndHour, minute: session.breakEndMinute }, session.timeZone)
       : null;
+    const tomorrow = nextWeekdayDate(local, 1);
+    const nextRegularOpen = zonedDateTimeToUtc({ ...tomorrow, hour: session.openHour, minute: session.openMinute }, session.timeZone);
     if (isWeekday && breakStart && breakEnd && now >= breakStart && now < breakEnd) {
       return {
         isOpen: false,
         isBreak: true,
         openedAt: todayOpen,
+        lastOpenedAt: todayOpen,
+        lastClosedAt: null,
         closesAt: null,
+        finalCloseAt: todayClose,
         nextOpen: breakEnd,
+        nextRegularOpen,
       };
     }
     if (isWeekday && now >= todayOpen && now < todayClose) {
-      const tomorrow = nextWeekdayDate(local, 1);
       return {
         isOpen: true,
         isBreak: false,
         pausesAtBreak: Boolean(breakStart && now < breakStart),
         openedAt: todayOpen,
+        lastOpenedAt: todayOpen,
+        lastClosedAt: null,
         closesAt: breakStart && now < breakStart ? breakStart : todayClose,
+        finalCloseAt: todayClose,
         nextOpen: breakStart && breakEnd && now < breakStart
           ? breakEnd
-          : zonedDateTimeToUtc({ ...tomorrow, hour: session.openHour, minute: session.openMinute }, session.timeZone),
+          : nextRegularOpen,
+        nextRegularOpen,
       };
     }
     const nextDate = isWeekday && now < todayOpen ? today : nextWeekdayDate(local, 1);
+    const previousDate = isWeekday && now >= todayClose ? today : previousWeekdayDate(local);
+    const previousOpen = zonedDateTimeToUtc({ ...previousDate, hour: session.openHour, minute: session.openMinute }, session.timeZone);
+    const previousClose = zonedDateTimeToUtc({ ...previousDate, hour: session.closeHour, minute: session.closeMinute }, session.timeZone);
+    const upcomingOpen = zonedDateTimeToUtc({ ...nextDate, hour: session.openHour, minute: session.openMinute }, session.timeZone);
     return {
       isOpen: false,
       isBreak: false,
       openedAt: null,
+      lastOpenedAt: previousOpen,
+      lastClosedAt: previousClose,
       closesAt: null,
-      nextOpen: zonedDateTimeToUtc({ ...nextDate, hour: session.openHour, minute: session.openMinute }, session.timeZone),
+      finalCloseAt: null,
+      nextOpen: upcomingOpen,
+      nextRegularOpen: upcomingOpen,
     };
   }
 
@@ -147,48 +172,63 @@
     const nextSunday = calendarDate(local, sundayOffset || 7);
     const sundayOpen = at(nextSunday, 17);
 
+    const closedStatus = (lastOpen, lastClose, nextOpen, isBreak = false) => ({
+      isOpen: false, isBreak, openedAt: null, lastOpenedAt: lastOpen, lastClosedAt: lastClose,
+      closesAt: null, finalCloseAt: null, nextOpen, nextRegularOpen: nextOpen,
+    });
+    const openStatus = (openedAt, closesAt, nextOpen, pausesAtBreak = false) => ({
+      isOpen: true, isBreak: false, pausesAtBreak, openedAt, lastOpenedAt: openedAt,
+      lastClosedAt: null, closesAt, finalCloseAt: closesAt, nextOpen, nextRegularOpen: nextOpen,
+    });
+    const priorThursday = () => {
+      const fridayOffset = today.weekday === 6 ? -1 : today.weekday === 0 ? -2 : 0;
+      const friday = calendarDate(local, fridayOffset);
+      return { open: at(calendarDate(friday, -1), 17), close: at(friday, 16) };
+    };
+
     if (today.weekday === 6) {
-      return { isOpen: false, isBreak: false, openedAt: null, closesAt: null, nextOpen: at(calendarDate(local, 1), 17) };
+      const prior = priorThursday();
+      return closedStatus(prior.open, prior.close, at(calendarDate(local, 1), 17));
     }
     if (today.weekday === 0) {
-      if (now < todayOpen) return { isOpen: false, isBreak: false, openedAt: null, closesAt: null, nextOpen: todayOpen };
-      return {
-        isOpen: true, isBreak: false, pausesAtBreak: false, openedAt: todayOpen,
-        closesAt: at(calendarDate(local, 1), 16), nextOpen: at(calendarDate(local, 1), 17),
-      };
+      if (now < todayOpen) {
+        const prior = priorThursday();
+        return closedStatus(prior.open, prior.close, todayOpen);
+      }
+      return openStatus(todayOpen, at(calendarDate(local, 1), 16), at(calendarDate(local, 1), 17));
     }
     if (today.weekday >= 1 && today.weekday <= 4) {
       if (now < todayClose) {
-        return {
-          isOpen: true, isBreak: false, pausesAtBreak: true, openedAt: null,
-          closesAt: todayClose, nextOpen: todayOpen,
-        };
+        const previousOpen = at(calendarDate(local, -1), 17);
+        return openStatus(previousOpen, todayClose, todayOpen, true);
       }
-      if (now < todayOpen) return { isOpen: false, isBreak: true, openedAt: null, closesAt: null, nextOpen: todayOpen };
+      if (now < todayOpen) {
+        return closedStatus(at(calendarDate(local, -1), 17), todayClose, todayOpen, true);
+      }
       const tomorrow = calendarDate(local, 1);
-      return {
-        isOpen: true, isBreak: false, pausesAtBreak: false, openedAt: todayOpen,
-        closesAt: at(tomorrow, 16),
-        nextOpen: today.weekday === 4 ? sundayOpen : at(tomorrow, 17),
-      };
+      return openStatus(todayOpen, at(tomorrow, 16), today.weekday === 4 ? sundayOpen : at(tomorrow, 17));
     }
     if (now < todayClose) {
-      return {
-        isOpen: true, isBreak: false, pausesAtBreak: false, openedAt: null,
-        closesAt: todayClose, nextOpen: sundayOpen,
-      };
+      return openStatus(at(calendarDate(local, -1), 17), todayClose, sundayOpen);
     }
-    return { isOpen: false, isBreak: false, openedAt: null, closesAt: null, nextOpen: sundayOpen };
+    return closedStatus(at(calendarDate(local, -1), 17), todayClose, sundayOpen);
   }
 
-  function countdown(target, now = new Date()) {
-    const totalSeconds = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
+  function durationLabel(totalSeconds) {
     const days = Math.floor(totalSeconds / 86400);
     const hours = Math.floor((totalSeconds % 86400) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
     if (days) return `${days}d ${hours}h ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
     return `${hours}h ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
+  }
+
+  function countdown(target, now = new Date()) {
+    return durationLabel(Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000)));
+  }
+
+  function elapsed(since, now = new Date()) {
+    return durationLabel(Math.max(0, Math.floor((now.getTime() - since.getTime()) / 1000)));
   }
 
   function localTimeLabel(date) {
@@ -361,6 +401,10 @@
     mountedDocument.getElementById("market-next-time").textContent =
       `${localTimeLabel(next.status.nextOpen)} Dallas · ${exchangeOpenLabel(next, next.status.nextOpen)}`;
     mountedDocument.getElementById("market-open-count").textContent = `${snapshot.openCount} of ${snapshot.sessions.length} open now`;
+    const openNames = snapshot.sessions.filter((session) => session.status.isOpen).map((session) => session.name);
+    mountedDocument.getElementById("market-open-zones").textContent = openNames.length
+      ? `Open now: ${openNames.join(" · ")}`
+      : "No major session is open right now";
     const rankingBasis = mountedDocument.getElementById("market-ranking-basis");
     const measuredCount = data?.sessions?.filter(qualifiedEvidence).length || 0;
     rankingBasis.textContent = measuredCount
@@ -434,31 +478,44 @@
     for (const session of rankSessions(snapshot.sessions, data)) {
       const sessionEvidence = evidence.get(session.key);
       const row = mountedDocument.createElement("article");
-      row.className = `market-session ${session.status.isOpen ? "is-open" : "is-closed"} ${sessionEvidence?.observed_rank ? "is-measured" : "is-unmeasured"}`;
+      const stateClass = session.status.isOpen ? "is-open" : session.status.isBreak ? "is-break" : "is-closed";
+      row.className = `market-session ${stateClass} ${qualifiedEvidence(sessionEvidence) ? "is-measured" : "is-unmeasured"}`;
       const rank = mountedDocument.createElement("span");
       rank.className = "market-session-rank";
-      rank.textContent = sessionEvidence?.observed_rank ? String(sessionEvidence.observed_rank) : "—";
+      rank.textContent = qualifiedEvidence(sessionEvidence) ? String(sessionEvidence.observed_rank) : "—";
       const identity = mountedDocument.createElement("span");
       const name = mountedDocument.createElement("strong");
       name.textContent = session.name;
       const exchange = mountedDocument.createElement("small");
       exchange.textContent = session.exchange;
+      const zoneTime = mountedDocument.createElement("small");
+      zoneTime.className = "market-session-zone";
+      zoneTime.textContent = `Local time ${exchangeOpenLabel(session, now)}`;
       const observed = mountedDocument.createElement("small");
       observed.className = "market-session-evidence";
       observed.textContent = evidenceLabel(sessionEvidence);
       observed.title = evidenceTitle(sessionEvidence);
-      identity.append(name, exchange, observed);
+      identity.append(name, exchange, zoneTime, observed);
       const timing = mountedDocument.createElement("span");
       timing.className = "market-session-timing";
       const status = mountedDocument.createElement("strong");
       status.textContent = session.status.isOpen
         ? `OPEN · ${session.status.pausesAtBreak ? "pauses" : "closes"} in ${countdown(session.status.closesAt, now)}`
-        : `${session.status.isBreak ? "MIDDAY BREAK · reopens" : "Opens"} in ${countdown(session.status.nextOpen, now)}`;
-      const local = mountedDocument.createElement("small");
-      local.textContent = session.status.isOpen
-        ? `Next open ${localTimeLabel(session.status.nextOpen)}`
-        : localTimeLabel(session.status.nextOpen);
-      timing.append(status, local);
+        : session.status.isBreak
+          ? `BREAK · reopens in ${countdown(session.status.nextOpen, now)}`
+          : `CLOSED · opens in ${countdown(session.status.nextRegularOpen, now)}`;
+      const activity = mountedDocument.createElement("small");
+      const openedAt = session.status.openedAt || session.status.lastOpenedAt;
+      activity.textContent = `${session.status.openedAt ? "Opened" : "Last opened"} ${elapsed(openedAt, now)} ago · ${localTimeLabel(openedAt)} Dallas`;
+      const schedule = mountedDocument.createElement("small");
+      if (session.status.isOpen) {
+        schedule.textContent = `Close ${localTimeLabel(session.status.finalCloseAt)} Dallas · Next open ${localTimeLabel(session.status.nextRegularOpen)} Dallas`;
+      } else if (session.status.isBreak) {
+        schedule.textContent = `Final close ${localTimeLabel(session.status.finalCloseAt)} Dallas · Next day ${localTimeLabel(session.status.nextRegularOpen)} Dallas`;
+      } else {
+        schedule.textContent = `Closed ${elapsed(session.status.lastClosedAt, now)} ago · Next open ${localTimeLabel(session.status.nextRegularOpen)} Dallas`;
+      }
+      timing.append(status, activity, schedule);
       const source = mountedDocument.createElement("a");
       source.href = session.source;
       source.target = "_blank";
@@ -492,6 +549,7 @@
     calendarDate,
     cmeEquityFuturesStatus,
     countdown,
+    elapsed,
     exchangeOpenLabel,
     localTimeLabel,
     evidenceLabel,
@@ -504,6 +562,7 @@
     marketSnapshot,
     mount,
     nextWeekdayDate,
+    previousWeekdayDate,
     render,
     sessionStatus,
     setAsset,

@@ -187,6 +187,7 @@ main > * { min-width: 0; }
   color: var(--text-muted);
   font-size: 0.68rem;
 }
+.market-clock-context #market-open-zones { color: var(--support); font-weight: 750; }
 
 .market-clock-context {
   display: grid;
@@ -312,7 +313,7 @@ main > * { min-width: 0; }
 
 .market-session {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(9.5rem, auto) auto;
+  grid-template-columns: auto minmax(0, 1fr) minmax(14rem, auto) auto;
   align-items: center;
   gap: 0.52rem;
   min-width: 0;
@@ -323,6 +324,7 @@ main > * { min-width: 0; }
   background: var(--surface);
 }
 .market-session.is-open { border-left-color: var(--support); }
+.market-session.is-break { border-left-color: var(--flip); }
 .market-session-rank {
   display: grid;
   width: 1.45rem;
@@ -335,12 +337,14 @@ main > * { min-width: 0; }
 }
 .market-session > span:nth-child(2),
 .market-session-timing { display: grid; gap: 0.08rem; }
-.market-session strong { font-size: 0.68rem; }
-.market-session small { color: var(--text-muted); font-size: 0.57rem; }
+.market-session strong { font-size: 0.72rem; }
+.market-session small { color: var(--text-muted); font-size: 0.62rem; }
 .market-session-evidence { color: var(--accent) !important; }
+.market-session-zone { color: var(--text) !important; }
 .market-session.is-unmeasured .market-session-rank { opacity: 0.55; }
 .market-session-timing { text-align: right; }
 .market-session.is-open .market-session-timing strong { color: var(--support); }
+.market-session.is-break .market-session-timing strong { color: var(--flip); }
 .market-session a { color: var(--accent); font-size: 0.58rem; text-decoration: none; }
 .market-clock-details > p {
   margin: 0;
@@ -2753,6 +2757,10 @@ tr.low-confidence-row {
 .site-footer strong {
   color: var(--text);
   font-weight: 700;
+}
+
+@media (max-width: 1050px) {
+  .market-session-list { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 700px) {
