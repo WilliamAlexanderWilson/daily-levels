@@ -119,6 +119,7 @@
       return {
         isOpen: false,
         isBreak: true,
+        breakKind: "midday",
         openedAt: todayOpen,
         lastOpenedAt: todayOpen,
         lastClosedAt: null,
@@ -172,9 +173,9 @@
     const nextSunday = calendarDate(local, sundayOffset || 7);
     const sundayOpen = at(nextSunday, 17);
 
-    const closedStatus = (lastOpen, lastClose, nextOpen, isBreak = false) => ({
-      isOpen: false, isBreak, openedAt: null, lastOpenedAt: lastOpen, lastClosedAt: lastClose,
-      closesAt: null, finalCloseAt: null, nextOpen, nextRegularOpen: nextOpen,
+    const closedStatus = (lastOpen, lastClose, nextOpen, isBreak = false, finalCloseAt = null, breakKind = null) => ({
+      isOpen: false, isBreak, breakKind, openedAt: null, lastOpenedAt: lastOpen, lastClosedAt: lastClose,
+      closesAt: null, finalCloseAt, nextOpen, nextRegularOpen: nextOpen,
     });
     const openStatus = (openedAt, closesAt, nextOpen, pausesAtBreak = false) => ({
       isOpen: true, isBreak: false, pausesAtBreak, openedAt, lastOpenedAt: openedAt,
@@ -203,7 +204,14 @@
         return openStatus(previousOpen, todayClose, todayOpen, true);
       }
       if (now < todayOpen) {
-        return closedStatus(at(calendarDate(local, -1), 17), todayClose, todayOpen, true);
+        return closedStatus(
+          at(calendarDate(local, -1), 17),
+          todayClose,
+          todayOpen,
+          true,
+          at(calendarDate(local, 1), 16),
+          "maintenance"
+        );
       }
       const tomorrow = calendarDate(local, 1);
       return openStatus(todayOpen, at(tomorrow, 16), today.weekday === 4 ? sundayOpen : at(tomorrow, 17));
@@ -242,6 +250,27 @@
     return new Intl.DateTimeFormat("en-US", {
       timeZone: session.timeZone, hour: "numeric", minute: "2-digit", timeZoneName: "short",
     }).format(date);
+  }
+
+  function sessionTimingText(session, status, now = new Date()) {
+    const openedAt = status.openedAt || status.lastOpenedAt;
+    const headline = status.isOpen
+      ? `OPEN · ${status.pausesAtBreak ? "pauses" : "closes"} in ${countdown(status.closesAt, now)}`
+      : status.isBreak
+        ? `${status.breakKind === "maintenance" ? "MAINTENANCE" : "BREAK"} · reopens in ${countdown(status.nextOpen, now)}`
+        : `CLOSED · opens in ${countdown(status.nextRegularOpen, now)}`;
+    const activity = `${status.openedAt ? "Opened" : "Last opened"} ${elapsed(openedAt, now)} ago · ${localTimeLabel(openedAt)} Dallas`;
+    let schedule;
+    if (status.isOpen) {
+      schedule = `Close ${localTimeLabel(status.finalCloseAt)} Dallas · Next open ${localTimeLabel(status.nextRegularOpen)} Dallas`;
+    } else if (status.isBreak && status.breakKind === "maintenance") {
+      schedule = `Reopens ${localTimeLabel(status.nextOpen)} Dallas · Next close ${localTimeLabel(status.finalCloseAt)} Dallas`;
+    } else if (status.isBreak) {
+      schedule = `Final close ${localTimeLabel(status.finalCloseAt)} Dallas · Next day ${localTimeLabel(status.nextRegularOpen)} Dallas`;
+    } else {
+      schedule = `Closed ${elapsed(status.lastClosedAt, now)} ago · Next open ${localTimeLabel(status.nextRegularOpen)} Dallas`;
+    }
+    return { headline, activity, schedule };
   }
 
   function marketSnapshot(now = new Date()) {
@@ -499,22 +528,12 @@
       const timing = mountedDocument.createElement("span");
       timing.className = "market-session-timing";
       const status = mountedDocument.createElement("strong");
-      status.textContent = session.status.isOpen
-        ? `OPEN · ${session.status.pausesAtBreak ? "pauses" : "closes"} in ${countdown(session.status.closesAt, now)}`
-        : session.status.isBreak
-          ? `BREAK · reopens in ${countdown(session.status.nextOpen, now)}`
-          : `CLOSED · opens in ${countdown(session.status.nextRegularOpen, now)}`;
+      const timingText = sessionTimingText(session, session.status, now);
+      status.textContent = timingText.headline;
       const activity = mountedDocument.createElement("small");
-      const openedAt = session.status.openedAt || session.status.lastOpenedAt;
-      activity.textContent = `${session.status.openedAt ? "Opened" : "Last opened"} ${elapsed(openedAt, now)} ago · ${localTimeLabel(openedAt)} Dallas`;
+      activity.textContent = timingText.activity;
       const schedule = mountedDocument.createElement("small");
-      if (session.status.isOpen) {
-        schedule.textContent = `Close ${localTimeLabel(session.status.finalCloseAt)} Dallas · Next open ${localTimeLabel(session.status.nextRegularOpen)} Dallas`;
-      } else if (session.status.isBreak) {
-        schedule.textContent = `Final close ${localTimeLabel(session.status.finalCloseAt)} Dallas · Next day ${localTimeLabel(session.status.nextRegularOpen)} Dallas`;
-      } else {
-        schedule.textContent = `Closed ${elapsed(session.status.lastClosedAt, now)} ago · Next open ${localTimeLabel(session.status.nextRegularOpen)} Dallas`;
-      }
+      schedule.textContent = timingText.schedule;
       timing.append(status, activity, schedule);
       const source = mountedDocument.createElement("a");
       source.href = session.source;
@@ -565,6 +584,7 @@
     previousWeekdayDate,
     render,
     sessionStatus,
+    sessionTimingText,
     setAsset,
     zonedDateTimeToUtc,
     zonedParts,

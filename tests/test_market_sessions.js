@@ -159,12 +159,25 @@ test("Tokyo and Hong Kong midday recesses are not counted as open", () => {
 
 test("CME equity futures model the Dallas maintenance halt and weekend reopen", () => {
   const cme = MarketSessions.SESSIONS[1];
+  const before = MarketSessions.sessionStatus(cme, new Date("2026-11-10T21:59:59Z"));
+  const start = MarketSessions.sessionStatus(cme, new Date("2026-11-10T22:00:00Z"));
   const maintenance = MarketSessions.sessionStatus(cme, new Date("2026-11-10T22:30:00Z"));
+  const reopened = MarketSessions.sessionStatus(cme, new Date("2026-11-10T23:00:00Z"));
+  assert.equal(before.isOpen, true);
+  assert.equal(start.isBreak, true);
   assert.equal(maintenance.isOpen, false);
   assert.equal(maintenance.isBreak, true);
+  assert.equal(maintenance.breakKind, "maintenance");
   assert.equal(maintenance.lastOpenedAt.toISOString(), "2026-11-09T23:00:00.000Z");
   assert.equal(maintenance.lastClosedAt.toISOString(), "2026-11-10T22:00:00.000Z");
   assert.equal(maintenance.nextOpen.toISOString(), "2026-11-10T23:00:00.000Z");
+  assert.equal(maintenance.finalCloseAt.toISOString(), "2026-11-11T22:00:00.000Z");
+  const maintenanceCopy = MarketSessions.sessionTimingText(cme, maintenance, new Date("2026-11-10T22:30:00Z"));
+  assert.match(maintenanceCopy.headline, /^MAINTENANCE · reopens in 0h 30m 00s$/);
+  assert.match(maintenanceCopy.schedule, /Reopens Tue, 5:00 PM CST Dallas · Next close Wed, 4:00 PM CST Dallas/);
+  assert.doesNotMatch(maintenanceCopy.schedule, /1969|1970/);
+  assert.equal(reopened.isOpen, true);
+  assert.equal(reopened.openedAt.toISOString(), "2026-11-10T23:00:00.000Z");
   const fridayClosed = MarketSessions.sessionStatus(cme, new Date("2026-11-13T23:30:00Z"));
   assert.equal(fridayClosed.isOpen, false);
   assert.equal(fridayClosed.isBreak, false);
