@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "asset": "spy",
-  "generated_at_utc": "2026-11-09T12:17:00.172002+00:00",
+  "generated_at_utc": "2026-11-09T16:57:05.000794+00:00",
   "coverage_start_utc": "2024-11-11T14:05:00+00:00",
-  "coverage_end_utc": "2026-11-06T21:55:00+00:00",
+  "coverage_end_utc": "2026-11-09T16:55:00+00:00",
   "candle_interval_minutes": 5,
   "source": {
     "name": "Alpaca historical SPY bars (IEX feed)",
@@ -33,28 +33,28 @@
       "evidence_status": "measured",
       "horizons": {
         "15": {
-          "n": 498,
+          "n": 499,
           "median_return_pct": 0.0,
           "median_abs_move_pct": 0.1136,
-          "up_rate_pct": 49.8
+          "up_rate_pct": 49.9
         },
         "30": {
-          "n": 498,
-          "median_return_pct": 0.0202,
-          "median_abs_move_pct": 0.1584,
-          "up_rate_pct": 53.4
+          "n": 499,
+          "median_return_pct": 0.0206,
+          "median_abs_move_pct": 0.1588,
+          "up_rate_pct": 53.5
         },
         "60": {
-          "n": 497,
-          "median_return_pct": 0.0219,
-          "median_abs_move_pct": 0.2212,
-          "up_rate_pct": 51.7
+          "n": 498,
+          "median_return_pct": 0.0226,
+          "median_abs_move_pct": 0.2222,
+          "up_rate_pct": 51.8
         },
         "120": {
-          "n": 497,
-          "median_return_pct": 0.0445,
+          "n": 498,
+          "median_return_pct": 0.0451,
           "median_abs_move_pct": 0.2845,
-          "up_rate_pct": 52.9
+          "up_rate_pct": 53.0
         }
       },
       "median_volume_ratio_60m": null,
