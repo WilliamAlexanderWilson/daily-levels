@@ -77,6 +77,31 @@ test("keeps two volatility leaders visible while clearly marking a fallback as p
   }), false);
 });
 
+test("setup timing requires a measured leader to be open or approaching", () => {
+  const newYorkOnly = {
+    sessions: [
+      { key: "new-york", observed_rank: 1, evidence_status: "measured", horizons: { "60": { n: 50, median_abs_move_pct: 0.4 } } },
+    ],
+  };
+  const active = MarketSessions.setupSessionContext("btc", new Date("2026-11-09T15:00:00Z"), newYorkOnly);
+  assert.equal(active.ready, true);
+  assert.deepEqual(active.active.map((session) => session.name), ["New York"]);
+  assert.match(active.detail, /New York is open now/);
+
+  const approaching = MarketSessions.setupSessionContext("btc", new Date("2026-11-09T14:15:00Z"), newYorkOnly);
+  assert.equal(approaching.ready, true);
+  assert.deepEqual(approaching.approaching.map((session) => session.name), ["New York"]);
+  assert.match(approaching.detail, /opens in 0h 15m 00s/);
+
+  const tooEarly = MarketSessions.setupSessionContext("btc", new Date("2026-11-09T13:59:00Z"), newYorkOnly);
+  assert.equal(tooEarly.ready, false);
+  assert.match(tooEarly.detail, /No measured volatility-leading session/);
+
+  const unavailable = MarketSessions.setupSessionContext("btc", new Date("2026-11-09T15:00:00Z"), null);
+  assert.equal(unavailable.ready, false);
+  assert.match(unavailable.detail, /evidence is not available/);
+});
+
 test("forward tracker stays collecting until the frozen balanced gate passes", () => {
   const collecting = MarketSessions.forwardDisplay({
     forward_start_utc: "2026-11-08T00:00:00Z",

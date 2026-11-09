@@ -132,11 +132,22 @@
       <div class="patience-gate" id="patience-gate">
         <div class="patience-gate-copy">
           <span class="metric-label">Trade checklist</span>
-          <strong id="patience-count">0 of 3 conditions met</strong>
+          <strong id="patience-count">0 of 5 conditions met</strong>
           <p id="patience-instruction">Wait for the range data before considering a position.</p>
           <div class="patience-alert-controls">
-            <button type="button" id="patience-alert-toggle" class="patience-alert-toggle" aria-pressed="false">Enable ready alert</button>
+            <button type="button" id="patience-alert-toggle" class="patience-alert-toggle" aria-pressed="false">Enable setup alerts</button>
+            <button type="button" id="patience-alert-test" class="patience-alert-test" disabled>Send test</button>
+            <button type="button" id="setup-alert-paper" class="patience-alert-test" disabled>Plan paper trade</button>
+            <label class="patience-alert-risk">Minimum range R:R
+              <select id="setup-alert-min-rr" aria-label="Minimum range reward-to-risk for setup alerts">
+                <option value="1">1.0</option>
+                <option value="1.5" selected>1.5</option>
+                <option value="2">2.0</option>
+                <option value="3">3.0</option>
+              </select>
+            </label>
             <small id="patience-alert-status">Off · no setup notifications</small>
+            <small class="patience-alert-boundary">Alerts work while Range Desk is open. Browser notifications can appear when this tab is hidden; closing the site stops them.</small>
           </div>
         </div>
         <ol class="patience-conditions">
@@ -148,6 +159,12 @@
           </li>
           <li id="patience-confirmation">
             <i>3</i><span><strong>Candle confirmation</strong><small>A completed candle closed back inside the range</small></span><b>Not met</b>
+          </li>
+          <li id="patience-session">
+            <i>4</i><span><strong>Session timing</strong><small>A measured volatility leader is open or within 30 minutes</small></span><b>Waiting for session data</b>
+          </li>
+          <li id="patience-risk">
+            <i>5</i><span><strong>Range geometry</strong><small>Potential reward-to-risk meets your selected minimum</small></span><b>Not met</b>
           </li>
         </ol>
       </div>
@@ -739,7 +756,7 @@
 
   <aside id="patience-alert-toast" class="patience-alert-toast" role="status" aria-live="assertive" hidden>
     <span>
-      <small id="patience-alert-toast-label">Trade checklist · 3 of 3</small>
+      <small id="patience-alert-toast-label">Trade checklist · 5 of 5</small>
       <strong id="patience-alert-toast-title">Setup ready to assess</strong>
       <b id="patience-alert-toast-detail">Location, test, and completed close agree.</b>
     </span>

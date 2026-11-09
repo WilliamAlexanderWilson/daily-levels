@@ -31,6 +31,7 @@
   const RANGE_INTERVALS = { "1m": 1, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "4h": 240, "1d": 1440 };
   const PATIENCE_ALERT_PREF_KEY = "range-desk:patience-alerts:v1";
   const PATIENCE_ALERTED_KEY = "range-desk:patience-alerted:v1";
+  const SETUP_ALERT_MIN_RR_KEY = "range-desk:setup-alert-min-rr:v1";
   const PAPER_EVENT_STATE_KEY = "range-desk:paper-event-state:v1";
   const RANGE_LAB_POLL_MS = 300000;
 
@@ -41,6 +42,7 @@
   };
 
   let patienceAlertsEnabled = false;
+  let setupAlertMinimumRewardRisk = 1.5;
   let patienceAlertMemory = [];
   let patienceToastTimer = null;
 
@@ -1587,13 +1589,17 @@
 
   function syncPatienceAlertControls() {
     const button = document.getElementById("patience-alert-toggle");
+    const testButton = document.getElementById("patience-alert-test");
+    const riskSelect = document.getElementById("setup-alert-min-rr");
     const status = document.getElementById("patience-alert-status");
     if (!button || !status) return;
     const permission = patienceAlertPermission();
     button.setAttribute("aria-pressed", String(patienceAlertsEnabled));
-    button.textContent = patienceAlertsEnabled ? "Disable alerts" : "Enable alerts";
+    button.textContent = patienceAlertsEnabled ? "Disable alerts" : "Enable setup alerts";
+    if (testButton) testButton.disabled = !patienceAlertsEnabled;
+    if (riskSelect) riskSelect.value = String(setupAlertMinimumRewardRisk);
     if (!patienceAlertsEnabled) status.textContent = "Off · no setup, boundary-change, or paper-observation notifications";
-    else if (permission === "granted") status.textContent = "On · in-page and hidden-tab browser alerts";
+    else if (permission === "granted") status.textContent = "On · in-page and hidden-tab browser alerts while Range Desk is open";
     else if (permission === "denied") status.textContent = "On · in-page alert only (browser notifications blocked)";
     else if (permission === "unsupported") status.textContent = "On · in-page alert only on this device";
     else status.textContent = "On · permission not yet selected";
@@ -1634,7 +1640,22 @@
   }
 
   function showPatienceToast(title, detail, direction) {
-    showAlertToast(`Trade checklist · 3 of 3 · ${direction.toLowerCase()} setup`, title, detail);
+    showAlertToast(`Trade checklist · 5 of 5 · ${direction.toLowerCase()} watch`, title, detail);
+  }
+
+  function sendBrowserAlert(title, detail, tag, force = false) {
+    if (patienceAlertPermission() !== "granted" || (!force && !document.hidden)) return false;
+    try {
+      const notification = new Notification(title, { body: detail, tag, renotify: false });
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+      return true;
+    } catch (err) {
+      console.error("browser notification unavailable; in-page alert still shown", err);
+      return false;
+    }
   }
 
   function maybeSendPaperEventAlerts(data) {
@@ -1683,29 +1704,17 @@
     const direction = decision.status === "long-watch" ? "LONG" : "SHORT";
     const assetLabel = state.asset.toUpperCase();
     const timeframeLabel = state.range === "1d" ? "Daily" : state.range.toUpperCase();
-    const title = `${assetLabel} ${timeframeLabel} ${direction.toLowerCase()} setup confirmed`;
-    const detail = `${gateState.boundary.name} was tested and a completed candle closed back inside. Review the stop and size before acting.`;
+    const title = `${assetLabel} ${timeframeLabel} ${direction.toLowerCase()} watch ready to assess`;
+    const sessionDetail = gateState.sessionContext?.detail || "Measured session timing is confirmed.";
+    const detail = `${gateState.boundary.name} was tested and the latest completed candle closed back inside. ${sessionDetail} Range R:R ${gateState.rewardRisk.toFixed(2)} meets ${gateState.minimumRewardRisk.toFixed(1)}. Review the stop and size before acting.`;
     showPatienceToast(title, detail, direction);
-
-    if (document.hidden && patienceAlertPermission() === "granted") {
-      try {
-        const notification = new Notification(title, {
-          body: detail,
-          tag: `range-desk-${state.asset}-${state.range}`,
-          renotify: false,
-        });
-        notification.onclick = () => {
-          window.focus();
-          notification.close();
-        };
-      } catch (err) {
-        console.error("browser notification unavailable; in-page alert still shown", err);
-      }
-    }
+    sendBrowserAlert(title, detail, `range-desk-${state.asset}-${state.range}`);
   }
 
   function wirePatienceAlerts() {
     patienceAlertsEnabled = readLocalStorage(PATIENCE_ALERT_PREF_KEY, "false") === "true";
+    const storedMinimum = Number(readLocalStorage(SETUP_ALERT_MIN_RR_KEY, "1.5"));
+    setupAlertMinimumRewardRisk = [1, 1.5, 2, 3].includes(storedMinimum) ? storedMinimum : 1.5;
     syncPatienceAlertControls();
     document.getElementById("patience-alert-toast-close").addEventListener("click", hidePatienceToast);
     document.getElementById("patience-alert-toggle").addEventListener("click", async () => {
@@ -1720,7 +1729,47 @@
       }
       if (!patienceAlertsEnabled) hidePatienceToast();
       syncPatienceAlertControls();
+      if (patienceAlertsEnabled) {
+        showAlertToast(
+          "SETUP ALERTS ON",
+          "Range Desk will watch the five-check gate",
+          "Keep this site open. Use Send test to confirm in-page and browser delivery on this device."
+        );
+      }
       if (patienceAlertsEnabled && state.asset !== "spy" && activeLevels.length && Number.isFinite(lastLivePrice)) {
+        renderRangeDecision(activeLevels, activeScorecard, lastLivePrice);
+      }
+    });
+    document.getElementById("patience-alert-test").addEventListener("click", async () => {
+      if (!patienceAlertsEnabled) return;
+      if (patienceAlertPermission() === "default") {
+        try {
+          await Notification.requestPermission();
+          syncPatienceAlertControls();
+        } catch (err) {
+          console.error("test notification permission request failed; in-page test remains available", err);
+        }
+      }
+      const title = "Range Desk test alert";
+      const detail = "Alerts are enabled on this device. Keep Range Desk open to receive setup notifications.";
+      showAlertToast("TEST ALERT · NO TRADE SIGNAL", title, detail);
+      sendBrowserAlert(title, detail, "range-desk-test", true);
+    });
+    document.getElementById("setup-alert-paper").addEventListener("click", () => {
+      const button = document.getElementById("setup-alert-paper");
+      if (button.disabled || !activePatienceGate?.isReady || !liveMarkIsFresh()) return;
+      useLiveTradePrice();
+      document.getElementById("trade-form-min-r").value = String(setupAlertMinimumRewardRisk);
+      const direction = activeRangeDecision?.status === "long-watch" ? "long" : "short";
+      const directionButton = document.querySelector(`.trade-dir-btn[data-direction="${direction}"]`);
+      if (directionButton) directionButton.click();
+      document.getElementById("paper-trader").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    document.getElementById("setup-alert-min-rr").addEventListener("change", (event) => {
+      const next = Number(event.target.value);
+      setupAlertMinimumRewardRisk = [1, 1.5, 2, 3].includes(next) ? next : 1.5;
+      writeLocalStorage(SETUP_ALERT_MIN_RR_KEY, String(setupAlertMinimumRewardRisk));
+      if (state.asset !== "spy" && activeLevels.length && Number.isFinite(lastLivePrice)) {
         renderRangeDecision(activeLevels, activeScorecard, lastLivePrice);
       }
     });
@@ -1729,9 +1778,22 @@
   function renderPatienceGate(decision) {
     const gate = document.getElementById("patience-gate");
     gate.hidden = false;
-    const gateState = RangeDecision.patienceState(decision, activeCandles);
+    const sessionContext = window.MarketSessions
+      ? MarketSessions.setupSessionContext(state.asset, new Date())
+      : { ready: false, detail: "Session timing is unavailable." };
+    const gateState = RangeDecision.setupAlertState(
+      decision,
+      activeCandles,
+      sessionContext,
+      setupAlertMinimumRewardRisk
+    );
     activePatienceGate = gateState;
-    const { hasLocation, hasTouch, hasConfirmation, readyCount, boundary, boundaryTest } = gateState;
+    const paperButton = document.getElementById("setup-alert-paper");
+    paperButton.disabled = !gateState.isReady || !liveMarkIsFresh();
+    paperButton.title = gateState.isReady
+      ? liveMarkIsFresh() ? "Open the paper planner at the current live price" : "Waiting for a fresh live price"
+      : "Available only after all five setup checks agree";
+    const { hasLocation, hasTouch, hasConfirmation, hasSessionTiming, hasRewardRisk, readyCount, boundary, boundaryTest } = gateState;
     const timeframeLabel = state.range === "1d" ? "Daily" : state.range.toUpperCase();
 
     setPatienceCondition(
@@ -1755,20 +1817,34 @@
             ? "Waiting for a confirming candle close"
             : "Waiting for the boundary test"
     );
+    setPatienceCondition(
+      "patience-session",
+      hasSessionTiming,
+      sessionContext.detail
+    );
+    setPatienceCondition(
+      "patience-risk",
+      hasRewardRisk,
+      gateState.rewardRisk === null
+        ? "Range reward-to-risk is unavailable"
+        : `Range R:R ${gateState.rewardRisk.toFixed(2)} ${hasRewardRisk ? "meets" : "is below"} ${gateState.minimumRewardRisk.toFixed(1)}`
+    );
 
-    document.getElementById("patience-count").textContent = `${readyCount} of 3 conditions met`;
+    document.getElementById("patience-count").textContent = `${readyCount} of 5 conditions met`;
     const quickGuideStatus = document.getElementById("quick-guide-status");
     if (quickGuideStatus) {
-      quickGuideStatus.textContent = readyCount === 3
-        ? "All three conditions are visible. Review risk before making a decision."
-        : `${readyCount} of 3 conditions met · patience is part of the process.`;
+      quickGuideStatus.textContent = readyCount === 5
+        ? "All five checks are visible. Review the actual stop and size before making a decision."
+        : `${readyCount} of 5 checks met · the alert remains in wait mode.`;
     }
     let instruction = "Price is between the important boundaries. Wait for it to reach an edge.";
     if (hasLocation && !hasTouch) instruction = `Price is in the right area, but it has not tested ${boundary.name} yet.`;
     if (hasTouch && !hasConfirmation) instruction = boundaryTest && boundaryTest.confirmed
       ? "The earlier confirmation is now stale. Wait for a new test instead of chasing price."
       : "The boundary was tested, but a completed candle has not closed back inside the range.";
-    if (hasConfirmation) instruction = "All three conditions are visible. Review the stop, target, and position size before making any decision.";
+    if (hasConfirmation && !hasSessionTiming) instruction = "Price confirmation is present, but a measured volatility-leading session is not active or close to opening.";
+    if (hasConfirmation && hasSessionTiming && !hasRewardRisk) instruction = `Price and session timing agree, but range R:R is below your ${gateState.minimumRewardRisk.toFixed(1)} minimum.`;
+    if (gateState.isReady) instruction = "All five checks agree. This is a watch alert—not an automatic entry. Review the actual stop, target, leverage, and size.";
     document.getElementById("patience-instruction").textContent = instruction;
     maybeSendPatienceAlert(decision, gateState);
     const tradeForm = document.getElementById("trade-form");
@@ -1786,7 +1862,7 @@
     const isLong = decision.status === "long-watch";
     const isShort = decision.status === "short-watch";
     document.getElementById("decision-badge").textContent = gateState.isReady
-      ? "3 conditions met"
+      ? "5 checks met"
       : isLong
         ? "Near support"
         : isShort

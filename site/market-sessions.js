@@ -356,6 +356,28 @@
     }));
   }
 
+  function setupSessionContext(asset = activeAsset, now = new Date(), data = reactionData[asset], approachMinutes = 30) {
+    const snapshot = marketSnapshot(now);
+    const leaders = topVolatilitySessions(snapshot.sessions, data).filter((session) => session.measured);
+    const approachMs = Math.max(0, Number(approachMinutes) || 0) * 60000;
+    const active = leaders.filter((session) => session.status.isOpen);
+    const approaching = leaders.filter((session) => {
+      if (session.status.isOpen) return false;
+      const nextOpen = session.status.nextOpen;
+      const waitMs = nextOpen instanceof Date ? nextOpen.getTime() - now.getTime() : Infinity;
+      return waitMs >= 0 && waitMs <= approachMs;
+    });
+    const ready = active.length > 0 || approaching.length > 0;
+    let detail = "No measured volatility-leading session is active or within 30 minutes.";
+    if (!leaders.length) detail = "Measured session evidence is not available yet; timing stays unconfirmed.";
+    else if (active.length) detail = `${active.map((session) => session.name).join(" and ")} ${active.length === 1 ? "is" : "are"} open now.`;
+    else if (approaching.length) {
+      const first = approaching.slice().sort((left, right) => left.status.nextOpen - right.status.nextOpen)[0];
+      detail = `${first.name} opens in ${countdown(first.status.nextOpen, now)}.`;
+    }
+    return { ready, detail, leaders, active, approaching };
+  }
+
   function evidenceLabel(evidence) {
     const hour = evidence?.horizons?.["60"];
     if (!hour || !hour.n) return "Not enough complete candles to measure";
@@ -594,6 +616,7 @@
     sessionStateLabel,
     sessionTimingText,
     setAsset,
+    setupSessionContext,
     zonedDateTimeToUtc,
     zonedParts,
   };
