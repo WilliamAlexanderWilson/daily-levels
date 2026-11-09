@@ -47,29 +47,25 @@
     </div>
 
     <section id="market-clock" class="market-clock" aria-labelledby="market-clock-title">
-      <div class="market-clock-primary">
-        <div>
-          <span class="market-clock-kicker">Market clock · Dallas time</span>
-          <h2 id="market-clock-title"><span id="market-next-name">Calculating next open…</span> <strong id="market-next-countdown" role="timer" aria-live="off">—</strong></h2>
-          <p id="market-next-time">Checking regular exchange hours…</p>
-        </div>
-        <div class="market-clock-context">
-          <strong id="market-open-count">—</strong>
-          <span id="market-open-zones">Checking which trading zones are open…</span>
-          <span id="market-clock-context">BTC trades 24/7 · cash opens can still change liquidity and volatility.</span>
-        </div>
+      <div class="market-session-strip" aria-label="Live market-session overview">
+        <section class="market-strip-cell market-strip-open" aria-labelledby="market-clock-title">
+          <span class="market-clock-kicker">Open now · Dallas time</span>
+          <h2 id="market-clock-title"><strong id="market-open-count">—</strong></h2>
+          <p id="market-open-zones">Checking which trading zones are open…</p>
+          <small id="market-clock-context">BTC trades 24/7 · cash opens can still change liquidity and volatility.</small>
+        </section>
+        <section class="market-strip-cell market-strip-next" aria-labelledby="market-next-heading">
+          <span class="market-clock-kicker">Next session event</span>
+          <h3 id="market-next-heading"><span id="market-next-name">Calculating…</span> <strong id="market-next-countdown" role="timer" aria-live="off">—</strong></h3>
+          <small id="market-next-time">Checking regular exchange hours…</small>
+        </section>
+        <section class="market-strip-cell market-strip-leaders" aria-labelledby="market-leaders-title">
+          <span class="market-clock-kicker">Observed 60-minute movement</span>
+          <h3 id="market-leaders-title">Volatility leaders</h3>
+          <div id="market-leader-list" class="market-leader-list"></div>
+        </section>
       </div>
-      <section class="market-leaders" aria-labelledby="market-leaders-title">
-        <div class="market-leaders-heading">
-          <div>
-            <span class="market-clock-kicker">Highest observed 60-minute movement</span>
-            <h3 id="market-leaders-title">Two volatility leaders</h3>
-          </div>
-          <small>Measured with 20+ complete opens; provisional cards are labeled.</small>
-        </div>
-        <div id="market-leader-list" class="market-leader-list"></div>
-      </section>
-      <details class="market-clock-details" open>
+      <details class="market-clock-details">
         <summary><span><strong>Global trading-session board</strong><small id="market-ranking-basis">All seven major zones · Dallas time · loading observed reactions…</small></span><b>Show</b></summary>
         <div id="market-session-list" class="market-session-list"></div>
         <p>Observed ranks use the median absolute 60-minute move, with at least 20 complete samples. This describes past movement—not direction, a prediction, or a trade signal. Regular sessions only. Exchange holidays, half-days, severe weather, or emergency closures can override these clocks. <span id="market-reaction-coverage">Loading source scope…</span> <a id="market-reaction-source" href="#" target="_blank" rel="noopener noreferrer" hidden>Data method ↗</a></p>

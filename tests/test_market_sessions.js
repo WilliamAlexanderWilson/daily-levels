@@ -34,7 +34,7 @@ test("observed reaction evidence replaces opinion ranking only for qualified ses
   }), /Alpaca IEX · one U\.S\. exchange · 729-day sample/);
 });
 
-test("keeps two volatility leaders expanded while clearly marking a fallback as provisional", () => {
+test("keeps two volatility leaders visible while clearly marking a fallback as provisional", () => {
   const measured = {
     sessions: [
       { key: "london", observed_rank: 1, evidence_status: "measured", horizons: { "60": { n: 42, median_abs_move_pct: 0.5 } } },
@@ -196,6 +196,21 @@ test("the global board can identify every currently open trading zone", () => {
     snapshot.sessions.filter((session) => session.status.isOpen).map((session) => session.name),
     ["New York", "Chicago", "London", "Frankfurt"]
   );
+  assert.equal(snapshot.nextEvent.session.name, "London");
+  assert.equal(snapshot.nextEvent.action, "closes");
+  assert.equal(snapshot.nextEvent.at.toISOString(), "2026-11-09T16:30:00.000Z");
+});
+
+test("next event includes pauses and midday reopens, not only session openings", () => {
+  const beforeTokyoBreak = MarketSessions.marketSnapshot(new Date("2026-11-09T02:29:00Z"));
+  assert.equal(beforeTokyoBreak.nextEvent.session.name, "Tokyo");
+  assert.equal(beforeTokyoBreak.nextEvent.action, "pauses");
+  assert.equal(beforeTokyoBreak.nextEvent.at.toISOString(), "2026-11-09T02:30:00.000Z");
+
+  const duringTokyoBreak = MarketSessions.marketSnapshot(new Date("2026-11-09T03:00:00Z"));
+  assert.equal(duringTokyoBreak.nextEvent.session.name, "Tokyo");
+  assert.equal(duringTokyoBreak.nextEvent.action, "reopens");
+  assert.equal(duringTokyoBreak.nextEvent.at.toISOString(), "2026-11-09T03:30:00.000Z");
 });
 
 test("skips weekends and identifies the chronologically next cash open", () => {
@@ -212,11 +227,13 @@ test("the shared dashboard clock is present on every asset and discloses holiday
   const siteRoot = path.join(__dirname, "..", "site");
   const html = fs.readFileSync(path.join(siteRoot, "index.html"), "utf8");
   const app = fs.readFileSync(path.join(siteRoot, "app.js"), "utf8");
-  assert.match(html, /Market clock · Dallas time/);
+  assert.match(html, /Open now · Dallas time/);
   assert.match(html, /Global trading-session board/);
   assert.match(html, /market-open-zones/);
-  assert.match(html, /market-clock-details" open/);
-  assert.match(html, /Two volatility leaders/);
+  assert.match(html, /market-session-strip/);
+  assert.doesNotMatch(html, /market-clock-details" open/);
+  assert.match(html, /Next session event/);
+  assert.match(html, /Volatility leaders/);
   assert.match(html, /market-leader-list/);
   assert.match(html, /Regular sessions only/);
   assert.match(html, /Exchange holidays, half-days, severe weather, or emergency closures can override/);
