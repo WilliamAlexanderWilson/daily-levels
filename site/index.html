@@ -55,6 +55,7 @@
         </div>
         <div class="market-clock-context">
           <strong id="market-open-count">—</strong>
+          <span id="market-open-zones">Checking which trading zones are open…</span>
           <span id="market-clock-context">BTC trades 24/7 · cash opens can still change liquidity and volatility.</span>
         </div>
       </div>
@@ -68,8 +69,8 @@
         </div>
         <div id="market-leader-list" class="market-leader-list"></div>
       </section>
-      <details class="market-clock-details">
-        <summary><span><strong>All seven major market opens</strong><small id="market-ranking-basis">Cash sessions plus CME U.S. index futures · loading observed reactions…</small></span><b>Show</b></summary>
+      <details class="market-clock-details" open>
+        <summary><span><strong>Global trading-session board</strong><small id="market-ranking-basis">All seven major zones · Dallas time · loading observed reactions…</small></span><b>Show</b></summary>
         <div id="market-session-list" class="market-session-list"></div>
         <p>Observed ranks use the median absolute 60-minute move, with at least 20 complete samples. This describes past movement—not direction, a prediction, or a trade signal. Regular sessions only. Exchange holidays, half-days, severe weather, or emergency closures can override these clocks. <span id="market-reaction-coverage">Loading source scope…</span> <a id="market-reaction-source" href="#" target="_blank" rel="noopener noreferrer" hidden>Data method ↗</a></p>
       </details>

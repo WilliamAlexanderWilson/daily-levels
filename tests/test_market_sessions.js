@@ -124,8 +124,22 @@ test("reports an open session and advances its next regular opening", () => {
   const now = new Date("2026-11-09T15:00:00Z");
   const status = MarketSessions.sessionStatus(newYork, now);
   assert.equal(status.isOpen, true);
+  assert.equal(status.openedAt.toISOString(), "2026-11-09T14:30:00.000Z");
   assert.equal(status.closesAt.toISOString(), "2026-11-09T21:00:00.000Z");
   assert.equal(status.nextOpen.toISOString(), "2026-11-10T14:30:00.000Z");
+  assert.equal(status.nextRegularOpen.toISOString(), "2026-11-10T14:30:00.000Z");
+  assert.equal(MarketSessions.elapsed(status.openedAt, now), "0h 30m 00s");
+});
+
+test("closed sessions retain their last open, last close, and next regular open", () => {
+  const newYork = MarketSessions.SESSIONS[0];
+  const now = new Date("2026-11-09T22:00:00Z");
+  const status = MarketSessions.sessionStatus(newYork, now);
+  assert.equal(status.isOpen, false);
+  assert.equal(status.lastOpenedAt.toISOString(), "2026-11-09T14:30:00.000Z");
+  assert.equal(status.lastClosedAt.toISOString(), "2026-11-09T21:00:00.000Z");
+  assert.equal(status.nextRegularOpen.toISOString(), "2026-11-10T14:30:00.000Z");
+  assert.equal(MarketSessions.elapsed(status.lastClosedAt, now), "1h 00m 00s");
 });
 
 test("Tokyo and Hong Kong midday recesses are not counted as open", () => {
@@ -136,6 +150,12 @@ test("Tokyo and Hong Kong midday recesses are not counted as open", () => {
   assert.equal(tokyoBreak.isOpen, false);
   assert.equal(tokyoBreak.isBreak, true);
   assert.equal(tokyoBreak.nextOpen.toISOString(), "2026-11-09T03:30:00.000Z");
+  assert.equal(tokyoBreak.finalCloseAt.toISOString(), "2026-11-09T06:30:00.000Z");
+  assert.equal(tokyoBreak.nextRegularOpen.toISOString(), "2026-11-10T00:00:00.000Z");
+  assert.match(
+    MarketSessions.sessionTimingText(tokyo, tokyoBreak, new Date("2026-11-09T03:00:00Z")).headline,
+    /^MIDDAY BREAK · reopens in 0h 30m 00s$/
+  );
   assert.equal(hongKongBreak.isOpen, false);
   assert.equal(hongKongBreak.isBreak, true);
   assert.equal(hongKongBreak.nextOpen.toISOString(), "2026-11-09T05:00:00.000Z");
@@ -143,14 +163,37 @@ test("Tokyo and Hong Kong midday recesses are not counted as open", () => {
 
 test("CME equity futures model the Dallas maintenance halt and weekend reopen", () => {
   const cme = MarketSessions.SESSIONS[1];
+  const before = MarketSessions.sessionStatus(cme, new Date("2026-11-10T21:59:59Z"));
+  const start = MarketSessions.sessionStatus(cme, new Date("2026-11-10T22:00:00Z"));
   const maintenance = MarketSessions.sessionStatus(cme, new Date("2026-11-10T22:30:00Z"));
+  const reopened = MarketSessions.sessionStatus(cme, new Date("2026-11-10T23:00:00Z"));
+  assert.equal(before.isOpen, true);
+  assert.equal(start.isBreak, true);
   assert.equal(maintenance.isOpen, false);
   assert.equal(maintenance.isBreak, true);
+  assert.equal(maintenance.breakKind, "maintenance");
+  assert.equal(maintenance.lastOpenedAt.toISOString(), "2026-11-09T23:00:00.000Z");
+  assert.equal(maintenance.lastClosedAt.toISOString(), "2026-11-10T22:00:00.000Z");
   assert.equal(maintenance.nextOpen.toISOString(), "2026-11-10T23:00:00.000Z");
+  assert.equal(maintenance.finalCloseAt.toISOString(), "2026-11-11T22:00:00.000Z");
+  const maintenanceCopy = MarketSessions.sessionTimingText(cme, maintenance, new Date("2026-11-10T22:30:00Z"));
+  assert.match(maintenanceCopy.headline, /^MAINTENANCE · reopens in 0h 30m 00s$/);
+  assert.match(maintenanceCopy.schedule, /Reopens Tue, 5:00 PM CST Dallas · Next close Wed, 4:00 PM CST Dallas/);
+  assert.doesNotMatch(maintenanceCopy.schedule, /1969|1970/);
+  assert.equal(reopened.isOpen, true);
+  assert.equal(reopened.openedAt.toISOString(), "2026-11-10T23:00:00.000Z");
   const fridayClosed = MarketSessions.sessionStatus(cme, new Date("2026-11-13T23:30:00Z"));
   assert.equal(fridayClosed.isOpen, false);
   assert.equal(fridayClosed.isBreak, false);
   assert.equal(fridayClosed.nextOpen.toISOString(), "2026-11-15T23:00:00.000Z");
+});
+
+test("the global board can identify every currently open trading zone", () => {
+  const snapshot = MarketSessions.marketSnapshot(new Date("2026-11-09T15:00:00Z"));
+  assert.deepEqual(
+    snapshot.sessions.filter((session) => session.status.isOpen).map((session) => session.name),
+    ["New York", "Chicago", "London", "Frankfurt"]
+  );
 });
 
 test("skips weekends and identifies the chronologically next cash open", () => {
@@ -168,7 +211,9 @@ test("the shared dashboard clock is present on every asset and discloses holiday
   const html = fs.readFileSync(path.join(siteRoot, "index.html"), "utf8");
   const app = fs.readFileSync(path.join(siteRoot, "app.js"), "utf8");
   assert.match(html, /Market clock · Dallas time/);
-  assert.match(html, /All seven major market opens/);
+  assert.match(html, /Global trading-session board/);
+  assert.match(html, /market-open-zones/);
+  assert.match(html, /market-clock-details" open/);
   assert.match(html, /Two volatility leaders/);
   assert.match(html, /market-leader-list/);
   assert.match(html, /Regular sessions only/);
