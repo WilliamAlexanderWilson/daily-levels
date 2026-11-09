@@ -280,6 +280,22 @@
     return "CLOSED";
   }
 
+  function nextSessionEvent(sessions, now = new Date()) {
+    return sessions.map((session) => {
+      const status = session.status;
+      if (status.isOpen) {
+        return {
+          session,
+          at: status.closesAt,
+          action: status.pausesAtBreak ? "pauses" : "closes",
+        };
+      }
+      if (status.isBreak) return { session, at: status.nextOpen, action: "reopens" };
+      return { session, at: status.nextRegularOpen || status.nextOpen, action: "opens" };
+    }).filter((event) => event.at instanceof Date && Number.isFinite(event.at.getTime()) && event.at > now)
+      .sort((left, right) => (left.at - right.at) || (left.session.rank - right.session.rank))[0] || null;
+  }
+
   function marketSnapshot(now = new Date()) {
     const sessions = SESSIONS.map((session) => ({ ...session, status: sessionStatus(session, now) }));
     const closed = sessions.filter((session) => !session.status.isOpen);
@@ -287,7 +303,12 @@
       const delta = left.status.nextOpen - right.status.nextOpen;
       return delta || left.rank - right.rank;
     })[0] || sessions.slice().sort((left, right) => left.status.nextOpen - right.status.nextOpen)[0];
-    return { sessions, next, openCount: sessions.filter((session) => session.status.isOpen).length };
+    return {
+      sessions,
+      next,
+      nextEvent: nextSessionEvent(sessions, now),
+      openCount: sessions.filter((session) => session.status.isOpen).length,
+    };
   }
 
   function assetContext(asset) {
@@ -427,16 +448,17 @@
   function render(now = new Date()) {
     if (!mountedDocument) return;
     const snapshot = marketSnapshot(now);
-    const next = snapshot.next;
+    const nextEvent = snapshot.nextEvent || { session: snapshot.next, at: snapshot.next.status.nextOpen, action: "opens" };
+    const next = nextEvent.session;
     const data = reactionData[activeAsset];
     const evidence = reactionByKey(data);
     const forward = forwardDisplay(forwardData[activeAsset]);
     mountedDocument.getElementById("market-clock-context").textContent = assetContext(activeAsset);
-    mountedDocument.getElementById("market-next-name").textContent = `${next.name} ${next.status.isBreak ? "reopens" : "opens"} in`;
-    mountedDocument.getElementById("market-next-countdown").textContent = countdown(next.status.nextOpen, now);
+    mountedDocument.getElementById("market-next-name").textContent = `${next.name} ${nextEvent.action} in`;
+    mountedDocument.getElementById("market-next-countdown").textContent = countdown(nextEvent.at, now);
     mountedDocument.getElementById("market-next-time").textContent =
-      `${localTimeLabel(next.status.nextOpen)} Dallas · ${exchangeOpenLabel(next, next.status.nextOpen)}`;
-    mountedDocument.getElementById("market-open-count").textContent = `${snapshot.openCount} of ${snapshot.sessions.length} open now`;
+      `${localTimeLabel(nextEvent.at)} Dallas · ${exchangeOpenLabel(next, nextEvent.at)} local`;
+    mountedDocument.getElementById("market-open-count").textContent = `${snapshot.openCount} of ${snapshot.sessions.length}`;
     const openNames = snapshot.sessions.filter((session) => session.status.isOpen).map((session) => session.name);
     mountedDocument.getElementById("market-open-zones").textContent = openNames.length
       ? `Open now: ${openNames.join(" · ")}`
@@ -461,46 +483,23 @@
       const hour = session.evidence?.horizons?.["60"];
       const sampleCount = Number(hour?.n) || 0;
       const move = Number(hour?.median_abs_move_pct);
-      const card = mountedDocument.createElement("article");
+      const card = mountedDocument.createElement("span");
       card.className = `market-leader ${session.status.isOpen ? "is-open" : "is-closed"} ${session.measured ? "is-measured" : "is-provisional"}`;
-
-      const header = mountedDocument.createElement("div");
-      header.className = "market-leader-card-heading";
-      const badge = mountedDocument.createElement("span");
-      badge.className = "market-leader-badge";
-      badge.textContent = session.measured ? `OBSERVED #${session.evidence.observed_rank}` : `PROVISIONAL #${session.displayRank}`;
+      card.title = session.measured
+        ? `${session.name}: median absolute 60-minute move ${move.toFixed(2)}% across ${sampleCount} complete observations.`
+        : `${session.name}: provisional source-priority position until 20 complete observations are available.`;
+      const dot = mountedDocument.createElement("i");
+      dot.setAttribute("aria-hidden", "true");
+      const name = mountedDocument.createElement("strong");
+      name.textContent = session.name;
+      const movement = mountedDocument.createElement("small");
+      movement.textContent = session.measured && Number.isFinite(move)
+        ? `${move.toFixed(2)}% · n=${sampleCount}`
+        : "Provisional";
       const state = mountedDocument.createElement("span");
       state.className = "market-leader-state";
       state.textContent = sessionStateLabel(session.status);
-      header.append(badge, state);
-
-      const identity = mountedDocument.createElement("div");
-      identity.className = "market-leader-identity";
-      const name = mountedDocument.createElement("strong");
-      name.textContent = session.name;
-      const exchange = mountedDocument.createElement("small");
-      exchange.textContent = session.exchange;
-      identity.append(name, exchange);
-
-      const metrics = mountedDocument.createElement("div");
-      metrics.className = "market-leader-metrics";
-      const movement = mountedDocument.createElement("span");
-      movement.innerHTML = session.measured && Number.isFinite(move)
-        ? `<small>Median |60m| move</small><strong>${move.toFixed(2)}%</strong><em>n=${sampleCount}</em>`
-        : `<small>Median |60m| move</small><strong>Collecting</strong><em>${sampleCount} of 20 minimum</em>`;
-      const timing = mountedDocument.createElement("span");
-      timing.innerHTML = session.status.isOpen
-        ? `<small>${session.status.pausesAtBreak ? "Pauses" : "Closes"} in</small><strong>${countdown(session.status.closesAt, now)}</strong><em>Next open ${localTimeLabel(session.status.nextOpen)}</em>`
-        : `<small>${session.status.isBreak ? "Reopens" : "Opens"} in</small><strong>${countdown(session.status.nextOpen, now)}</strong><em>${localTimeLabel(session.status.nextOpen)}</em>`;
-      metrics.append(movement, timing);
-
-      if (!session.measured) {
-        const note = mountedDocument.createElement("p");
-        note.textContent = "Shown by source priority while this session collects enough complete opens for a volatility rank.";
-        card.append(header, identity, metrics, note);
-      } else {
-        card.append(header, identity, metrics);
-      }
+      card.append(dot, name, movement, state);
       leaderList.appendChild(card);
     }
     const forwardPanel = mountedDocument.getElementById("range-open-forward");
@@ -587,6 +586,7 @@
     topVolatilitySessions,
     marketSnapshot,
     mount,
+    nextSessionEvent,
     nextWeekdayDate,
     previousWeekdayDate,
     render,
