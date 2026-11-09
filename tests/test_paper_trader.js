@@ -138,6 +138,18 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.match(app, /activeRangeLabCandidateKey && activeRangeLabData/);
   assert.match(html, /Research &amp; details/);
   assert.match(html, /Trade checklist/);
+  assert.match(html, /id="patience-session"/);
+  assert.match(html, /id="patience-risk"/);
+  assert.match(html, /id="setup-alert-min-rr"/);
+  assert.match(html, /id="patience-alert-test"/);
+  assert.match(html, /id="setup-alert-paper"/);
+  assert.match(html, /Alerts work while Range Desk is open/);
+  assert.match(app, /RangeDecision\.setupAlertState/);
+  assert.match(app, /MarketSessions\.setupSessionContext/);
+  assert.match(app, /sendBrowserAlert\(title, detail, "range-desk-test", true\)/);
+  assert.match(app, /activePatienceGate\?\.isReady/);
+  assert.match(app, /useLiveTradePrice\(\)/);
+  assert.match(app, /of 5 conditions met/);
   assert.match(html, /id="quick-guide"/);
   assert.match(html, /How to use Range Desk/);
   assert.match(html, /id="structural-reclaim-proof"/);

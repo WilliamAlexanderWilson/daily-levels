@@ -243,6 +243,30 @@
     };
   }
 
+  function setupAlertState(decision, candles, sessionContext, minimumRewardRisk = 1.5) {
+    const priceChecks = patienceState(decision, candles);
+    const rawRewardRisk = decision && decision.preferredRewardRisk;
+    const rewardRisk = typeof rawRewardRisk === "number" ? rawRewardRisk : NaN;
+    const minimum = Number.isFinite(Number(minimumRewardRisk)) && Number(minimumRewardRisk) > 0
+      ? Number(minimumRewardRisk)
+      : 1.5;
+    const hasSessionTiming = Boolean(sessionContext && sessionContext.ready);
+    const hasRewardRisk = Number.isFinite(rewardRisk) && rewardRisk >= minimum;
+    const readyCount = priceChecks.readyCount + Number(hasSessionTiming) + Number(hasRewardRisk);
+
+    return {
+      ...priceChecks,
+      priceChecksReady: priceChecks.isReady,
+      hasSessionTiming,
+      hasRewardRisk,
+      rewardRisk: Number.isFinite(rewardRisk) ? rewardRisk : null,
+      minimumRewardRisk: minimum,
+      sessionContext: sessionContext || null,
+      readyCount,
+      isReady: readyCount === 5,
+    };
+  }
+
   function confirmedSetup(decision, candles) {
     const gate = patienceState(decision, candles);
     if (!gate.isReady || !gate.boundaryTest || gate.boundaryTest.barsAgo !== 0) return null;
@@ -397,6 +421,13 @@
       summary = `Price is above ${range.supportHigh.toLocaleString()} support but below the ${range.high.toLocaleString()} ceiling. This is not a clean range edge.`;
     }
 
+    const longRewardRisk = status === "long-watch" && price > range.failureLevel && price < range.high
+      ? (range.high - price) / (price - range.failureLevel)
+      : null;
+    const shortRewardRisk = status === "short-watch" && price > range.supportHigh && price < range.reclaim
+      ? (price - range.supportHigh) / (range.reclaim - price)
+      : null;
+
     return {
       status,
       label,
@@ -406,9 +437,9 @@
       resistance,
       bracketPosition: Math.max(0, Math.min(1, macroPosition)),
       macroPosition,
-      longRewardRisk: null,
-      shortRewardRisk: null,
-      preferredRewardRisk: null,
+      longRewardRisk,
+      shortRewardRisk,
+      preferredRewardRisk: status === "long-watch" ? longRewardRisk : status === "short-watch" ? shortRewardRisk : null,
       supportScore: null,
       resistanceScore: null,
       strategyRange: range,
@@ -493,6 +524,7 @@
     completedCloseAbove,
     strategyTrackPosition,
     patienceState,
+    setupAlertState,
     confirmedSetup,
     patienceAlertFingerprint,
     rangeZonePrices,

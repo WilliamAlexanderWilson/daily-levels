@@ -140,10 +140,13 @@ William is in Dallas; each exchange remains calculated in its own IANA
 timezone. Keep the seven-session order stable unless the product decision is
 explicitly revisited: New York cash, Chicago CME U.S. index futures, London,
 Tokyo, Hong Kong, Frankfurt/Xetra, Sydney. Cash exchanges use regular weekdays;
-CME models its Sunday-Friday session and daily 4:00-5:00 PM Central halt. This
-is not a holiday calendar. Preserve the
-holiday/half-day/emergency-closure warning and official source links rather
-than presenting a weekend-only calculation as exchange-authoritative.
+CME models its Sunday-Friday session and daily 4:00-5:00 PM Central halt.
+`VERIFIED_SESSION_CALENDARS` adds official 2026-2027 holiday and half-day
+coverage for the currently measured New York, London, and Hong Kong alert
+leaders. Alert timing must fail closed outside that verified coverage; do not
+silently fall back to weekday-only timing. Preserve the severe-weather and
+emergency-closure warning and official source links because a frozen calendar
+still cannot represent unscheduled closures.
 
 `range-open-forward-v1` is preregistered in
 `docs/RANGE-OPEN-FORWARD-TRACKER.md` with a future cutoff of
@@ -307,15 +310,23 @@ candle before checking, so an intrabar wick cannot flash a false completed
 confirmation. This is a transparent confirmation proxy, not a backtested
 edge; 3/3 says “setup to assess,” never “place the trade.”
 
-Follow-up: added an opt-in **ready alert** backed by the same pure
-`RangeDecision.patienceState()` result. It never alerts for location alone,
-a wick alone, or an unconfirmed close. A fingerprint of asset, timeframe,
-direction, boundary, and completed-candle time makes each setup alert once
-even across refreshes. Visible tabs get an in-page toast; hidden tabs can
-also receive a browser notification after the user explicitly enables and
-permits it. Preference and the last 20 fingerprints live only in browser
-localStorage. This is intentionally not Telegram/background infrastructure:
-the static page must remain open for the live stream to evaluate a setup.
+Follow-up: added an opt-in **setup alert**. The three price facts still come
+from pure `RangeDecision.patienceState()`, while `setupAlertState()` adds a
+measured top-two volatility session (open or within 30 minutes) and a user-set
+minimum range R:R for a five-condition notification gate. The session check
+uses verified New York, London, and Hong Kong holiday/half-day calendars for
+2026-2027 and fails closed outside verified coverage. It never alerts for
+location alone, a wick alone, an unconfirmed close, an unverified session date,
+or insufficient geometry. A fingerprint of asset, timeframe, direction,
+boundary, and completed-candle time makes each setup alert once even across
+refreshes. **Send test** verifies delivery and **Plan paper trade** carries the
+direction and minimum R:R into the paper planner. Visible tabs get an in-page
+toast; hidden tabs can also receive a browser notification after the user
+explicitly enables and permits it. Preference and the last 20 fingerprints
+live only in browser localStorage. This is intentionally not Telegram or
+background infrastructure: the static page must remain open for the live
+stream to evaluate a setup. SPY stays fail-closed after its live-rule holdout
+test failed.
 
 Final visual acceptance caught that the default chart still contradicted
 the simplified brief: every level, order-book wall, proximity band, and

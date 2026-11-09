@@ -77,6 +77,85 @@ test("keeps two volatility leaders visible while clearly marking a fallback as p
   }), false);
 });
 
+test("setup timing requires a measured leader to be open or approaching", () => {
+  const newYorkOnly = {
+    sessions: [
+      { key: "new-york", observed_rank: 1, evidence_status: "measured", horizons: { "60": { n: 50, median_abs_move_pct: 0.4 } } },
+    ],
+  };
+  const active = MarketSessions.setupSessionContext("btc", new Date("2026-11-09T15:00:00Z"), newYorkOnly);
+  assert.equal(active.ready, true);
+  assert.deepEqual(active.active.map((session) => session.name), ["New York"]);
+  assert.match(active.detail, /New York is open now/);
+
+  const approaching = MarketSessions.setupSessionContext("btc", new Date("2026-11-09T14:15:00Z"), newYorkOnly);
+  assert.equal(approaching.ready, true);
+  assert.deepEqual(approaching.approaching.map((session) => session.name), ["New York"]);
+  assert.match(approaching.detail, /opens in 0h 15m 00s/);
+
+  const tooEarly = MarketSessions.setupSessionContext("btc", new Date("2026-11-09T13:59:00Z"), newYorkOnly);
+  assert.equal(tooEarly.ready, false);
+  assert.match(tooEarly.detail, /No measured volatility-leading session/);
+
+  const unavailable = MarketSessions.setupSessionContext("btc", new Date("2026-11-09T15:00:00Z"), null);
+  assert.equal(unavailable.ready, false);
+  assert.match(unavailable.detail, /evidence is not available/);
+});
+
+test("setup timing fails closed on NYSE holidays and respects official early closes", () => {
+  const newYorkOnly = {
+    sessions: [
+      { key: "new-york", observed_rank: 1, evidence_status: "measured", horizons: { "60": { n: 50, median_abs_move_pct: 0.4 } } },
+    ],
+  };
+  const thanksgiving = new Date("2026-11-26T15:00:00Z");
+  const holidayStatus = MarketSessions.sessionStatus(MarketSessions.SESSIONS[0], thanksgiving);
+  assert.equal(holidayStatus.isOpen, false);
+  assert.equal(holidayStatus.calendarVerified, true);
+  assert.equal(holidayStatus.nextOpen.toISOString(), "2026-11-27T14:30:00.000Z");
+  assert.equal(MarketSessions.setupSessionContext("btc", thanksgiving, newYorkOnly).ready, false);
+
+  const beforeEarlyClose = MarketSessions.sessionStatus(MarketSessions.SESSIONS[0], new Date("2026-11-27T17:59:00Z"));
+  const afterEarlyClose = MarketSessions.sessionStatus(MarketSessions.SESSIONS[0], new Date("2026-11-27T19:00:00Z"));
+  assert.equal(beforeEarlyClose.isOpen, true);
+  assert.equal(beforeEarlyClose.closesAt.toISOString(), "2026-11-27T18:00:00.000Z");
+  assert.equal(beforeEarlyClose.isEarlyClose, true);
+  assert.equal(afterEarlyClose.isOpen, false);
+  assert.equal(afterEarlyClose.lastClosedAt.toISOString(), "2026-11-27T18:00:00.000Z");
+  assert.equal(MarketSessions.setupSessionContext("btc", new Date("2026-11-27T19:00:00Z"), newYorkOnly).ready, false);
+});
+
+test("verified London and Hong Kong calendars model holidays and half-days", () => {
+  const london = MarketSessions.SESSIONS[2];
+  const hongKong = MarketSessions.SESSIONS[4];
+  const londonEarlyClose = MarketSessions.sessionStatus(london, new Date("2026-12-24T12:29:00Z"));
+  const londonClosed = MarketSessions.sessionStatus(london, new Date("2026-12-24T12:31:00Z"));
+  assert.equal(londonEarlyClose.isOpen, true);
+  assert.equal(londonEarlyClose.closesAt.toISOString(), "2026-12-24T12:30:00.000Z");
+  assert.equal(londonClosed.isOpen, false);
+  assert.equal(londonClosed.nextOpen.toISOString(), "2026-12-29T08:00:00.000Z");
+
+  const hongKongHoliday = MarketSessions.sessionStatus(hongKong, new Date("2026-12-25T02:00:00Z"));
+  assert.equal(hongKongHoliday.isOpen, false);
+  assert.equal(hongKongHoliday.calendarVerified, true);
+  assert.equal(hongKongHoliday.nextOpen.toISOString(), "2026-12-28T01:30:00.000Z");
+});
+
+test("setup timing refuses calendar years that have not been verified", () => {
+  const newYorkOnly = {
+    sessions: [
+      { key: "new-york", observed_rank: 1, evidence_status: "measured", horizons: { "60": { n: 50, median_abs_move_pct: 0.4 } } },
+    ],
+  };
+  const outsideCoverage = new Date("2028-11-06T15:00:00Z");
+  const status = MarketSessions.sessionStatus(MarketSessions.SESSIONS[0], outsideCoverage);
+  assert.equal(status.isOpen, true);
+  assert.equal(status.calendarVerified, false);
+  const context = MarketSessions.setupSessionContext("btc", outsideCoverage, newYorkOnly);
+  assert.equal(context.ready, false);
+  assert.match(context.detail, /calendar coverage is not verified/);
+});
+
 test("forward tracker stays collecting until the frozen balanced gate passes", () => {
   const collecting = MarketSessions.forwardDisplay({
     forward_start_utc: "2026-11-08T00:00:00Z",

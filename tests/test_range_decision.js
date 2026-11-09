@@ -8,6 +8,7 @@ const {
   confirmedSetup,
   patienceAlertFingerprint,
   patienceState,
+  setupAlertState,
   rangeZonePrices,
   reclaimBiasPresentation,
   recentBoundaryTest,
@@ -104,6 +105,29 @@ test("patience state becomes ready only after all three facts agree", () => {
   assert.equal(gate.boundaryTest.time, 1);
 });
 
+test("setup alert requires confirmation, measured session timing, and minimum reward-to-risk", () => {
+  const decision = build(levels, scorecard, 92);
+  const candles = [
+    { time: 1, low: 89, high: 94, close: 91 },
+    { time: 2, low: 91, high: 93, close: 92 },
+  ];
+  const ready = setupAlertState(decision, candles, { ready: true, detail: "New York is open now." }, 1.5);
+  assert.equal(ready.priceChecksReady, true);
+  assert.equal(ready.hasSessionTiming, true);
+  assert.equal(ready.hasRewardRisk, true);
+  assert.equal(ready.readyCount, 5);
+  assert.equal(ready.isReady, true);
+
+  const noSession = setupAlertState(decision, candles, { ready: false }, 1.5);
+  assert.equal(noSession.readyCount, 4);
+  assert.equal(noSession.isReady, false);
+
+  const strictRisk = setupAlertState(decision, candles, { ready: true }, 5);
+  assert.equal(strictRisk.hasRewardRisk, false);
+  assert.equal(strictRisk.readyCount, 4);
+  assert.equal(strictRisk.isReady, false);
+});
+
 test("patience state refuses a confirmed candle when price is no longer at an edge", () => {
   const decision = build(levels, scorecard, 95);
   const candles = [
@@ -169,7 +193,22 @@ test("uses the sourced BTC macro range instead of the nearest-level bracket", ()
   assert.equal(decision.support.name, "Decision support");
   assert.equal(decision.strategyRange.low, 60000);
   assert.equal(decision.strategyRange.high, 80000);
+  assert.ok(Math.abs(decision.preferredRewardRisk - (4100 / 1900)) < 0.0001);
   assert.ok(Math.abs(decision.macroPosition - 0.795) < 0.001);
+});
+
+test("macro strategy geometry stays unavailable when no defined invalidation exists", () => {
+  const floorWatch = buildStrategyRange(61000);
+  assert.equal(floorWatch.status, "long-watch");
+  assert.equal(floorWatch.preferredRewardRisk, null);
+
+  const belowFailure = buildStrategyRange(73000);
+  assert.equal(belowFailure.status, "long-watch");
+  assert.equal(belowFailure.preferredRewardRisk, null);
+
+  const upperDeviation = buildStrategyRange(81000);
+  assert.equal(upperDeviation.status, "short-watch");
+  assert.ok(Math.abs(upperDeviation.preferredRewardRisk - (4000 / 1800)) < 0.0001);
 });
 
 test("layers a calculated structural reclaim onto the dated macro framework", () => {
