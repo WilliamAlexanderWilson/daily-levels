@@ -156,6 +156,7 @@ test("Tokyo and Hong Kong midday recesses are not counted as open", () => {
     MarketSessions.sessionTimingText(tokyo, tokyoBreak, new Date("2026-11-09T03:00:00Z")).headline,
     /^MIDDAY BREAK · reopens in 0h 30m 00s$/
   );
+  assert.equal(MarketSessions.sessionStateLabel(tokyoBreak), "MIDDAY BREAK");
   assert.equal(hongKongBreak.isOpen, false);
   assert.equal(hongKongBreak.isBreak, true);
   assert.equal(hongKongBreak.nextOpen.toISOString(), "2026-11-09T05:00:00.000Z");
@@ -180,6 +181,7 @@ test("CME equity futures model the Dallas maintenance halt and weekend reopen", 
   assert.match(maintenanceCopy.headline, /^MAINTENANCE · reopens in 0h 30m 00s$/);
   assert.match(maintenanceCopy.schedule, /Reopens Tue, 5:00 PM CST Dallas · Next close Wed, 4:00 PM CST Dallas/);
   assert.doesNotMatch(maintenanceCopy.schedule, /1969|1970/);
+  assert.equal(MarketSessions.sessionStateLabel(maintenance), "MAINTENANCE");
   assert.equal(reopened.isOpen, true);
   assert.equal(reopened.openedAt.toISOString(), "2026-11-10T23:00:00.000Z");
   const fridayClosed = MarketSessions.sessionStatus(cme, new Date("2026-11-13T23:30:00Z"));

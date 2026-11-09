@@ -273,6 +273,13 @@
     return { headline, activity, schedule };
   }
 
+  function sessionStateLabel(status) {
+    if (status.isOpen) return "OPEN";
+    if (status.breakKind === "maintenance") return "MAINTENANCE";
+    if (status.breakKind === "midday") return "MIDDAY BREAK";
+    return "CLOSED";
+  }
+
   function marketSnapshot(now = new Date()) {
     const sessions = SESSIONS.map((session) => ({ ...session, status: sessionStatus(session, now) }));
     const closed = sessions.filter((session) => !session.status.isOpen);
@@ -464,7 +471,7 @@
       badge.textContent = session.measured ? `OBSERVED #${session.evidence.observed_rank}` : `PROVISIONAL #${session.displayRank}`;
       const state = mountedDocument.createElement("span");
       state.className = "market-leader-state";
-      state.textContent = session.status.isOpen ? "OPEN" : session.status.isBreak ? "MIDDAY BREAK" : "CLOSED";
+      state.textContent = sessionStateLabel(session.status);
       header.append(badge, state);
 
       const identity = mountedDocument.createElement("div");
@@ -584,6 +591,7 @@
     previousWeekdayDate,
     render,
     sessionStatus,
+    sessionStateLabel,
     sessionTimingText,
     setAsset,
     zonedDateTimeToUtc,
