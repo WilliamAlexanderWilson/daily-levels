@@ -9,9 +9,11 @@ levels are optional context, not mislabeled as the macro range. The full level
 map, liquidity model, scorecards, explanations, and local trade journal remain
 available under **Research & details**.
 
-**A watch area is not an entry signal.** The UI labels a setup confirmed only
-when the latest completed candle supplies all three visible facts below. That
-label is context to assess, not an automatic order or a promise of profit.
+**A watch area is not an entry signal.** The UI labels price action confirmed
+only when the latest completed candle supplies all three price facts below.
+The optional notification gate adds measured session timing and minimum range
+reward-to-risk, for five conditions total. Neither label is an automatic order
+or a promise of profit.
 
 Live: https://williamalexanderwilson.github.io/daily-levels/
 
@@ -53,12 +55,18 @@ When that latest completed candle passes the gate, the chart adds a
 **LIVE LONG SETUP ✓** or **LIVE SHORT SETUP ✓** marker. An older reclaim can
 remain useful history, but it cannot masquerade as a current live setup.
 
-The optional **ready alert** uses that exact same gate. It stays silent at
-0/3, 1/3, and 2/3, then emits one in-page alert per unique completed candle
-when all three facts agree. If browser notifications are allowed, the same
-one-time alert can appear while the tab is hidden. The opt-in setting and a
-short deduplication history are stored only in that browser's localStorage;
-no account, server, Telegram bot, or trading connection is involved.
+The optional **setup alert** starts with those same three price facts, then
+also requires (4) one of the asset's two measured volatility-leading sessions
+to be open or within 30 minutes and (5) the selected minimum range
+reward-to-risk to be available. It emits one in-page alert per unique completed
+candle only at 5/5. **Send test** verifies delivery; **Plan paper trade** opens
+the existing paper planner with the direction and minimum R:R carried over.
+If browser notifications are allowed, the same one-time alert can appear while
+the tab is hidden. Range Desk must remain open; closing the site stops alerts.
+The opt-in setting and short deduplication history are stored only in that
+browser's localStorage; no account, server, Telegram bot, or trading connection
+is involved. SPY stays fail-closed because its preregistered live rule did not
+pass validation.
 
 ## Global market-open clock
 
@@ -74,8 +82,11 @@ periods when crypto itself opens.
 Session calculations use each exchange's IANA timezone, so daylight-saving
 changes are automatic. Cash clocks model regular Monday-Friday hours; CME
 also models its Sunday-Friday session and daily 4:00-5:00 PM Central halt.
-Exchange holidays, half-days, severe-weather changes, and emergency closures
-can override it, so every row links to the exchange's official hours/calendar.
+Alert eligibility uses verified 2026-2027 holiday and half-day calendars for
+the currently measured New York, London, and Hong Kong leaders and fails closed
+outside verified calendar coverage. Severe-weather changes and emergency
+closures can still override scheduled calendars, so every row links to the
+exchange's official hours/calendar.
 BTC/ETH use a visible 60-day Coinbase Exchange sample; SPY uses the existing
 Alpaca IEX history and leaves opens without exact SPY candles unranked. These
 are source-specific historical measurements, not a claim that one exchange is

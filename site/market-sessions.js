@@ -45,6 +45,53 @@
     },
   ];
 
+  // Alert eligibility uses only exchange calendars that have been checked
+  // against the linked official sources. Normal session clocks can remain
+  // visible outside this window, but an unverified calendar can never satisfy
+  // the setup-alert timing condition.
+  const VERIFIED_SESSION_CALENDARS = {
+    "new-york": {
+      source: "https://www.nyse.com/trade/hours-calendars",
+      years: {
+        2026: {
+          closed: ["2026-01-01", "2026-01-19", "2026-02-16", "2026-04-03", "2026-05-25", "2026-06-19", "2026-07-03", "2026-09-07", "2026-11-26", "2026-12-25"],
+          earlyClose: { "2026-11-27": [13, 0], "2026-12-24": [13, 0] },
+        },
+        2027: {
+          closed: ["2027-01-01", "2027-01-18", "2027-02-15", "2027-03-26", "2027-05-31", "2027-06-18", "2027-07-05", "2027-09-06", "2027-11-25", "2027-12-24"],
+          earlyClose: { "2027-11-26": [13, 0] },
+        },
+      },
+    },
+    london: {
+      source: "https://www.londonstockexchange.com/trade/trading-access/business-days",
+      years: {
+        2026: {
+          verifiedFrom: "2026-08-31",
+          closed: ["2026-08-31", "2026-12-25", "2026-12-28"],
+          earlyClose: { "2026-12-24": [12, 30], "2026-12-31": [12, 30] },
+        },
+        2027: {
+          closed: ["2027-01-01", "2027-03-26", "2027-03-29", "2027-05-03", "2027-05-31", "2027-08-30", "2027-12-27", "2027-12-28"],
+          earlyClose: { "2027-12-24": [12, 30], "2027-12-31": [12, 30] },
+        },
+      },
+    },
+    "hong-kong": {
+      source: "https://www.hkex.com.hk/News/HKEX-Calendar?sc_lang=en",
+      years: {
+        2026: {
+          closed: ["2026-01-01", "2026-02-17", "2026-02-18", "2026-02-19", "2026-04-03", "2026-04-06", "2026-04-07", "2026-05-01", "2026-05-25", "2026-06-19", "2026-07-01", "2026-10-01", "2026-10-19", "2026-12-25"],
+          earlyClose: { "2026-02-16": [12, 0], "2026-12-24": [12, 0], "2026-12-31": [12, 0] },
+        },
+        2027: {
+          closed: ["2027-01-01", "2027-02-08", "2027-02-09", "2027-03-26", "2027-03-29", "2027-04-05", "2027-05-13", "2027-06-09", "2027-07-01", "2027-09-16", "2027-10-01", "2027-10-08", "2027-12-27"],
+          earlyClose: { "2027-02-05": [12, 0], "2027-12-24": [12, 0], "2027-12-31": [12, 0] },
+        },
+      },
+    },
+  };
+
   let mountedDocument = null;
   let activeAsset = "btc";
   let clockTimer = null;
@@ -84,6 +131,38 @@
     };
   }
 
+  function calendarDateKey(parts) {
+    return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+  }
+
+  function verifiedSchedule(session, date) {
+    const calendar = VERIFIED_SESSION_CALENDARS[session.key];
+    const year = calendar?.years?.[date.year];
+    const dateKey = calendarDateKey(date);
+    const verified = Boolean(year)
+      && (!year.verifiedFrom || dateKey >= year.verifiedFrom)
+      && (!year.verifiedThrough || dateKey <= year.verifiedThrough);
+    const earlyClose = verified ? year.earlyClose?.[dateKey] : null;
+    return {
+      verified,
+      closed: verified && year.closed.includes(dateKey),
+      closeHour: earlyClose ? earlyClose[0] : session.closeHour,
+      closeMinute: earlyClose ? earlyClose[1] : session.closeMinute,
+      isEarlyClose: Boolean(earlyClose),
+      source: calendar?.source || session.source,
+    };
+  }
+
+  function tradingDate(session, parts, initialOffset, direction) {
+    for (let step = 0; step <= 370; step += 1) {
+      const candidate = calendarDate(parts, initialOffset + (step * direction));
+      if (candidate.weekday < 1 || candidate.weekday > 5) continue;
+      const schedule = verifiedSchedule(session, candidate);
+      if (!schedule.verified || !schedule.closed) return { date: candidate, schedule };
+    }
+    throw new Error("Unable to locate the next trading date");
+  }
+
   function nextWeekdayDate(parts, minimumOffset) {
     for (let offset = minimumOffset; offset <= minimumOffset + 7; offset += 1) {
       const candidate = calendarDate(parts, offset);
@@ -105,17 +184,25 @@
     const local = zonedParts(now, session.timeZone);
     const today = calendarDate(local, 0);
     const isWeekday = today.weekday >= 1 && today.weekday <= 5;
+    const todaySchedule = verifiedSchedule(session, today);
+    const isTradingDay = isWeekday && (!todaySchedule.verified || !todaySchedule.closed);
     const todayOpen = zonedDateTimeToUtc({ ...today, hour: session.openHour, minute: session.openMinute }, session.timeZone);
-    const todayClose = zonedDateTimeToUtc({ ...today, hour: session.closeHour, minute: session.closeMinute }, session.timeZone);
+    const todayClose = zonedDateTimeToUtc({ ...today, hour: todaySchedule.closeHour, minute: todaySchedule.closeMinute }, session.timeZone);
     const breakStart = Number.isFinite(session.breakStartHour)
       ? zonedDateTimeToUtc({ ...today, hour: session.breakStartHour, minute: session.breakStartMinute }, session.timeZone)
       : null;
     const breakEnd = Number.isFinite(session.breakEndHour)
       ? zonedDateTimeToUtc({ ...today, hour: session.breakEndHour, minute: session.breakEndMinute }, session.timeZone)
       : null;
-    const tomorrow = nextWeekdayDate(local, 1);
-    const nextRegularOpen = zonedDateTimeToUtc({ ...tomorrow, hour: session.openHour, minute: session.openMinute }, session.timeZone);
-    if (isWeekday && breakStart && breakEnd && now >= breakStart && now < breakEnd) {
+    const tomorrow = tradingDate(session, local, 1, 1);
+    const nextRegularOpen = zonedDateTimeToUtc({ ...tomorrow.date, hour: session.openHour, minute: session.openMinute }, session.timeZone);
+    const calendarMetadata = {
+      calendarVerified: todaySchedule.verified,
+      nextOpenCalendarVerified: tomorrow.schedule.verified,
+      isEarlyClose: todaySchedule.isEarlyClose,
+      calendarSource: todaySchedule.source,
+    };
+    if (isTradingDay && breakStart && breakEnd && now >= breakStart && now < breakEnd && now < todayClose) {
       return {
         isOpen: false,
         isBreak: true,
@@ -127,9 +214,10 @@
         finalCloseAt: todayClose,
         nextOpen: breakEnd,
         nextRegularOpen,
+        ...calendarMetadata,
       };
     }
-    if (isWeekday && now >= todayOpen && now < todayClose) {
+    if (isTradingDay && now >= todayOpen && now < todayClose) {
       return {
         isOpen: true,
         isBreak: false,
@@ -143,13 +231,22 @@
           ? breakEnd
           : nextRegularOpen,
         nextRegularOpen,
+        ...calendarMetadata,
       };
     }
-    const nextDate = isWeekday && now < todayOpen ? today : nextWeekdayDate(local, 1);
-    const previousDate = isWeekday && now >= todayClose ? today : previousWeekdayDate(local);
-    const previousOpen = zonedDateTimeToUtc({ ...previousDate, hour: session.openHour, minute: session.openMinute }, session.timeZone);
-    const previousClose = zonedDateTimeToUtc({ ...previousDate, hour: session.closeHour, minute: session.closeMinute }, session.timeZone);
-    const upcomingOpen = zonedDateTimeToUtc({ ...nextDate, hour: session.openHour, minute: session.openMinute }, session.timeZone);
+    const nextTrading = isTradingDay && now < todayOpen
+      ? { date: today, schedule: todaySchedule }
+      : tradingDate(session, local, 1, 1);
+    const previousTrading = isTradingDay && now >= todayClose
+      ? { date: today, schedule: todaySchedule }
+      : tradingDate(session, local, -1, -1);
+    const previousOpen = zonedDateTimeToUtc({ ...previousTrading.date, hour: session.openHour, minute: session.openMinute }, session.timeZone);
+    const previousClose = zonedDateTimeToUtc({
+      ...previousTrading.date,
+      hour: previousTrading.schedule.closeHour,
+      minute: previousTrading.schedule.closeMinute,
+    }, session.timeZone);
+    const upcomingOpen = zonedDateTimeToUtc({ ...nextTrading.date, hour: session.openHour, minute: session.openMinute }, session.timeZone);
     return {
       isOpen: false,
       isBreak: false,
@@ -160,6 +257,10 @@
       finalCloseAt: null,
       nextOpen: upcomingOpen,
       nextRegularOpen: upcomingOpen,
+      calendarVerified: todaySchedule.verified,
+      nextOpenCalendarVerified: nextTrading.schedule.verified,
+      isEarlyClose: todaySchedule.isEarlyClose,
+      calendarSource: todaySchedule.source,
     };
   }
 
@@ -360,9 +461,10 @@
     const snapshot = marketSnapshot(now);
     const leaders = topVolatilitySessions(snapshot.sessions, data).filter((session) => session.measured);
     const approachMs = Math.max(0, Number(approachMinutes) || 0) * 60000;
-    const active = leaders.filter((session) => session.status.isOpen);
+    const active = leaders.filter((session) => session.status.isOpen && session.status.calendarVerified);
     const approaching = leaders.filter((session) => {
       if (session.status.isOpen) return false;
+      if (!session.status.nextOpenCalendarVerified) return false;
       const nextOpen = session.status.nextOpen;
       const waitMs = nextOpen instanceof Date ? nextOpen.getTime() - now.getTime() : Infinity;
       return waitMs >= 0 && waitMs <= approachMs;
@@ -370,6 +472,9 @@
     const ready = active.length > 0 || approaching.length > 0;
     let detail = "No measured volatility-leading session is active or within 30 minutes.";
     if (!leaders.length) detail = "Measured session evidence is not available yet; timing stays unconfirmed.";
+    else if (leaders.every((session) => !session.status.calendarVerified && !session.status.nextOpenCalendarVerified)) {
+      detail = "The leaders' official exchange-calendar coverage is not verified for this date; timing stays unconfirmed.";
+    }
     else if (active.length) detail = `${active.map((session) => session.name).join(" and ")} ${active.length === 1 ? "is" : "are"} open now.`;
     else if (approaching.length) {
       const first = approaching.slice().sort((left, right) => left.status.nextOpen - right.status.nextOpen)[0];
@@ -592,8 +697,10 @@
 
   return {
     SESSIONS,
+    VERIFIED_SESSION_CALENDARS,
     assetContext,
     calendarDate,
+    calendarDateKey,
     cmeEquityFuturesStatus,
     countdown,
     elapsed,
@@ -617,6 +724,7 @@
     sessionTimingText,
     setAsset,
     setupSessionContext,
+    verifiedSchedule,
     zonedDateTimeToUtc,
     zonedParts,
   };
