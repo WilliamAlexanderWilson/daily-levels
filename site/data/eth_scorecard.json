@@ -1,57 +1,46 @@
 {
   "Range low (60d)": {
-    "touches": 53,
-    "resolved": 53,
-    "holds": 17,
-    "breaks": 36,
+    "touches": 61,
+    "resolved": 61,
+    "holds": 16,
+    "breaks": 45,
     "inconclusive": 0,
-    "hold_rate_pct": 32.075471698113205,
-    "avg_move_after_hold_pct": 8.479358938582946,
-    "avg_move_after_break_pct": -5.321346001214892,
-    "low_confidence": false
-  },
-  "Prior week low": {
-    "touches": 135,
-    "resolved": 129,
-    "holds": 44,
-    "breaks": 85,
-    "inconclusive": 6,
-    "hold_rate_pct": 34.10852713178294,
-    "avg_move_after_hold_pct": 1.1758187141207532,
-    "avg_move_after_break_pct": -1.7279849396837605,
-    "low_confidence": false
-  },
-  "Flip support": {
-    "touches": 198,
-    "resolved": 189,
-    "holds": 89,
-    "breaks": 100,
-    "inconclusive": 9,
-    "hold_rate_pct": 47.08994708994709,
-    "avg_move_after_hold_pct": 4.182043899078203,
-    "avg_move_after_break_pct": -2.989469921069442,
-    "low_confidence": false
-  },
-  "Current week open": {
-    "touches": 250,
-    "resolved": 243,
-    "holds": 118,
-    "breaks": 125,
-    "inconclusive": 7,
-    "hold_rate_pct": 48.559670781893004,
-    "avg_move_after_hold_pct": -0.40167316037318773,
-    "avg_move_after_break_pct": 0.9157679491959537,
+    "hold_rate_pct": 26.229508196721312,
+    "avg_move_after_hold_pct": 8.836377171745912,
+    "avg_move_after_break_pct": -4.680579105119376,
     "low_confidence": false
   },
   "Round number": {
     "touches": 602,
-    "resolved": 593,
+    "resolved": 595,
     "holds": 345,
-    "breaks": 248,
-    "inconclusive": 9,
-    "hold_rate_pct": 58.1787521079258,
+    "breaks": 250,
+    "inconclusive": 7,
+    "hold_rate_pct": 57.98319327731093,
     "avg_move_after_hold_pct": 0.09782203577155363,
-    "avg_move_after_break_pct": 0.5237364927915287,
+    "avg_move_after_break_pct": 0.4881322313477303,
+    "low_confidence": false
+  },
+  "Prior week low": {
+    "touches": 140,
+    "resolved": 134,
+    "holds": 44,
+    "breaks": 90,
+    "inconclusive": 6,
+    "hold_rate_pct": 32.83582089552239,
+    "avg_move_after_hold_pct": 1.1758187141207532,
+    "avg_move_after_break_pct": -1.7090315797632187,
+    "low_confidence": false
+  },
+  "Flip support": {
+    "touches": 198,
+    "resolved": 191,
+    "holds": 89,
+    "breaks": 102,
+    "inconclusive": 7,
+    "hold_rate_pct": 46.596858638743456,
+    "avg_move_after_hold_pct": 4.182043899078203,
+    "avg_move_after_break_pct": -2.970223518667309,
     "low_confidence": false
   },
   "Flip resistance": {
@@ -63,6 +52,17 @@
     "hold_rate_pct": 51.953125,
     "avg_move_after_hold_pct": -3.6340153916607965,
     "avg_move_after_break_pct": 4.372650990983873,
+    "low_confidence": false
+  },
+  "Current week open": {
+    "touches": 249,
+    "resolved": 242,
+    "holds": 118,
+    "breaks": 124,
+    "inconclusive": 7,
+    "hold_rate_pct": 48.760330578512395,
+    "avg_move_after_hold_pct": -0.40167316037318773,
+    "avg_move_after_break_pct": 0.943340479483434,
     "low_confidence": false
   },
   "VAL (60d)": {
@@ -99,25 +99,25 @@
     "low_confidence": false
   },
   "Prior month low": {
-    "touches": 67,
-    "resolved": 66,
+    "touches": 74,
+    "resolved": 73,
     "holds": 38,
-    "breaks": 28,
+    "breaks": 35,
     "inconclusive": 1,
-    "hold_rate_pct": 57.57575757575758,
+    "hold_rate_pct": 52.054794520547944,
     "avg_move_after_hold_pct": 2.3433001357726404,
-    "avg_move_after_break_pct": -5.359960078434737,
+    "avg_move_after_break_pct": -4.711470366895251,
     "low_confidence": false
   },
   "Current month open": {
     "touches": 130,
-    "resolved": 118,
+    "resolved": 119,
     "holds": 42,
-    "breaks": 76,
-    "inconclusive": 12,
-    "hold_rate_pct": 35.59322033898305,
+    "breaks": 77,
+    "inconclusive": 11,
+    "hold_rate_pct": 35.294117647058826,
     "avg_move_after_hold_pct": 0.991654753085094,
-    "avg_move_after_break_pct": -0.2050347348753882,
+    "avg_move_after_break_pct": -0.2763603896832543,
     "low_confidence": false
   },
   "POC (60d)": {
@@ -166,12 +166,12 @@
   },
   "Exhaustion pattern": {
     "touches": 13,
-    "resolved": 12,
-    "holds": 6,
+    "resolved": 13,
+    "holds": 7,
     "breaks": 6,
-    "inconclusive": 1,
-    "hold_rate_pct": 50.0,
-    "avg_move_after_hold_pct": 0.8609479217903285,
+    "inconclusive": 0,
+    "hold_rate_pct": 53.84615384615385,
+    "avg_move_after_hold_pct": 0.028722357144046664,
     "avg_move_after_break_pct": 1.6554143033350803,
     "low_confidence": true
   }
