@@ -3933,6 +3933,7 @@
     });
     document.getElementById("range-select").value = state.range;
     document.getElementById("spy-timeframe-select").value = state.spyTimeframe;
+    if (window.AssetBrand) AssetBrand.apply(document, state.asset);
     applyAssetVisibility(state.asset);
     if (window.MarketSessions) MarketSessions.setAsset(state.asset);
   }

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
+  <title id="title">Ethereum</title>
+  <desc id="description">A white Ethereum diamond on a blue coin.</desc>
+  <rect width="128" height="128" rx="28" fill="#10151b"/>
+  <circle cx="64" cy="64" r="45" fill="#627eea"/>
+  <path fill="#fff" d="M64 31 43 65.5 64 77l21-11.5L64 31Zm0 51.5L43 71 64 99l21-28-21 11.5Z"/>
+</svg>
