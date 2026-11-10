@@ -41,6 +41,7 @@
     asset: "btc",
     range: "4h",
     spyTimeframe: "15",
+    candleStyle: "regular",
   };
 
   let patienceAlertsEnabled = false;
@@ -53,13 +54,19 @@
     const asset = params.get("asset");
     if (["eth", "spy", "qqq", "nvda"].includes(asset)) state.asset = asset;
     const range = params.get("range");
-    if (range && RANGE_INTERVALS[range]) state.range = range;
+    if (isBatchAsset(state.asset) && /^(10|15|20|30)m?$/.test(range || "")) {
+      state.spyTimeframe = range.replace("m", "");
+    } else if (range && RANGE_INTERVALS[range]) {
+      state.range = range;
+    }
+    if (params.get("style") === "ha") state.candleStyle = "heikin-ashi";
   }
 
   function writeHash() {
     const params = new URLSearchParams();
     params.set("asset", state.asset);
-    params.set("range", state.range);
+    params.set("range", isBatchAsset(state.asset) ? `${state.spyTimeframe}m` : state.range);
+    if (state.candleStyle === "heikin-ashi") params.set("style", "ha");
     history.replaceState(null, "", "#" + params.toString());
   }
 
@@ -297,7 +304,10 @@
   const liquidationEls = []; // kept separate from overlayEls - purely visual, never clickable/decluttered/part of currentMarkers
   let liquidationLayerEl = null; // the blurred wrapper all liquidation rows render into, created once and reused
   let tradeMarkersPlugin = null;
+  let tradeChartMarkers = [];
+  let dojiChartMarkers = [];
   let activeCandles = []; // current timeframe's loaded candles, so trade markers can be bounds-checked
+  let activeDisplayCandles = []; // regular or derived HA bars currently sent to the chart series
   let markingMode = false;
   let pendingTrade = null; // {time, price} captured from a chart click, awaiting form submission
   let lastLivePrice = null; // most recent known price, for live P&L on sized/leveraged trades
@@ -316,6 +326,21 @@
   let lastOverlayPriceRange = null; // {from, to} as of the last renderOverlays() call, for the price-scale poll below
   let macroRangeFramedKey = null; // frame the sourced BTC range once per chart load without fighting later manual zooms
   let macroAutoPriceRange = null; // last range set by macro framing; live ticks may extend only this untouched automatic view
+  let historyFitFrame = null; // refit only after the chart's own responsive resize has settled
+
+  function scheduleFullHistoryFit() {
+    if (historyFitFrame !== null) cancelAnimationFrame(historyFitFrame);
+    historyFitFrame = requestAnimationFrame(() => {
+      // Lightweight Charts' autoSize uses its own ResizeObserver. Waiting a
+      // second frame prevents that later resize from undoing our fit when a
+      // desktop chart narrows to mobile width (or expands again).
+      historyFitFrame = requestAnimationFrame(() => {
+        historyFitFrame = null;
+        fitAllLoadedHistory();
+        renderOverlays();
+      });
+    });
+  }
 
   function ensureChart() {
     if (chart) return;
@@ -379,6 +404,16 @@
         // can be clipped at the pane boundary.
         rightOffsetPixels: 44,
         tickMarkFormatter: ChartTime.formatDallasAxisTick,
+      },
+      // This dashboard is an overview, not a free-pan trading terminal.
+      // Keep the complete loaded sample visible at all times so wheel,
+      // trackpad, touch, or drag gestures cannot strand the chart on only
+      // part of its history. Price-axis scaling stays available below.
+      handleScroll: false,
+      handleScale: {
+        axisPressedMouseMove: { time: false, price: true },
+        mouseWheel: false,
+        pinch: false,
       },
       rightPriceScale: { borderColor: cssVar("--border") },
     });
@@ -453,7 +488,9 @@
     });
 
     chart.timeScale().subscribeVisibleLogicalRangeChange(renderOverlays);
-    window.addEventListener("resize", renderOverlays);
+    const chartResizeObserver = new ResizeObserver(scheduleFullHistoryFit);
+    chartResizeObserver.observe(container);
+    window.addEventListener("resize", scheduleFullHistoryFit);
 
     // The library has no price-scale equivalent of
     // subscribeVisibleLogicalRangeChange, so a manual drag or scroll-zoom
@@ -555,14 +592,15 @@
     const status = document.getElementById("chart-focus-status");
     if (!status) return;
     let message;
+    const style = state.candleStyle === "heikin-ashi" ? "Heikin Ashi" : "Regular candles";
     if (isBatchAsset(state.asset)) {
-      message = `${state.asset.toUpperCase()} 20-session range · Dallas time · batch IEX data`;
+      message = `${state.asset.toUpperCase()} 20-session range · ${style} · Dallas time · all loaded batch history`;
     } else if (fullAnalysisIsOpen()) {
-      message = "Level radar · Dallas time · reacts to the real-time price";
+      message = `Level radar · ${style} · Dallas time · all loaded history · reacts to the real-time price`;
     } else {
       message = state.asset === "btc"
-        ? "BTC macro range $60k–$80k · Dallas time · real-time Kraken stream"
-        : "Rolling range · Dallas time · real-time Kraken stream";
+        ? `BTC macro range $60k–$80k · ${style} · Dallas time · all loaded history · real-time Kraken stream`
+        : `Rolling range · ${style} · Dallas time · all loaded history · real-time Kraken stream`;
     }
     if (status.textContent !== message) status.textContent = message;
   }
@@ -1041,50 +1079,74 @@
     return candle.time;
   }
 
-  // POC/VAH/VAL/range high-low are computed from the same levelsWindowDays
-  // lookback - on 4H, open already framed to that same window so those
-  // lines land on the actual high/low on screen, instead of fitContent()
-  // showing ~120 days (the full fetch) and making a 60-day-scoped level
-  // look like it's ignoring an older, bigger wick further left. Daily
-  // view: full fetched history - there's no single lookback window that
-  // cleanly maps to every Daily-relevant stat (golden pocket uses a
-  // longer window than range high/low does), so that stays "zoom out for
-  // context, labels already say their own scope" rather than forcing a
-  // crop that still wouldn't match everything. Shared by renderChart and
-  // resetPriceSnap (clicking a level row to snap away from this default,
-  // then clicking it again to come back).
-  function applyDefaultZoom(candleCount, range, levelsWindowDays) {
-    if (range === "4h" && levelsWindowDays) {
-      const candlesPerDay = 6; // 24h / 4h
-      const windowBars = levelsWindowDays * candlesPerDay;
-      const marginBars = Math.round(windowBars * 0.08);
-      const from = Math.max(0, candleCount - windowBars - marginBars);
-      // Leave enough future-space for the final 12-hour time tick to render
-      // completely instead of being clipped by the right price scale.
-      const to = candleCount + 14;
-      chart.timeScale().setVisibleLogicalRange({ from, to });
-    } else {
-      chart.timeScale().fitContent();
-    }
+  // The chart's time axis has one invariant: every loaded candle remains
+  // visible. This is shared by every asset and timeframe, including 4H,
+  // which previously cropped itself to the level-calculation window.
+  function fitAllLoadedHistory() {
+    if (!chart) return;
+    chart.timeScale().fitContent();
+  }
+
+  function syncSeriesMarkers() {
+    if (!tradeMarkersPlugin) return;
+    const markers = [...dojiChartMarkers, ...tradeChartMarkers]
+      .sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0));
+    tradeMarkersPlugin.setMarkers(markers);
+  }
+
+  function renderDojiMarkers(candles, intervalMinutes, range, options = {}) {
+    const status = document.getElementById("doji-study-status");
+    const eligible = Number(intervalMinutes) >= DojiStudy.MIN_TIMEFRAME_MINUTES;
+    const matches = eligible
+      ? DojiStudy.findCompleted(candles, {
+          intervalMinutes,
+          completedThroughUnix: options.completedThroughUnix,
+          timeIsClose: options.timeIsClose,
+        })
+      : [];
+
+    dojiChartMarkers = matches.map((bar) => ({
+      time: toTimePoint(bar, range),
+      position: "aboveBar",
+      color: cssVar("--doji"),
+      shape: "circle",
+      text: "D",
+      size: 0.8,
+    }));
+    syncSeriesMarkers();
+
+    if (!status) return;
+    status.textContent = eligible
+      ? `D · ${matches.length} completed HA doji${matches.length === 1 ? "" : "s"}`
+      : "D · HA dojis start at 15m";
+    status.title = eligible
+      ? `This ${intervalMinutes}-minute view marks completed Heikin Ashi candles whose body is no more than 10% of the full high-low range. D means doji; the forming candle is excluded.`
+      : "Heikin Ashi doji markers begin on the 15-minute timeframe. The forming candle is never marked.";
   }
 
   function renderChart(candles, range, levelsWindowDays) {
     ensureChart();
     clearPriceSnapState(); // a fresh timeframe/asset load starts back at normal autoscale
-    const candleData = candles.map((c) => ({
+    activeCandles = candles;
+    activeDisplayCandles = CandleStyle.forStyle(candles, state.candleStyle);
+    const candleData = activeDisplayCandles.map((c) => ({
       time: toTimePoint(c, range),
       open: c.open,
       high: c.high,
       low: c.low,
       close: c.close,
     }));
-    const volumeData = candles.map((c) => ({
+    const volumeData = activeDisplayCandles.map((c) => ({
       time: toTimePoint(c, range),
       value: c.volume,
       color: c.close >= c.open ? cssVar("--support") : cssVar("--resistance"),
     }));
     candleSeries.setData(candleData);
     volumeSeries.setData(volumeData);
+    renderDojiMarkers(candles, RANGE_INTERVALS[range], range, {
+      completedThroughUnix: Date.now() / 1000,
+      timeIsClose: false,
+    });
 
     // Daily now spans over a decade (see the deep-history fetch above) -
     // BTC/ETH have moved through multiple orders of magnitude in that
@@ -1101,7 +1163,7 @@
     activeLevelsWindowDays = levelsWindowDays;
     macroRangeFramedKey = null;
     macroAutoPriceRange = null;
-    applyDefaultZoom(candleData.length, range, levelsWindowDays);
+    fitAllLoadedHistory();
 
     // Seed the guard to the last rendered candle's true time rather than
     // nulling it out - nulling disabled the guard entirely for the very
@@ -1219,22 +1281,36 @@
     if (state.asset !== asset || state.range !== range || !candleSeries) return false;
     if (lastLiveUnixTime !== null && candle.time < lastLiveUnixTime) return false;
 
-    const point = { time: toTimePoint(candle, range) };
+    const activeIndex = activeCandles.findIndex((item) => item.time === candle.time);
+    const addedNewCandle = activeIndex < 0;
+    const displayIndex = addedNewCandle ? activeCandles.length : activeIndex;
+    if (activeIndex >= 0) activeCandles[activeIndex] = candle;
+    else activeCandles.push(candle);
+    const displayCandle = state.candleStyle === "heikin-ashi"
+      ? CandleStyle.heikinAshiBar(candle, activeDisplayCandles[displayIndex - 1] || null)
+      : candle;
+    activeDisplayCandles[displayIndex] = displayCandle;
+
+    const point = { time: toTimePoint(displayCandle, range) };
     candleSeries.update({
       ...point,
-      open: candle.open,
-      high: candle.high,
-      low: candle.low,
-      close: candle.close,
+      open: displayCandle.open,
+      high: displayCandle.high,
+      low: displayCandle.low,
+      close: displayCandle.close,
     });
     volumeSeries.update({
       ...point,
       value: candle.volume,
-      color: candle.close >= candle.open ? cssVar("--support") : cssVar("--resistance"),
+      color: displayCandle.close >= displayCandle.open ? cssVar("--support") : cssVar("--resistance"),
     });
-    const activeIndex = activeCandles.findIndex((item) => item.time === candle.time);
-    if (activeIndex >= 0) activeCandles[activeIndex] = candle;
-    else activeCandles.push(candle);
+    if (addedNewCandle) {
+      renderDojiMarkers(activeCandles, RANGE_INTERVALS[range], range, {
+        completedThroughUnix: Date.now() / 1000,
+        timeIsClose: false,
+      });
+      fitAllLoadedHistory();
+    }
     lastLiveUnixTime = candle.time;
 
     document.getElementById("price-label").textContent = candle.close.toLocaleString(undefined, {
@@ -2780,7 +2856,8 @@
     if (!tradeMarkersPlugin) return;
     const trades = loadTrades(asset);
     if (!candles.length) {
-      tradeMarkersPlugin.setMarkers([]);
+      tradeChartMarkers = [];
+      syncSeriesMarkers();
       renderTradeRiskLines(asset);
       return;
     }
@@ -2836,7 +2913,8 @@
     }
     markers.sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0));
 
-    tradeMarkersPlugin.setMarkers(markers);
+    tradeChartMarkers = markers;
+    syncSeriesMarkers();
     renderTradeRiskLines(asset);
   }
 
@@ -3344,13 +3422,13 @@
   // window first, so "un-snap" always lands back on the same framing
   // regardless of whether the user panned around while a level was
   // snapped, then measure that window's candles and set the price range
-  // to fit them directly. Future manual pans/zooms still autoscale
-  // normally from here.
+  // to fit them directly. The time axis remains locked to all loaded
+  // history; only the price-axis framing changes here.
   function resetPriceSnap() {
     clearPriceSnapState();
     if (!activeCandles.length || !candleSeries) return;
 
-    applyDefaultZoom(activeCandles.length, state.range, activeLevelsWindowDays);
+    fitAllLoadedHistory();
 
     let candlesInView = activeCandles;
     const visibleRange = chart.timeScale().getVisibleLogicalRange();
@@ -4000,7 +4078,7 @@
     });
   }
 
-  function renderSpyChart(bars, rangeContext = null) {
+  function renderSpyChart(regularBars, rangeContext = null) {
     ensureChart();
     clearPriceSnapState();
     updateChartFocusStatus();
@@ -4022,24 +4100,33 @@
     for (const line of orderBookPriceLines) candleSeries.removePriceLine(line);
     orderBookPriceLines.length = 0;
 
+    const bars = CandleStyle.forStyle(regularBars, state.candleStyle);
+    activeCandles = regularBars;
+    activeDisplayCandles = bars;
     const candleData = bars.map((b) => ({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close }));
     candleSeries.setData(candleData);
-    volumeSeries.setData([]); // no HA volume computed - an empty histogram beats a stale crypto one
+    volumeSeries.setData([]); // batch export omits volume; empty beats a stale crypto histogram
     // Historical Call/Put annotations are intentionally excluded from the
     // decision chart. They were batch backtest observations with outcomes
     // known later, not live information available to the viewer.
-    if (tradeMarkersPlugin) tradeMarkersPlugin.setMarkers([]);
+    tradeChartMarkers = [];
+    renderDojiMarkers(regularBars, Number(state.spyTimeframe), "batch", {
+      completedThroughUnix: activeSpyChart && Number.isFinite(Date.parse(activeSpyChart.generated_at_utc))
+        ? Date.parse(activeSpyChart.generated_at_utc) / 1000
+        : Date.now() / 1000,
+      timeIsClose: true,
+    });
     candleSeries.priceScale().applyOptions({ mode: LightweightCharts.PriceScaleMode.Normal });
-    chart.timeScale().fitContent();
-    lastLiveUnixTime = bars.length ? bars[bars.length - 1].time : null;
+    fitAllLoadedHistory();
+    lastLiveUnixTime = regularBars.length ? regularBars[regularBars.length - 1].time : null;
     renderBatchRangeLines(rangeContext);
     renderOverlays();
   }
 
   function rerenderSpyTimeframe() {
     if (!activeSpyChart) return;
-    const bars = activeSpyChart.timeframes[state.spyTimeframe] || [];
-    renderSpyChart(bars, activeSpyChart.range_context);
+    const regularBars = (activeSpyChart.timeframes || {})[state.spyTimeframe] || [];
+    renderSpyChart(regularBars, activeSpyChart.range_context);
   }
 
   function renderSpyBacktestTable(backtest) {
@@ -4115,8 +4202,8 @@
 
       activeSpyChart = chartData;
       renderHeader(chartData); // same {generated_at_utc, price} shape renderHeader already expects
-      const bars = chartData.timeframes[state.spyTimeframe] || [];
-      renderSpyChart(bars, chartData.range_context);
+      const regularBars = (chartData.timeframes || {})[state.spyTimeframe] || [];
+      renderSpyChart(regularBars, chartData.range_context);
       if (asset === "spy") {
         const [signalsData, backtestData, rangeResearch] = await Promise.all([
           fetchJson(spySignalsUrl()), fetchJson(spyBacktestUrl()), fetchJson(spyRangeResearchUrl()),
@@ -4145,6 +4232,11 @@
   function setActiveButtons() {
     document.querySelectorAll("#asset-toggle .toggle-btn").forEach((btn) => {
       const isActive = btn.dataset.asset === state.asset;
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute("aria-pressed", String(isActive));
+    });
+    document.querySelectorAll("#candle-style-toggle .toggle-btn").forEach((btn) => {
+      const isActive = btn.dataset.candleStyle === state.candleStyle;
       btn.classList.toggle("active", isActive);
       btn.setAttribute("aria-pressed", String(isActive));
     });
@@ -4190,7 +4282,29 @@
     });
     document.getElementById("spy-timeframe-select").addEventListener("change", (e) => {
       state.spyTimeframe = e.target.value;
+      writeHash();
       rerenderSpyTimeframe();
+    });
+    document.querySelectorAll("#candle-style-toggle .toggle-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const nextStyle = btn.dataset.candleStyle;
+        if (nextStyle === state.candleStyle) return;
+        state.candleStyle = nextStyle;
+        setActiveButtons();
+        writeHash();
+        updateChartFocusStatus();
+        if (isBatchAsset(state.asset)) {
+          rerenderSpyTimeframe();
+          return;
+        }
+        if (!activeCandles.length) return;
+        renderChart(activeCandles, state.range, activeLevelsWindowDays);
+        renderLevels(activeLevels);
+        renderRangeDecision(activeLevels, activeScorecard, lastLivePrice);
+        renderRoundProximityBands(lastLivePrice, activeProximity);
+        renderOrderBookWalls(activeOrderBookWalls);
+        renderTradeMarkers(state.asset, state.range, activeCandles);
+      });
     });
 
     const refreshBtn = document.getElementById("refresh-btn");

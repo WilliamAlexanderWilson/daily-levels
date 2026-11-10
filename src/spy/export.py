@@ -44,10 +44,10 @@ def _frame_to_json(frame: pd.DataFrame, display_days: int) -> list[dict]:
     return [
         {
             "time": int(ts.timestamp()),
-            "open": row["ha_open"],
-            "high": row["ha_high"],
-            "low": row["ha_low"],
-            "close": row["ha_close"],
+            "open": row["open"],
+            "high": row["high"],
+            "low": row["low"],
+            "close": row["close"],
         }
         for ts, row in frame.iterrows()
     ]

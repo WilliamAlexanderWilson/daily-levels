@@ -180,9 +180,10 @@ test("SPY decision chart excludes retrospective Call and Put markers", () => {
   const html = fs.readFileSync(path.join(root, "site", "index.html"), "utf8");
   assert.doesNotMatch(app, /renderSpySignalMarkers/);
   assert.doesNotMatch(app, /Historical \$\{isCall \? "Call" : "Put"\} setup/);
-  assert.match(app, /tradeMarkersPlugin\.setMarkers\(\[\]\)/);
+  assert.match(app, /tradeChartMarkers = \[\]/);
+  assert.match(app, /syncSeriesMarkers\(\)/);
   assert.match(app, /if \(isBatch\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
-  assert.match(app, /function renderSpyChart\(bars, rangeContext = null\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
+  assert.match(app, /function renderSpyChart\(regularBars, rangeContext = null\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
   assert.match(html, /Batch chart — no live trade labels/);
   assert.match(html, /Historical setup records remain[\s\S]*for audit/);
 });

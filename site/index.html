@@ -24,7 +24,7 @@
   <link rel="canonical" href="https://williamalexanderwilson.github.io/daily-levels/" />
   <title>William Wilson's Range Desk — BTC, ETH, SPY, QQQ &amp; NVDA</title>
   <link id="site-favicon" rel="icon" type="image/svg+xml" href="brand-btc.svg" />
-  <link rel="stylesheet" href="styles.css?v=equity-ranges-v1" />
+  <link rel="stylesheet" href="styles.css?v=doji-study-v1" />
 </head>
 <body>
   <header class="site-header">
@@ -61,12 +61,17 @@
         <option value="4h" selected>4H</option>
         <option value="1d">Daily</option>
       </select>
-      <select id="spy-timeframe-select" class="range-select" aria-label="Heikin-Ashi timeframe" hidden>
-        <option value="10">10m HA</option>
-        <option value="15" selected>15m HA</option>
-        <option value="20">20m HA</option>
-        <option value="30">30m HA</option>
+      <select id="spy-timeframe-select" class="range-select" aria-label="Equity timeframe" hidden>
+        <option value="10">10m</option>
+        <option value="15" selected>15m</option>
+        <option value="20">20m</option>
+        <option value="30">30m</option>
       </select>
+      <div class="toggle-group candle-style-toggle" id="candle-style-toggle" role="group" aria-label="Candle style">
+        <button type="button" data-candle-style="regular" class="toggle-btn active" aria-pressed="true" title="Actual market open, high, low, and close">Regular</button>
+        <button type="button" data-candle-style="heikin-ashi" class="toggle-btn" aria-pressed="false" title="Smoothed Heikin Ashi candles; values are derived, not traded prices">Heikin Ashi</button>
+      </div>
+      <span id="doji-study-status" class="study-status" aria-live="polite" title="Completed Heikin Ashi candles whose body is no more than 10% of the full high-low range">D · HA dojis start at 15m</span>
     </div>
 
     <section id="market-clock" class="market-clock" aria-labelledby="market-clock-title">
@@ -812,16 +817,18 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="range-decision.js?v=equity-ranges-v1"></script>
-  <script src="range-lab.js?v=equity-ranges-v1"></script>
-  <script src="liquidation-risk.js?v=equity-ranges-v1"></script>
-  <script src="live-stream.js?v=equity-ranges-v1"></script>
-  <script src="market-sessions.js?v=equity-ranges-v1"></script>
-  <script src="paper-trader.js?v=equity-ranges-v1"></script>
-  <script src="journal-analytics.js?v=equity-ranges-v1"></script>
-  <script src="decision-lock.js?v=equity-ranges-v1"></script>
-  <script src="asset-brand.js?v=equity-ranges-v1"></script>
-  <script src="chart-time.js?v=equity-ranges-v1"></script>
-  <script src="app.js?v=equity-ranges-v1"></script>
+  <script src="range-decision.js?v=doji-study-v1"></script>
+  <script src="range-lab.js?v=doji-study-v1"></script>
+  <script src="liquidation-risk.js?v=doji-study-v1"></script>
+  <script src="live-stream.js?v=doji-study-v1"></script>
+  <script src="market-sessions.js?v=doji-study-v1"></script>
+  <script src="paper-trader.js?v=doji-study-v1"></script>
+  <script src="journal-analytics.js?v=doji-study-v1"></script>
+  <script src="decision-lock.js?v=doji-study-v1"></script>
+  <script src="asset-brand.js?v=doji-study-v1"></script>
+  <script src="chart-time.js?v=doji-study-v1"></script>
+  <script src="candle-style.js?v=doji-study-v1"></script>
+  <script src="doji-study.js?v=doji-study-v1"></script>
+  <script src="app.js?v=doji-study-v1"></script>
 </body>
 </html>
