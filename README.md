@@ -1,12 +1,20 @@
-# William Wilson's Range Desk — BTC, ETH & SPY decision dashboard
+# Daily Levels — evidence-first BTC, ETH & SPY research dashboard
 
-A focused range-trading workspace. BTC's default screen is organized around
-Mathieu's November 4, 2026 higher-timeframe framework: a $60k floor, $80k
-ceiling, an automatically reconstructed structural reclaim near $82.8k, and
-$72k-$77k decision-support zone. Live candles and price move with Kraken's per-trade WebSocket stream;
-the REST poll is only a reconnect fallback. Rolling calculated
-levels are optional context, not mislabeled as the macro range. The full level
-map, liquidity model, scorecards, explanations, and local trade journal remain
+Daily Levels is my personal market-research and decision-support workspace. I
+built it to turn public market data into transparent, testable context: live
+prices and candles, daily calculated levels, global market-session timing,
+historical backtests, prospective evidence gates, and browser-local paper
+planning.
+
+The dashboard's calculations, tests, evidence rules, interface, and ongoing
+validation are maintained in this repository. Market observations come from
+named public data providers; opinions from outside creators are not treated as
+data, copied signals, or proof of an edge.
+
+BTC and ETH live prices and candles use Kraken's per-trade WebSocket stream,
+with REST used for history and reconnect fallback. SPY research uses Alpaca IEX
+history, with its own explicitly documented limitations. The full level map,
+liquidity model, scorecards, explanations, and local paper journal remain
 available under **Research & details**.
 
 **A watch area is not an entry signal.** The UI labels price action confirmed
@@ -17,26 +25,41 @@ or a promise of profit.
 
 Live: https://williamalexanderwilson.github.io/daily-levels/
 
-## Range method and source boundary
+## Data and methodology boundary
 
-The original linked video, https://youtu.be/sj4rNQ2ytZw, is primarily a BloFin
-leverage tutorial and does not define how to select a range. Follow-up review
-of Mathieu's current market videos established the missing framework:
+The project separates four kinds of information instead of blending them
+together:
 
-- https://youtu.be/cOxjsDvGRTA describes a $60k-$80k range with deviations,
-  $72k-$77k support, and the risk of moving toward the floor if support fails.
-- https://youtu.be/HBKEvXjDbS0 repeats the $20k range and identifies roughly
-  $74k as an important anchored-VWAP failure area.
-- https://youtu.be/v3fXVye-TVg?t=64 explains that $82.8k is the May range high
-  below which the lower higher-timeframe bias remained intact.
+1. **Market data** from identified providers such as Kraken, Coinbase Exchange,
+   and Alpaca IEX.
+2. **Calculated context** produced by this repository, including pivots, volume
+   profiles, confluence zones, session measurements, and structural levels.
+3. **Historical tests** that preserve sample sizes, assumptions, negative
+   results, and known modeling limitations.
+4. **Dated discretionary context** that may explain why a watch area was first
+   investigated but is never presented as measured evidence or a trading
+   signal.
 
-The surrounding levels remain a dated discretionary framework, not an
-objective or backtested signal. The structural reclaim is now independently
-reconstructed once a day from completed Kraken Daily candles: repeated pivot
-highs within 2% form a candidate cluster, and the strongest durable cluster's
-exact high becomes the boundary. The current result traces `$82,790.90` to
-May 6, 2026, with later tests retained as evidence. Its full frozen method and
-limitations are in [`docs/STRUCTURAL-RECLAIM.md`](docs/STRUCTURAL-RECLAIM.md).
+For example, the structural reclaim is independently reconstructed once a day
+from completed Kraken Daily candles: repeated pivot highs within 2% form a
+candidate cluster, and the strongest durable cluster's exact high becomes the
+boundary. The current result traces `$82,790.90` to May 6, 2026, with later
+tests retained as evidence. Its frozen method and limitations are documented
+in [`docs/STRUCTURAL-RECLAIM.md`](docs/STRUCTURAL-RECLAIM.md).
+
+<details>
+<summary>Historical reference behind one original BTC watch area</summary>
+
+An early version of the BTC screen investigated a discretionary range discussed
+in public market commentary. Those videos are retained only to explain why that
+dated area was examined; they do not control the calculated levels, backtests,
+prospective observations, or conclusions produced by this project.
+
+- https://youtu.be/cOxjsDvGRTA
+- https://youtu.be/HBKEvXjDbS0
+- https://youtu.be/v3fXVye-TVg?t=64
+
+</details>
 
 The **Patience gate** then requires three visible facts before calling the
 chart a setup worth reviewing:
