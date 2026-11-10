@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node --test tests/*.js",
     "test:browser": "playwright test",
+    "capture:assets": "node scripts/capture-product-assets.mjs",
     "check:js": "for file in site/*.js; do node --check \"$file\" || exit 1; done"
   },
   "devDependencies": {

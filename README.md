@@ -25,6 +25,12 @@
   <a href="docs/RANGE-OPEN-FORWARD-TRACKER.md">Forward evidence</a>
 </p>
 
+<p align="center">
+  <a href="https://williamalexanderwilson.github.io/daily-levels/">
+    <img src="docs/assets/range-desk-dashboard.jpg" width="1200" alt="Range Desk live BTC dashboard showing market sessions, current range context, and the price chart" />
+  </a>
+</p>
+
 ---
 
 Range Desk is my public market-research and decision-support workspace. It
