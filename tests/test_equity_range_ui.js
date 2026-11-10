@@ -22,8 +22,19 @@ test("equity range copy remains context-only and never a direct signal", () => {
 });
 
 test("versioned assets prevent an old BTC app bundle from rendering new tabs", () => {
-  assert.match(index, /styles\.css\?v=full-history-v1/);
-  assert.match(index, /app\.js\?v=full-history-v1/);
+  assert.match(index, /styles\.css\?v=candle-style-v1/);
+  assert.match(index, /candle-style\.js\?v=candle-style-v1/);
+  assert.match(index, /app\.js\?v=candle-style-v1/);
+});
+
+test("regular and Heikin Ashi styles are explicit reversible controls", () => {
+  assert.match(index, /id="candle-style-toggle"/);
+  assert.match(index, /data-candle-style="regular"/);
+  assert.match(index, /data-candle-style="heikin-ashi"/);
+  assert.match(app, /state\.candleStyle = nextStyle/);
+  assert.match(app, /CandleStyle\.forStyle\(candles, state\.candleStyle\)/);
+  assert.match(app, /CandleStyle\.forStyle\(regularBars, state\.candleStyle\)/);
+  assert.match(app, /params\.set\("style", "ha"\)/);
 });
 
 test("every timeframe stays fitted to all loaded history", () => {

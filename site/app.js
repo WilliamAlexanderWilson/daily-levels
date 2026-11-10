@@ -41,6 +41,7 @@
     asset: "btc",
     range: "4h",
     spyTimeframe: "15",
+    candleStyle: "regular",
   };
 
   let patienceAlertsEnabled = false;
@@ -53,13 +54,19 @@
     const asset = params.get("asset");
     if (["eth", "spy", "qqq", "nvda"].includes(asset)) state.asset = asset;
     const range = params.get("range");
-    if (range && RANGE_INTERVALS[range]) state.range = range;
+    if (isBatchAsset(state.asset) && /^(10|15|20|30)m?$/.test(range || "")) {
+      state.spyTimeframe = range.replace("m", "");
+    } else if (range && RANGE_INTERVALS[range]) {
+      state.range = range;
+    }
+    if (params.get("style") === "ha") state.candleStyle = "heikin-ashi";
   }
 
   function writeHash() {
     const params = new URLSearchParams();
     params.set("asset", state.asset);
-    params.set("range", state.range);
+    params.set("range", isBatchAsset(state.asset) ? `${state.spyTimeframe}m` : state.range);
+    if (state.candleStyle === "heikin-ashi") params.set("style", "ha");
     history.replaceState(null, "", "#" + params.toString());
   }
 
@@ -298,6 +305,7 @@
   let liquidationLayerEl = null; // the blurred wrapper all liquidation rows render into, created once and reused
   let tradeMarkersPlugin = null;
   let activeCandles = []; // current timeframe's loaded candles, so trade markers can be bounds-checked
+  let activeDisplayCandles = []; // regular or derived HA bars currently sent to the chart series
   let markingMode = false;
   let pendingTrade = null; // {time, price} captured from a chart click, awaiting form submission
   let lastLivePrice = null; // most recent known price, for live P&L on sized/leveraged trades
@@ -582,14 +590,15 @@
     const status = document.getElementById("chart-focus-status");
     if (!status) return;
     let message;
+    const style = state.candleStyle === "heikin-ashi" ? "Heikin Ashi" : "Regular candles";
     if (isBatchAsset(state.asset)) {
-      message = `${state.asset.toUpperCase()} 20-session range · Dallas time · all loaded batch history`;
+      message = `${state.asset.toUpperCase()} 20-session range · ${style} · Dallas time · all loaded batch history`;
     } else if (fullAnalysisIsOpen()) {
-      message = "Level radar · Dallas time · all loaded history · reacts to the real-time price";
+      message = `Level radar · ${style} · Dallas time · all loaded history · reacts to the real-time price`;
     } else {
       message = state.asset === "btc"
-        ? "BTC macro range $60k–$80k · Dallas time · all loaded history · real-time Kraken stream"
-        : "Rolling range · Dallas time · all loaded history · real-time Kraken stream";
+        ? `BTC macro range $60k–$80k · ${style} · Dallas time · all loaded history · real-time Kraken stream`
+        : `Rolling range · ${style} · Dallas time · all loaded history · real-time Kraken stream`;
     }
     if (status.textContent !== message) status.textContent = message;
   }
@@ -1079,14 +1088,16 @@
   function renderChart(candles, range, levelsWindowDays) {
     ensureChart();
     clearPriceSnapState(); // a fresh timeframe/asset load starts back at normal autoscale
-    const candleData = candles.map((c) => ({
+    activeCandles = candles;
+    activeDisplayCandles = CandleStyle.forStyle(candles, state.candleStyle);
+    const candleData = activeDisplayCandles.map((c) => ({
       time: toTimePoint(c, range),
       open: c.open,
       high: c.high,
       low: c.low,
       close: c.close,
     }));
-    const volumeData = candles.map((c) => ({
+    const volumeData = activeDisplayCandles.map((c) => ({
       time: toTimePoint(c, range),
       value: c.volume,
       color: c.close >= c.open ? cssVar("--support") : cssVar("--resistance"),
@@ -1227,23 +1238,29 @@
     if (state.asset !== asset || state.range !== range || !candleSeries) return false;
     if (lastLiveUnixTime !== null && candle.time < lastLiveUnixTime) return false;
 
-    const point = { time: toTimePoint(candle, range) };
+    const activeIndex = activeCandles.findIndex((item) => item.time === candle.time);
+    const addedNewCandle = activeIndex < 0;
+    const displayIndex = addedNewCandle ? activeCandles.length : activeIndex;
+    if (activeIndex >= 0) activeCandles[activeIndex] = candle;
+    else activeCandles.push(candle);
+    const displayCandle = state.candleStyle === "heikin-ashi"
+      ? CandleStyle.heikinAshiBar(candle, activeDisplayCandles[displayIndex - 1] || null)
+      : candle;
+    activeDisplayCandles[displayIndex] = displayCandle;
+
+    const point = { time: toTimePoint(displayCandle, range) };
     candleSeries.update({
       ...point,
-      open: candle.open,
-      high: candle.high,
-      low: candle.low,
-      close: candle.close,
+      open: displayCandle.open,
+      high: displayCandle.high,
+      low: displayCandle.low,
+      close: displayCandle.close,
     });
     volumeSeries.update({
       ...point,
       value: candle.volume,
-      color: candle.close >= candle.open ? cssVar("--support") : cssVar("--resistance"),
+      color: displayCandle.close >= displayCandle.open ? cssVar("--support") : cssVar("--resistance"),
     });
-    const activeIndex = activeCandles.findIndex((item) => item.time === candle.time);
-    const addedNewCandle = activeIndex < 0;
-    if (activeIndex >= 0) activeCandles[activeIndex] = candle;
-    else activeCandles.push(candle);
     if (addedNewCandle) fitAllLoadedHistory();
     lastLiveUnixTime = candle.time;
 
@@ -4032,9 +4049,11 @@
     for (const line of orderBookPriceLines) candleSeries.removePriceLine(line);
     orderBookPriceLines.length = 0;
 
+    activeCandles = bars;
+    activeDisplayCandles = bars;
     const candleData = bars.map((b) => ({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close }));
     candleSeries.setData(candleData);
-    volumeSeries.setData([]); // no HA volume computed - an empty histogram beats a stale crypto one
+    volumeSeries.setData([]); // batch export omits volume; empty beats a stale crypto histogram
     // Historical Call/Put annotations are intentionally excluded from the
     // decision chart. They were batch backtest observations with outcomes
     // known later, not live information available to the viewer.
@@ -4048,7 +4067,8 @@
 
   function rerenderSpyTimeframe() {
     if (!activeSpyChart) return;
-    const bars = activeSpyChart.timeframes[state.spyTimeframe] || [];
+    const regularBars = (activeSpyChart.timeframes || {})[state.spyTimeframe] || [];
+    const bars = CandleStyle.forStyle(regularBars, state.candleStyle);
     renderSpyChart(bars, activeSpyChart.range_context);
   }
 
@@ -4125,7 +4145,8 @@
 
       activeSpyChart = chartData;
       renderHeader(chartData); // same {generated_at_utc, price} shape renderHeader already expects
-      const bars = chartData.timeframes[state.spyTimeframe] || [];
+      const regularBars = (chartData.timeframes || {})[state.spyTimeframe] || [];
+      const bars = CandleStyle.forStyle(regularBars, state.candleStyle);
       renderSpyChart(bars, chartData.range_context);
       if (asset === "spy") {
         const [signalsData, backtestData, rangeResearch] = await Promise.all([
@@ -4155,6 +4176,11 @@
   function setActiveButtons() {
     document.querySelectorAll("#asset-toggle .toggle-btn").forEach((btn) => {
       const isActive = btn.dataset.asset === state.asset;
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute("aria-pressed", String(isActive));
+    });
+    document.querySelectorAll("#candle-style-toggle .toggle-btn").forEach((btn) => {
+      const isActive = btn.dataset.candleStyle === state.candleStyle;
       btn.classList.toggle("active", isActive);
       btn.setAttribute("aria-pressed", String(isActive));
     });
@@ -4200,7 +4226,29 @@
     });
     document.getElementById("spy-timeframe-select").addEventListener("change", (e) => {
       state.spyTimeframe = e.target.value;
+      writeHash();
       rerenderSpyTimeframe();
+    });
+    document.querySelectorAll("#candle-style-toggle .toggle-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const nextStyle = btn.dataset.candleStyle;
+        if (nextStyle === state.candleStyle) return;
+        state.candleStyle = nextStyle;
+        setActiveButtons();
+        writeHash();
+        updateChartFocusStatus();
+        if (isBatchAsset(state.asset)) {
+          rerenderSpyTimeframe();
+          return;
+        }
+        if (!activeCandles.length) return;
+        renderChart(activeCandles, state.range, activeLevelsWindowDays);
+        renderLevels(activeLevels);
+        renderRangeDecision(activeLevels, activeScorecard, lastLivePrice);
+        renderRoundProximityBands(lastLivePrice, activeProximity);
+        renderOrderBookWalls(activeOrderBookWalls);
+        renderTradeMarkers(state.asset, state.range, activeCandles);
+      });
     });
 
     const refreshBtn = document.getElementById("refresh-btn");

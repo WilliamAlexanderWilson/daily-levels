@@ -31,3 +31,6 @@ def test_equity_payload_is_explicitly_batch_and_symbol_scoped():
         for bars in payload["timeframes"].values()
         for bar in bars
     )
+    regular_first = payload["timeframes"]["10"][0]
+    assert regular_first["open"] == 100
+    assert regular_first["close"] == 101

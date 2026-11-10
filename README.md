@@ -50,6 +50,9 @@ prospective evidence gates, alerts, and browser-local paper planning.
   geometry and caps account risk before calculating margin up to 100×.
 - **Private by default.** Alerts and paper trades stay in the browser; no
   brokerage connection, account, or order-routing backend is involved.
+- **Two honest candle views.** Regular candles show actual OHLC; optional
+  Heikin Ashi candles smooth the same series for trend reading and are clearly
+  treated as derived values rather than tradable prices.
 
 | Market | Data path | Current product boundary |
 | --- | --- | --- |
@@ -332,10 +335,14 @@ These are two independent systems that happen to share one page:
   forming candle on every trade, so both the ticker and candle move without
   waiting for a timer. The REST fetch remains a 10-second reconnect fallback
   only, with retry/backoff for Kraken's occasional missing CORS response.
-- The 4H view's default zoom frames exactly the `RANGE_DAYS`-day window
-  the volume-profile levels are computed from (read from the levels JSON's
-  own `config` block, not duplicated as a constant), so those lines land
-  on the actual high/low on screen. The other timeframes use `fitContent()`.
+- Every timeframe stays fitted to all history loaded for that view. Horizontal
+  panning and time zoom are disabled so a gesture cannot accidentally hide
+  earlier candles; the price scale remains inspectable.
+- The **Regular / Heikin Ashi** control changes candle presentation only.
+  BTC/ETH Heikin Ashi bars are derived in the browser from the real Kraken
+  series, and equity Heikin Ashi bars are derived from each exported real-OHLC
+  timeframe. Range calculations, evidence gates, and paper marks continue to
+  use real prices.
 - **Daily shows real history back to 2015/2016, not just ~2 years.**
   Kraken's public OHLC endpoint always returns just its most recent ~720
   candles no matter what date you ask for (confirmed directly - there's no
@@ -846,6 +853,7 @@ tests/                        # unit tests with hand-built fixtures + one real-r
 site/                         # static HTML/CSS/JS, hosted on GitHub Pages
   live-stream.js             # Kraken WebSocket v2 subscription and message normalization
   app.js                     # real-time chart + renders the daily levels/scorecard
+  candle-style.js            # reversible regular/Heikin Ashi presentation transform
   data/                      # JSON written by the Action; the page reads levels/scorecard from here
 .github/workflows/
   update-levels.yml          # the daily cron: level engine + backtest + commit + Pages deploy
