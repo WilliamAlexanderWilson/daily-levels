@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
+  <title id="title">SPY</title>
+  <desc id="description">A white rising market line and SPY label on a green coin.</desc>
+  <rect width="128" height="128" rx="28" fill="#10151b"/>
+  <circle cx="64" cy="64" r="45" fill="#2f7d5d"/>
+  <path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="7" d="m37 66 15-16 14 9 24-25"/>
+  <path fill="#fff" d="m84 31 13-3-4 13-9-10Z"/>
+  <text x="64" y="91" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" letter-spacing="2" text-anchor="middle">SPY</text>
+</svg>
