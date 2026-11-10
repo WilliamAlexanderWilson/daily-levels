@@ -9,6 +9,11 @@ test("the public dashboard identifies William Wilson as its owner", () => {
   const html = fs.readFileSync(path.join(siteRoot, "index.html"), "utf8");
   assert.match(html, /William Wilson's Range Desk/);
   assert.match(html, /by William Wilson/);
+  assert.match(html, /<meta name="description" content="William Wilson's evidence-first live range dashboard/);
+  assert.match(html, /<link rel="icon" type="image\/svg\+xml" href="favicon\.svg"/);
+  assert.match(html, />Source code<\/a>/);
+  assert.match(html, />Research notes<\/a>/);
+  assert.equal(fs.existsSync(path.join(siteRoot, "favicon.svg")), true);
 });
 
 test("product branding stays separate from the range method provenance", () => {
