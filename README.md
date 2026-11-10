@@ -1,29 +1,77 @@
-# Daily Levels — evidence-first BTC, ETH & SPY research dashboard
+<p align="center">
+  <img src="site/favicon.svg" width="88" height="88" alt="Range Desk monogram" />
+</p>
 
-Daily Levels is my personal market-research and decision-support workspace. I
-built it to turn public market data into transparent, testable context: live
-prices and candles, daily calculated levels, global market-session timing,
-historical backtests, prospective evidence gates, and browser-local paper
-planning.
+<h1 align="center">Range Desk</h1>
+
+<p align="center">
+  <strong>Evidence-first live range context for BTC, ETH, and SPY.</strong><br />
+  Built by William Wilson to make price location, confirmation, and risk easier to assess without pretending uncertainty is a signal.
+</p>
+
+<p align="center">
+  <a href="https://williamalexanderwilson.github.io/daily-levels/"><img alt="Open live dashboard" src="https://img.shields.io/badge/Open_live_dashboard-28634d?style=for-the-badge" /></a>
+  <a href="https://github.com/WilliamAlexanderWilson/daily-levels/actions/workflows/deploy-pages.yml"><img alt="GitHub Pages deployment" src="https://img.shields.io/github/actions/workflow/status/WilliamAlexanderWilson/daily-levels/deploy-pages.yml?branch=main&style=for-the-badge&label=Pages" /></a>
+</p>
+
+<p align="center">
+  <a href="https://williamalexanderwilson.github.io/daily-levels/">Live dashboard</a>
+  &nbsp;·&nbsp;
+  <a href="docs/RANGE-STRATEGY-RESEARCH.md">Range research</a>
+  &nbsp;·&nbsp;
+  <a href="docs/DECISION-LOCK.md">Decision rules</a>
+  &nbsp;·&nbsp;
+  <a href="docs/RANGE-OPEN-FORWARD-TRACKER.md">Forward evidence</a>
+</p>
+
+---
+
+Range Desk is my public market-research and decision-support workspace. It
+turns named public data into transparent, testable context: live prices and
+candles, calculated levels, global session timing, historical backtests,
+prospective evidence gates, alerts, and browser-local paper planning.
+
+## What makes it different
+
+- **Live where the data is genuinely live.** BTC and ETH use Kraken's
+  per-trade WebSocket stream; REST supplies history and reconnect fallback.
+- **Fail-closed by design.** Missing evidence, stale marks, unverified market
+  calendars, and failed holdout tests produce `WAIT`—not a manufactured call.
+- **Research is separated from execution.** Historical observations,
+  calculated context, and forward evidence are labeled independently.
+- **Risk comes before leverage.** The paper planner requires stop/target
+  geometry and caps account risk before calculating margin up to 100×.
+- **Private by default.** Alerts and paper trades stay in the browser; no
+  brokerage connection, account, or order-routing backend is involved.
+
+| Market | Data path | Current product boundary |
+| --- | --- | --- |
+| **BTC** | Kraken REST + per-trade WebSocket | Live chart, macro range, checklist, local alerts, paper planning |
+| **ETH** | Kraken REST + per-trade WebSocket | Live chart, rolling levels, checklist, local alerts, paper planning |
+| **SPY** | Alpaca IEX batch research | Historical research only; no live alert or paper P&L claim |
+
+> **A watch area is not an entry signal.** Three completed-candle price facts
+> confirm behavior; the optional notification gate also requires measured
+> session timing and minimum range reward-to-risk. Five checks produce a setup
+> to assess, never an automatic order or promise of profit.
+
+## System at a glance
+
+```mermaid
+flowchart LR
+    A[Kraken / Coinbase / Alpaca] --> B[Python research engine]
+    B --> C[Versioned JSON evidence]
+    C --> D[GitHub Pages]
+    A -->|BTC + ETH live stream| D
+    D --> E[Range map + checklist]
+    E --> F[Browser-local alerts]
+    E --> G[Paper planner]
+```
 
 The dashboard's calculations, tests, evidence rules, interface, and ongoing
-validation are maintained in this repository. Market observations come from
-named public data providers; opinions from outside creators are not treated as
-data, copied signals, or proof of an edge.
-
-BTC and ETH live prices and candles use Kraken's per-trade WebSocket stream,
-with REST used for history and reconnect fallback. SPY research uses Alpaca IEX
-history, with its own explicitly documented limitations. The full level map,
-liquidity model, scorecards, explanations, and local paper journal remain
-available under **Research & details**.
-
-**A watch area is not an entry signal.** The UI labels price action confirmed
-only when the latest completed candle supplies all three price facts below.
-The optional notification gate adds measured session timing and minimum range
-reward-to-risk, for five conditions total. Neither label is an automatic order
-or a promise of profit.
-
-Live: https://williamalexanderwilson.github.io/daily-levels/
+validation all live in this repository. Outside commentary may explain why a
+question was investigated, but it is never treated as market data, a copied
+signal, or proof of an edge.
 
 ## Data and methodology boundary
 

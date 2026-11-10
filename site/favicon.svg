@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
+  <title id="title">Range Desk</title>
+  <desc id="description">A white R on a deep green rounded square.</desc>
+  <rect width="128" height="128" rx="28" fill="#28634d"/>
+  <path fill="#ffffff" d="M38 31h29c19 0 31 10 31 27 0 12-6 21-17 25l20 30H80L63 86h-7v27H38V31Zm18 16v24h10c9 0 14-4 14-12s-5-12-14-12H56Z"/>
+</svg>
