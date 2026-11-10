@@ -304,6 +304,8 @@
   const liquidationEls = []; // kept separate from overlayEls - purely visual, never clickable/decluttered/part of currentMarkers
   let liquidationLayerEl = null; // the blurred wrapper all liquidation rows render into, created once and reused
   let tradeMarkersPlugin = null;
+  let tradeChartMarkers = [];
+  let dojiChartMarkers = [];
   let activeCandles = []; // current timeframe's loaded candles, so trade markers can be bounds-checked
   let activeDisplayCandles = []; // regular or derived HA bars currently sent to the chart series
   let markingMode = false;
@@ -1085,6 +1087,43 @@
     chart.timeScale().fitContent();
   }
 
+  function syncSeriesMarkers() {
+    if (!tradeMarkersPlugin) return;
+    const markers = [...dojiChartMarkers, ...tradeChartMarkers]
+      .sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0));
+    tradeMarkersPlugin.setMarkers(markers);
+  }
+
+  function renderDojiMarkers(candles, intervalMinutes, range, options = {}) {
+    const status = document.getElementById("doji-study-status");
+    const eligible = Number(intervalMinutes) >= DojiStudy.MIN_TIMEFRAME_MINUTES;
+    const matches = eligible
+      ? DojiStudy.findCompleted(candles, {
+          intervalMinutes,
+          completedThroughUnix: options.completedThroughUnix,
+          timeIsClose: options.timeIsClose,
+        })
+      : [];
+
+    dojiChartMarkers = matches.map((bar) => ({
+      time: toTimePoint(bar, range),
+      position: "aboveBar",
+      color: cssVar("--doji"),
+      shape: "circle",
+      text: "D",
+      size: 0.8,
+    }));
+    syncSeriesMarkers();
+
+    if (!status) return;
+    status.textContent = eligible
+      ? `D · ${matches.length} completed HA doji${matches.length === 1 ? "" : "s"}`
+      : "D · HA dojis start at 15m";
+    status.title = eligible
+      ? `This ${intervalMinutes}-minute view marks completed Heikin Ashi candles whose body is no more than 10% of the full high-low range. D means doji; the forming candle is excluded.`
+      : "Heikin Ashi doji markers begin on the 15-minute timeframe. The forming candle is never marked.";
+  }
+
   function renderChart(candles, range, levelsWindowDays) {
     ensureChart();
     clearPriceSnapState(); // a fresh timeframe/asset load starts back at normal autoscale
@@ -1104,6 +1143,10 @@
     }));
     candleSeries.setData(candleData);
     volumeSeries.setData(volumeData);
+    renderDojiMarkers(candles, RANGE_INTERVALS[range], range, {
+      completedThroughUnix: Date.now() / 1000,
+      timeIsClose: false,
+    });
 
     // Daily now spans over a decade (see the deep-history fetch above) -
     // BTC/ETH have moved through multiple orders of magnitude in that
@@ -1261,7 +1304,13 @@
       value: candle.volume,
       color: displayCandle.close >= displayCandle.open ? cssVar("--support") : cssVar("--resistance"),
     });
-    if (addedNewCandle) fitAllLoadedHistory();
+    if (addedNewCandle) {
+      renderDojiMarkers(activeCandles, RANGE_INTERVALS[range], range, {
+        completedThroughUnix: Date.now() / 1000,
+        timeIsClose: false,
+      });
+      fitAllLoadedHistory();
+    }
     lastLiveUnixTime = candle.time;
 
     document.getElementById("price-label").textContent = candle.close.toLocaleString(undefined, {
@@ -2807,7 +2856,8 @@
     if (!tradeMarkersPlugin) return;
     const trades = loadTrades(asset);
     if (!candles.length) {
-      tradeMarkersPlugin.setMarkers([]);
+      tradeChartMarkers = [];
+      syncSeriesMarkers();
       renderTradeRiskLines(asset);
       return;
     }
@@ -2863,7 +2913,8 @@
     }
     markers.sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0));
 
-    tradeMarkersPlugin.setMarkers(markers);
+    tradeChartMarkers = markers;
+    syncSeriesMarkers();
     renderTradeRiskLines(asset);
   }
 
@@ -4027,7 +4078,7 @@
     });
   }
 
-  function renderSpyChart(bars, rangeContext = null) {
+  function renderSpyChart(regularBars, rangeContext = null) {
     ensureChart();
     clearPriceSnapState();
     updateChartFocusStatus();
@@ -4049,7 +4100,8 @@
     for (const line of orderBookPriceLines) candleSeries.removePriceLine(line);
     orderBookPriceLines.length = 0;
 
-    activeCandles = bars;
+    const bars = CandleStyle.forStyle(regularBars, state.candleStyle);
+    activeCandles = regularBars;
     activeDisplayCandles = bars;
     const candleData = bars.map((b) => ({ time: b.time, open: b.open, high: b.high, low: b.low, close: b.close }));
     candleSeries.setData(candleData);
@@ -4057,10 +4109,16 @@
     // Historical Call/Put annotations are intentionally excluded from the
     // decision chart. They were batch backtest observations with outcomes
     // known later, not live information available to the viewer.
-    if (tradeMarkersPlugin) tradeMarkersPlugin.setMarkers([]);
+    tradeChartMarkers = [];
+    renderDojiMarkers(regularBars, Number(state.spyTimeframe), "batch", {
+      completedThroughUnix: activeSpyChart && Number.isFinite(Date.parse(activeSpyChart.generated_at_utc))
+        ? Date.parse(activeSpyChart.generated_at_utc) / 1000
+        : Date.now() / 1000,
+      timeIsClose: true,
+    });
     candleSeries.priceScale().applyOptions({ mode: LightweightCharts.PriceScaleMode.Normal });
     fitAllLoadedHistory();
-    lastLiveUnixTime = bars.length ? bars[bars.length - 1].time : null;
+    lastLiveUnixTime = regularBars.length ? regularBars[regularBars.length - 1].time : null;
     renderBatchRangeLines(rangeContext);
     renderOverlays();
   }
@@ -4068,8 +4126,7 @@
   function rerenderSpyTimeframe() {
     if (!activeSpyChart) return;
     const regularBars = (activeSpyChart.timeframes || {})[state.spyTimeframe] || [];
-    const bars = CandleStyle.forStyle(regularBars, state.candleStyle);
-    renderSpyChart(bars, activeSpyChart.range_context);
+    renderSpyChart(regularBars, activeSpyChart.range_context);
   }
 
   function renderSpyBacktestTable(backtest) {
@@ -4146,8 +4203,7 @@
       activeSpyChart = chartData;
       renderHeader(chartData); // same {generated_at_utc, price} shape renderHeader already expects
       const regularBars = (chartData.timeframes || {})[state.spyTimeframe] || [];
-      const bars = CandleStyle.forStyle(regularBars, state.candleStyle);
-      renderSpyChart(bars, chartData.range_context);
+      renderSpyChart(regularBars, chartData.range_context);
       if (asset === "spy") {
         const [signalsData, backtestData, rangeResearch] = await Promise.all([
           fetchJson(spySignalsUrl()), fetchJson(spyBacktestUrl()), fetchJson(spyRangeResearchUrl()),

@@ -11,6 +11,7 @@
   --flip: #9d721c;
   --round: #7254a7;
   --liquidity: #14808a;
+  --doji: #7254a7;
   --stale: #b4453f;
   --row-current: #e8eee8;
   --shadow: 0 8px 28px rgba(19, 29, 38, 0.07);
@@ -30,6 +31,7 @@
     --flip: #d7b55b;
     --round: #b199e4;
     --liquidity: #52c3cd;
+    --doji: #c2acf0;
     --stale: #ef7c70;
     --row-current: #222c24;
     --shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
@@ -354,6 +356,20 @@ main > * { min-width: 0; }
 .candle-style-toggle .toggle-btn {
   padding-inline: 0.85rem;
   font-size: 0.82rem;
+}
+
+.study-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--doji) 52%, var(--border));
+  border-radius: 999px;
+  color: var(--doji);
+  background: color-mix(in srgb, var(--doji) 7%, var(--surface));
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .range-select {

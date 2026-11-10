@@ -11,7 +11,7 @@ test("batch equity charts draw reproducible range edges and midpoint", () => {
   assert.match(app, /Lower edge/);
   assert.match(app, /Upper edge/);
   assert.match(app, /Midpoint/);
-  assert.match(app, /renderSpyChart\(bars, chartData\.range_context\)/);
+  assert.match(app, /renderSpyChart\(regularBars, chartData\.range_context\)/);
 });
 
 test("equity range copy remains context-only and never a direct signal", () => {
@@ -22,9 +22,10 @@ test("equity range copy remains context-only and never a direct signal", () => {
 });
 
 test("versioned assets prevent an old BTC app bundle from rendering new tabs", () => {
-  assert.match(index, /styles\.css\?v=candle-style-v1/);
-  assert.match(index, /candle-style\.js\?v=candle-style-v1/);
-  assert.match(index, /app\.js\?v=candle-style-v1/);
+  assert.match(index, /styles\.css\?v=doji-study-v1/);
+  assert.match(index, /candle-style\.js\?v=doji-study-v1/);
+  assert.match(index, /doji-study\.js\?v=doji-study-v1/);
+  assert.match(index, /app\.js\?v=doji-study-v1/);
 });
 
 test("regular and Heikin Ashi styles are explicit reversible controls", () => {
@@ -37,6 +38,15 @@ test("regular and Heikin Ashi styles are explicit reversible controls", () => {
   assert.match(app, /params\.set\("style", "ha"\)/);
 });
 
+test("completed 15-minute-and-higher Heikin Ashi dojis are marked consistently", () => {
+  assert.match(index, /id="doji-study-status"/);
+  assert.match(app, /DojiStudy\.findCompleted\(candles/);
+  assert.match(app, /Number\(intervalMinutes\) >= DojiStudy\.MIN_TIMEFRAME_MINUTES/);
+  assert.match(app, /text: "D"/);
+  assert.match(app, /timeIsClose: true/);
+  assert.match(app, /timeIsClose: false/);
+});
+
 test("every timeframe stays fitted to all loaded history", () => {
   assert.match(app, /function fitAllLoadedHistory\(\)/);
   assert.match(app, /handleScroll: false/);
@@ -47,7 +57,7 @@ test("every timeframe stays fitted to all loaded history", () => {
   assert.doesNotMatch(app, /function applyDefaultZoom/);
   assert.match(app, /function renderChart[\s\S]*?fitAllLoadedHistory\(\)/);
   assert.match(app, /function renderSpyChart[\s\S]*?fitAllLoadedHistory\(\)/);
-  assert.match(app, /if \(addedNewCandle\) fitAllLoadedHistory\(\)/);
+  assert.match(app, /if \(addedNewCandle\) \{[\s\S]*?fitAllLoadedHistory\(\)/);
   assert.match(app, /new ResizeObserver\(scheduleFullHistoryFit\)/);
   assert.match(app, /historyFitFrame = requestAnimationFrame\(\(\) => \{[\s\S]*?historyFitFrame = requestAnimationFrame/);
   assert.match(app, /all loaded batch history/);

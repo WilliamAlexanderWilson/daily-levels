@@ -50,7 +50,7 @@ test("the public dashboard identifies William Wilson as its owner", () => {
 test("the active chart controls the header mark and browser favicon", () => {
   const app = fs.readFileSync(path.join(siteRoot, "app.js"), "utf8");
   const html = fs.readFileSync(path.join(siteRoot, "index.html"), "utf8");
-  assert.match(html, /<script src="asset-brand\.js\?v=[^"]+"><\/script>\s*<script src="chart-time\.js\?v=[^"]+"><\/script>\s*<script src="candle-style\.js\?v=[^"]+"><\/script>\s*<script src="app\.js\?v=[^"]+"><\/script>/);
+  assert.match(html, /<script src="asset-brand\.js\?v=[^"]+"><\/script>\s*<script src="chart-time\.js\?v=[^"]+"><\/script>\s*<script src="candle-style\.js\?v=[^"]+"><\/script>\s*<script src="doji-study\.js\?v=[^"]+"><\/script>\s*<script src="app\.js\?v=[^"]+"><\/script>/);
   assert.match(app, /AssetBrand\.apply\(document, state\.asset\)/);
 });
 
