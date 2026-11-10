@@ -35,10 +35,12 @@ test("chart timestamps use Dallas 12-hour time and follow daylight saving", asyn
     winter: window.ChartTime.formatDallasAxisTick(Date.parse("2026-11-08T16:00:00Z") / 1000, 3),
     summer: window.ChartTime.formatDallasAxisTick(Date.parse("2026-07-08T16:00:00Z") / 1000, 3),
     hover: window.ChartTime.formatDallasCrosshair(Date.parse("2026-11-08T16:00:00Z") / 1000),
+    daily: window.ChartTime.formatDallasCrosshair("2024-10-01"),
   }));
   expect(labels.winter).toBe("10 AM");
   expect(labels.summer).toBe("11 AM");
   expect(labels.hover).toContain("10:00 AM CST");
+  expect(labels.daily).toBe("Oct 1, 2024");
 });
 
 test("the professional shell remains usable at its target viewport", async ({ page }, testInfo) => {

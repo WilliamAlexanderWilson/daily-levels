@@ -27,7 +27,20 @@ test("formats calendar-scale ticks in Dallas", () => {
   assert.equal(ChartTime.formatDallasAxisTick(time, 2), "Nov 8");
 });
 
+test("keeps date-only Daily candles date-only", () => {
+  assert.equal(ChartTime.formatDallasCrosshair("2024-10-01"), "Oct 1, 2024");
+  assert.equal(ChartTime.formatDallasCrosshair({ year: 2024, month: 10, day: 1 }), "Oct 1, 2024");
+  assert.equal(ChartTime.formatDallasAxisTick("2024-10-01", 3), "Oct 1");
+});
+
 test("returns safe fallbacks for invalid chart times", () => {
-  assert.equal(ChartTime.formatDallasAxisTick("not-a-date", 3), null);
-  assert.equal(ChartTime.formatDallasCrosshair("not-a-date"), "");
+  for (const time of [
+    "not-a-date",
+    "2026-02-30",
+    { year: 2026, month: 13, day: 40 },
+    Number.MAX_VALUE,
+  ]) {
+    assert.equal(ChartTime.formatDallasAxisTick(time, 3), null);
+    assert.equal(ChartTime.formatDallasCrosshair(time), "");
+  }
 });
