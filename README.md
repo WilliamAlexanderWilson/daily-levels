@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="https://williamalexanderwilson.github.io/daily-levels/"><img alt="Open live dashboard" src="https://img.shields.io/badge/Open_live_dashboard-28634d?style=for-the-badge" /></a>
+  <a href="https://github.com/WilliamAlexanderWilson/daily-levels/actions/workflows/ci.yml"><img alt="Quality checks" src="https://img.shields.io/github/actions/workflow/status/WilliamAlexanderWilson/daily-levels/ci.yml?branch=main&style=for-the-badge&label=Quality" /></a>
   <a href="https://github.com/WilliamAlexanderWilson/daily-levels/actions/workflows/deploy-pages.yml"><img alt="GitHub Pages deployment" src="https://img.shields.io/github/actions/workflow/status/WilliamAlexanderWilson/daily-levels/deploy-pages.yml?branch=main&style=for-the-badge&label=Pages" /></a>
 </p>
 
@@ -219,6 +220,8 @@ age of the last successful update.
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+npm ci
+npx playwright install chromium
 
 # run the level engine for real (writes into site/data/)
 python -m src.run --force
@@ -231,12 +234,19 @@ python -m src.session_reactions.cli --force
 
 # run the tests
 python -m pytest
-node --test tests/*.js
+npm run check:js
+npm test
+npm run test:browser
 
 # view the site locally
 cd site && python3 -m http.server 8000
 # open http://localhost:8000
 ```
+
+The `Quality` GitHub Actions workflow runs the same regression suite on every
+pull request and push to `main`. Its browser job exercises the dashboard in
+desktop Chromium and a mobile viewport, including asset switching, responsive
+layout, market-specific branding, URL state, page title, and favicon behavior.
 
 `--force` bypasses `src.run`'s once-per-day snapshot check, which is what you
 want for a deliberate manual refresh. `src.backtest.cli` isn't time-gated; it
