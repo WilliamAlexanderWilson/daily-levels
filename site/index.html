@@ -49,6 +49,8 @@
         <button type="button" data-asset="btc" class="toggle-btn active" aria-pressed="true">BTC</button>
         <button type="button" data-asset="eth" class="toggle-btn" aria-pressed="false">ETH</button>
         <button type="button" data-asset="spy" class="toggle-btn" aria-pressed="false">SPY</button>
+        <button type="button" data-asset="qqq" class="toggle-btn" aria-pressed="false">QQQ</button>
+        <button type="button" data-asset="nvda" class="toggle-btn" aria-pressed="false">NVDA</button>
       </div>
       <select id="range-select" class="range-select" aria-label="Timeframe">
         <option value="1m">1m</option>
@@ -493,6 +495,22 @@
 
       <div id="paper-position-summary" class="paper-position-summary"></div>
 
+      <section id="journal-analytics" class="journal-analytics" aria-labelledby="journal-analytics-title">
+        <div class="journal-analytics-heading">
+          <div>
+            <span class="paper-trader-kicker">Paper record · all markets</span>
+            <h3 id="journal-analytics-title">Journal review</h3>
+            <p>Closed trades measure results; open positions stay separate. This is your browser-local paper record, not strategy validation.</p>
+          </div>
+          <button type="button" id="journal-export-btn" class="journal-export-btn">Export CSV</button>
+        </div>
+        <div id="journal-stat-grid" class="journal-stat-grid"></div>
+        <div class="journal-breakdowns">
+          <div><h4>By market</h4><div id="journal-by-market"></div></div>
+          <div><h4>By range location</h4><div id="journal-by-location"></div></div>
+        </div>
+      </section>
+
       <section class="levels-table-section paper-history" id="trades-section">
         <div class="paper-history-heading">
           <h3>Position history</h3>
@@ -800,6 +818,7 @@
   <script src="live-stream.js"></script>
   <script src="market-sessions.js"></script>
   <script src="paper-trader.js"></script>
+  <script src="journal-analytics.js"></script>
   <script src="decision-lock.js"></script>
   <script src="asset-brand.js"></script>
   <script src="chart-time.js"></script>

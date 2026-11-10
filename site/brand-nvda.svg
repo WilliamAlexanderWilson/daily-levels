@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="NVIDIA">
+  <rect width="48" height="48" rx="12" fill="#182814"/>
+  <path d="M9 24c7-10 22-12 30-2-7 10-22 12-30 2Z" fill="none" stroke="#8bd05c" stroke-width="3"/>
+  <circle cx="25" cy="23" r="6" fill="none" stroke="#8bd05c" stroke-width="3"/>
+  <circle cx="25" cy="23" r="2.5" fill="#8bd05c"/>
+</svg>

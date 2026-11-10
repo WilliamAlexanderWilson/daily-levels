@@ -1687,6 +1687,34 @@ summary:focus-visible {
   border-top: 1px solid var(--border);
 }
 
+.journal-analytics {
+  margin-top: 0.9rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.journal-analytics-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.journal-analytics-heading h3, .journal-analytics-heading p, .journal-breakdowns h4 { margin: 0; }
+.journal-analytics-heading h3 { margin-top: 0.18rem; font-size: 1rem; }
+.journal-analytics-heading p { margin-top: 0.25rem; color: var(--text-muted); font-size: 0.72rem; max-width: 680px; }
+.journal-export-btn { padding: 0.48rem 0.7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-weight: 750; cursor: pointer; }
+.journal-stat-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.45rem; margin-top: 0.7rem; }
+.journal-stat { display: grid; gap: 0.2rem; padding: 0.65rem; border: 1px solid var(--border); border-radius: 9px; }
+.journal-stat span, .journal-mini-row span { color: var(--text-muted); font-size: 0.66rem; }
+.journal-stat strong { font-size: 1rem; }
+.journal-breakdowns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-top: 0.75rem; }
+.journal-breakdowns > div { min-width: 0; }
+.journal-breakdowns h4 { margin-bottom: 0.35rem; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.journal-mini-row { display: grid; grid-template-columns: minmax(70px, 1fr) auto auto; gap: 0.55rem; padding: 0.38rem 0; border-top: 1px solid var(--border); font-size: 0.72rem; }
+.journal-mini-row strong { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 760px) {
+  .journal-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .journal-breakdowns { grid-template-columns: 1fr; }
+  .journal-analytics-heading { display: grid; }
+  .journal-export-btn { width: 100%; }
+}
+
 .paper-history-heading h3 { font-size: 0.9rem; }
 .paper-history .table-wrapper { margin-top: 0.55rem; }
 

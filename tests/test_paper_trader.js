@@ -119,7 +119,7 @@ test("primary chart precedes decision research and paper tracker remains outside
   assert.match(html, /decision-lock\.js/);
   assert.match(app, /DecisionLock\.evaluate/);
   assert.match(html, /id="trade-form-size"[^>]+readonly/);
-  assert.match(app, /SPY is batch data|batch SPY data/);
+  assert.match(app, /batch data on this site/);
   assert.match(app, /liveEntryButton\.disabled = !markFresh/);
   assert.match(app, /paperLiveLabel\.textContent = markFresh \? "Live price" : "Last price"/);
   assert.match(app, /" \(last mark\)"/);
@@ -181,7 +181,7 @@ test("SPY decision chart excludes retrospective Call and Put markers", () => {
   assert.doesNotMatch(app, /renderSpySignalMarkers/);
   assert.doesNotMatch(app, /Historical \$\{isCall \? "Call" : "Put"\} setup/);
   assert.match(app, /tradeMarkersPlugin\.setMarkers\(\[\]\)/);
-  assert.match(app, /if \(isSpy\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
+  assert.match(app, /if \(isBatch\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
   assert.match(app, /function renderSpyChart\(bars\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
   assert.match(html, /Batch chart — no live trade labels/);
   assert.match(html, /Historical setup records remain[\s\S]*for audit/);

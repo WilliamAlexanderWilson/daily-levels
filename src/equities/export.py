@@ -1,0 +1,45 @@
+"""Export clean QQQ and NVDA chart datasets from Alpaca's free IEX feed.
+
+These are context charts only. SPY's separate research/backtest artifacts are
+not copied to other symbols, and no order or live-trading endpoint is used.
+"""
+
+import pandas as pd
+
+import config
+from src.output import atomic_write_json
+from src.spy.export import CHART_DISPLAY_DAYS, _frame_to_json
+from src.spy.fetch import ALPACA_HISTORY_DAYS, fetch_alpaca_5m
+from src.spy.heikin_ashi import TIMEFRAMES_MINUTES, build_timeframes
+
+SYMBOLS = ("QQQ", "NVDA")
+
+
+def build_chart_payload(symbol: str, frame: pd.DataFrame, generated_at: pd.Timestamp) -> dict:
+    timeframes = build_timeframes(frame)
+    return {
+        "symbol": symbol,
+        "generated_at_utc": generated_at.isoformat(),
+        "price": float(frame["close"].iloc[-1]),
+        "source": "Alpaca historical bars (free IEX feed)",
+        "is_live": False,
+        "timeframes": {
+            str(minutes): _frame_to_json(timeframes[minutes], CHART_DISPLAY_DAYS)
+            for minutes in TIMEFRAMES_MINUTES
+        },
+    }
+
+
+def main() -> int:
+    generated_at = pd.Timestamp.now(tz="UTC")
+    for symbol in SYMBOLS:
+        print(f"Fetching {symbol} 5m candles ({ALPACA_HISTORY_DAYS}d, Alpaca IEX)...")
+        frame = fetch_alpaca_5m(symbol)
+        payload = build_chart_payload(symbol, frame, generated_at)
+        atomic_write_json(f"{config.DATA_DIR}/{symbol.lower()}_chart.json", payload)
+        print(f"  wrote {symbol} chart ({len(frame)} source bars)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

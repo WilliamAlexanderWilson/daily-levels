@@ -9,6 +9,8 @@
     btc: Object.freeze({ label: "Bitcoin", mark: "brand-btc.svg" }),
     eth: Object.freeze({ label: "Ethereum", mark: "brand-eth.svg" }),
     spy: Object.freeze({ label: "SPY", mark: "brand-spy.svg" }),
+    qqq: Object.freeze({ label: "QQQ", mark: "brand-qqq.svg" }),
+    nvda: Object.freeze({ label: "NVIDIA", mark: "brand-nvda.svg" }),
   });
 
   function forAsset(asset) {

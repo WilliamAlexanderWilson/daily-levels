@@ -42,7 +42,7 @@ test("the public dashboard identifies William Wilson as its owner", () => {
   assert.equal(fs.existsSync(path.join(siteRoot, "favicon.svg")), true);
   assert.equal(fs.existsSync(path.join(siteRoot, "social-preview.jpg")), true);
   assert.equal(fs.existsSync(path.join(siteRoot, "..", "docs", "assets", "range-desk-dashboard.jpg")), true);
-  for (const asset of ["btc", "eth", "spy"]) {
+  for (const asset of ["btc", "eth", "spy", "qqq", "nvda"]) {
     assert.equal(fs.existsSync(path.join(siteRoot, `brand-${asset}.svg`)), true);
   }
 });

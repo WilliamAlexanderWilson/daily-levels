@@ -413,7 +413,7 @@
   }
 
   function assetContext(asset) {
-    if (asset === "spy") return "SPY focus · New York is the primary cash-session open.";
+    if (["spy", "qqq", "nvda"].includes(asset)) return `${asset.toUpperCase()} focus · New York is the primary cash-session open.`;
     return `${asset.toUpperCase()} trades 24/7 · cash opens can still change liquidity and volatility.`;
   }
 
@@ -679,18 +679,22 @@
   }
 
   function setAsset(asset) {
-    activeAsset = asset === "eth" || asset === "spy" ? asset : "btc";
+    activeAsset = ["eth", "spy", "qqq", "nvda"].includes(asset) ? asset : "btc";
     render();
-    loadReactionData(activeAsset);
-    loadForwardData(activeAsset);
+    if (["btc", "eth", "spy"].includes(activeAsset)) {
+      loadReactionData(activeAsset);
+      loadForwardData(activeAsset);
+    }
   }
 
   function mount(doc, asset = "btc") {
     mountedDocument = doc;
     activeAsset = asset;
     render();
-    loadReactionData(activeAsset);
-    loadForwardData(activeAsset);
+    if (["btc", "eth", "spy"].includes(activeAsset)) {
+      loadReactionData(activeAsset);
+      loadForwardData(activeAsset);
+    }
     if (clockTimer) clearInterval(clockTimer);
     clockTimer = setInterval(() => render(), 1000);
   }

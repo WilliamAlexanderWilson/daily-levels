@@ -87,6 +87,12 @@ jobs:
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
         run: python -m src.spy.export || echo "SPY export failed, continuing with yesterday's SPY data"
 
+      - name: Refresh QQQ and NVDA context charts
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+        run: python -m src.equities.export || echo "Equity chart export failed, continuing with prior QQQ/NVDA data"
+
       - name: Commit and push data
         id: commit
         run: |

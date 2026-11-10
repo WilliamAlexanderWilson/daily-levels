@@ -1,7 +1,7 @@
 import { mkdir, readFile } from "node:fs/promises";
 import { chromium } from "@playwright/test";
 
-const LIVE_URL = "https://williamalexanderwilson.github.io/daily-levels/#asset=btc&range=4h";
+const LIVE_URL = process.env.RANGE_DESK_CAPTURE_URL || "https://williamalexanderwilson.github.io/daily-levels/#asset=btc&range=4h";
 const DASHBOARD_PATH = "docs/assets/range-desk-dashboard.jpg";
 const SOCIAL_PATH = "site/social-preview.jpg";
 
@@ -131,7 +131,7 @@ try {
           <h1>Range Desk</h1>
           <p class="owner">Built by William Wilson</p>
           <p class="summary">Price location, confirmation, and risk—without turning uncertainty into a signal.</p>
-          <div class="markets" aria-label="Markets"><span>BTC</span><span>ETH</span><span>SPY</span></div>
+          <div class="markets" aria-label="Markets"><span>BTC</span><span>ETH</span><span>SPY</span><span>QQQ</span><span>NVDA</span></div>
         </section>
         <section class="product" aria-label="Range Desk dashboard preview">
           <img src="data:image/jpeg;base64,${dashboard}" alt="" />
