@@ -24,7 +24,7 @@ function fakeDocument() {
   };
 }
 
-for (const [asset, label] of [["btc", "Bitcoin"], ["eth", "Ethereum"], ["spy", "SPY"]]) {
+for (const [asset, label] of [["btc", "Bitcoin"], ["eth", "Ethereum"], ["spy", "SPY"], ["qqq", "QQQ"], ["nvda", "NVIDIA"]]) {
   test(`${asset.toUpperCase()} selects only its own chart brand`, () => {
     const doc = fakeDocument();
     const brand = AssetBrand.apply(doc, asset);

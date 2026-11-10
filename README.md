@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="site/favicon.svg" width="88" height="88" alt="Range Desk BTC, ETH, and SPY market mark" />
+  <img src="site/favicon.svg" width="88" height="88" alt="Range Desk market mark" />
 </p>
 
 <h1 align="center">Range Desk</h1>
 
 <p align="center">
-  <strong>Evidence-first live range context for BTC, ETH, and SPY.</strong><br />
+  <strong>Evidence-first market context for BTC, ETH, SPY, QQQ, and NVDA.</strong><br />
   Built by William Wilson to make price location, confirmation, and risk easier to assess without pretending uncertainty is a signal.
 </p>
 
@@ -56,6 +56,8 @@ prospective evidence gates, alerts, and browser-local paper planning.
 | **BTC** | Kraken REST + per-trade WebSocket | Live chart, macro range, checklist, local alerts, paper planning |
 | **ETH** | Kraken REST + per-trade WebSocket | Live chart, rolling levels, checklist, local alerts, paper planning |
 | **SPY** | Alpaca IEX batch research | Historical research only; no live alert or paper P&L claim |
+| **QQQ** | Alpaca IEX batch chart | Historical market context only; no copied SPY strategy labels |
+| **NVDA** | Alpaca IEX batch chart | Historical market context only; no live signal or paper P&L claim |
 
 > **A watch area is not an entry signal.** Three completed-candle price facts
 > confirm behavior; the optional notification gate also requires measured
@@ -66,13 +68,14 @@ prospective evidence gates, alerts, and browser-local paper planning.
 
 ```mermaid
 flowchart LR
-    A[Kraken / Coinbase / Alpaca] --> B[Python research engine]
+    A[Kraken / Coinbase / Alpaca] --> B[Python research and chart exports]
     B --> C[Versioned JSON evidence]
     C --> D[GitHub Pages]
     A -->|BTC + ETH live stream| D
     D --> E[Range map + checklist]
     E --> F[Browser-local alerts]
     E --> G[Paper planner]
+    G --> H[Local journal analytics + CSV]
 ```
 
 The dashboard's calculations, tests, evidence rules, interface, and ongoing
@@ -148,7 +151,7 @@ pass validation.
 
 ## Global market-open clock
 
-The BTC, ETH, and SPY views share one compact global-session clock. It keeps
+All five market views share one compact global-session clock. It keeps
 the chronologically next major market open visible with a one-second countdown
 in William's Dallas/Central time, while a collapsed list shows seven regular
 sessions ranked from observed median 60-minute movement when at least 20
@@ -169,6 +172,14 @@ BTC/ETH use a visible 60-day Coinbase Exchange sample; SPY uses the existing
 Alpaca IEX history and leaves opens without exact SPY candles unranked. These
 are source-specific historical measurements, not a claim that one exchange is
 universally more important or predictive in every market regime.
+
+## Paper journal review
+
+The browser-local journal separates open positions from completed paper
+trades, then reports wins, losses, win rate, average planned R, average
+realized R, results by market, and results by the recorded range location.
+It can export the complete local record as CSV. The summary describes the
+user's paper history only; it is not presented as a validated strategy edge.
 
 ### Range × open forward test
 

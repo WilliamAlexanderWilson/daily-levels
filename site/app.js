@@ -10,6 +10,8 @@
   const KRAKEN_OHLC_URL = "https://api.kraken.com/0/public/OHLC";
   const KRAKEN_DEPTH_URL = "https://api.kraken.com/0/public/Depth";
   const ASSET_PAIRS = { btc: "BTC/USD", eth: "ETH/USD" };
+  const BATCH_ASSETS = new Set(["spy", "qqq", "nvda"]);
+  const isBatchAsset = (asset) => BATCH_ASSETS.has(asset);
   // Kraken's public OHLC endpoint always returns just the most recent 720
   // candles no matter what `since` is set to (confirmed directly: since=1
   // and since=a 2020 date both came back anchored to "now", never further
@@ -49,7 +51,7 @@
   function readHash() {
     const params = new URLSearchParams(location.hash.replace(/^#/, ""));
     const asset = params.get("asset");
-    if (asset === "eth" || asset === "spy") state.asset = asset;
+    if (["eth", "spy", "qqq", "nvda"].includes(asset)) state.asset = asset;
     const range = params.get("range");
     if (range && RANGE_INTERVALS[range]) state.range = range;
   }
@@ -553,8 +555,8 @@
     const status = document.getElementById("chart-focus-status");
     if (!status) return;
     let message;
-    if (state.asset === "spy") {
-      message = "SPY historical backtest · Dallas time · not live";
+    if (isBatchAsset(state.asset)) {
+      message = `${state.asset.toUpperCase()} historical batch chart · Dallas time · not live`;
     } else if (fullAnalysisIsOpen()) {
       message = "Level radar · Dallas time · reacts to the real-time price";
     } else {
@@ -820,7 +822,7 @@
 
   function appendActiveRangeOverlay(container) {
     const decision = activeRangeDecision;
-    if (snappedMarkerKey || state.asset === "spy" || !decision || !decision.support || !decision.resistance) return;
+    if (snappedMarkerKey || isBatchAsset(state.asset) || !decision || !decision.support || !decision.resistance) return;
 
     const zonePrices = RangeDecision.rangeZonePrices(decision);
     if (!zonePrices) return;
@@ -1152,7 +1154,7 @@
     if (!ticker) return;
     const markFresh = liveMarkIsFresh();
     const headerBadge = document.getElementById("live-badge");
-    if (headerBadge && state.asset !== "spy") {
+    if (headerBadge && !isBatchAsset(state.asset)) {
       headerBadge.classList.toggle("is-stale", !markFresh);
       headerBadge.querySelector(".live-label").textContent = markFresh ? "Live" : "Last mark";
     }
@@ -1168,7 +1170,7 @@
     const liveEntryButton = document.getElementById("trade-live-btn");
     if (liveEntryButton) liveEntryButton.disabled = !markFresh;
     const paperLiveLabel = document.getElementById("paper-trader-live-label");
-    if (paperLiveLabel && state.asset !== "spy") {
+    if (paperLiveLabel && !isBatchAsset(state.asset)) {
       paperLiveLabel.textContent = markFresh ? "Live price" : "Last price";
     }
     if (lastRenderedMarkFresh !== markFresh) {
@@ -1178,7 +1180,7 @@
   }
 
   function liveMarkIsFresh(now = Date.now()) {
-    return state.asset !== "spy" && KrakenLive.markIsFresh(
+    return !isBatchAsset(state.asset) && KrakenLive.markIsFresh(
       liveStreamStatus,
       liveStreamSubscribed,
       lastLiveMessageAt,
@@ -1259,7 +1261,7 @@
   }
 
   async function pollLiveCandleFallback() {
-    if (state.asset === "spy") return;
+    if (isBatchAsset(state.asset)) return;
     const streamIsFresh = KrakenLive.isStreamFresh(
       liveStreamSubscribed,
       lastLiveMessageAt,
@@ -1305,7 +1307,7 @@
   }
 
   async function refreshOrderBookWalls() {
-    if (state.asset === "spy") return;
+    if (isBatchAsset(state.asset)) return;
     const asset = state.asset;
     const range = state.range;
     const pair = ASSET_PAIRS[asset];
@@ -1324,7 +1326,7 @@
   }
 
   function scheduleLiveReconnect(generation) {
-    if (generation !== liveSocketGeneration || state.asset === "spy" || liveReconnectTimer) return;
+    if (generation !== liveSocketGeneration || isBatchAsset(state.asset) || liveReconnectTimer) return;
     liveStreamStatus = "reconnecting";
     liveStreamSubscribed = false;
     setLiveBadge("reconnecting");
@@ -1337,7 +1339,7 @@
   }
 
   function connectLiveStream() {
-    if (state.asset === "spy" || typeof WebSocket !== "function") return;
+    if (isBatchAsset(state.asset) || typeof WebSocket !== "function") return;
     clearLiveReconnectTimer();
     const generation = liveSocketGeneration;
     const asset = state.asset;
@@ -1402,7 +1404,7 @@
       liveSocket = null;
       oldSocket.close();
     }
-    if (state.asset === "spy") return;
+    if (isBatchAsset(state.asset)) return;
     liveStreamStatus = "reconnecting";
     setLiveBadge("reconnecting");
     connectLiveStream();
@@ -1752,7 +1754,7 @@
           "Keep this site open. Use Send test to confirm in-page and browser delivery on this device."
         );
       }
-      if (patienceAlertsEnabled && state.asset !== "spy" && activeLevels.length && Number.isFinite(lastLivePrice)) {
+      if (patienceAlertsEnabled && !isBatchAsset(state.asset) && activeLevels.length && Number.isFinite(lastLivePrice)) {
         renderRangeDecision(activeLevels, activeScorecard, lastLivePrice);
       }
     });
@@ -1785,7 +1787,7 @@
       const next = Number(event.target.value);
       setupAlertMinimumRewardRisk = [1, 1.5, 2, 3].includes(next) ? next : 1.5;
       writeLocalStorage(SETUP_ALERT_MIN_RR_KEY, String(setupAlertMinimumRewardRisk));
-      if (state.asset !== "spy" && activeLevels.length && Number.isFinite(lastLivePrice)) {
+      if (!isBatchAsset(state.asset) && activeLevels.length && Number.isFinite(lastLivePrice)) {
         renderRangeDecision(activeLevels, activeScorecard, lastLivePrice);
       }
     });
@@ -2772,7 +2774,7 @@
 
   function renderTradeRiskLines(asset) {
     if (!candleSeries) return;
-    const trade = asset === "spy"
+    const trade = isBatchAsset(asset)
       ? null
       : loadTrades(asset).filter((item) => item.exitPrice == null).sort((a, b) => b.time - a.time)[0] || null;
     const liquidation = trade ? estimatedLiquidationPrice(trade) : null;
@@ -2850,7 +2852,7 @@
   }
 
   function settleTriggeredTrades(asset, currentPrice) {
-    if (asset === "spy" || !Number.isFinite(currentPrice)) return false;
+    if (isBatchAsset(asset) || !Number.isFinite(currentPrice)) return false;
     const result = window.PaperTrader.settleTrades(loadTrades(asset), currentPrice);
     if (result.changed) saveTrades(asset, result.trades);
     return result.changed;
@@ -2863,8 +2865,8 @@
   function renderPaperPositions(asset, currentPrice) {
     const container = document.getElementById("paper-position-summary");
     if (!container) return;
-    if (asset === "spy") {
-      container.innerHTML = '<div class="paper-position-empty">Live SPY paper tracking is paused because this page only has batch SPY data. BTC and ETH use a real-time Kraken stream.</div>';
+    if (isBatchAsset(asset)) {
+      container.innerHTML = `<div class="paper-position-empty">Live ${asset.toUpperCase()} paper tracking is paused because this page has batch data, not a real-time quote. BTC and ETH use a real-time Kraken stream.</div>`;
       return;
     }
 
@@ -2955,6 +2957,7 @@
 
     const trades = [...loadTrades(asset)].sort((a, b) => b.time - a.time);
     renderPaperPositions(asset, currentPrice);
+    renderJournalAnalytics();
     if (!trades.length) {
       tbody.innerHTML = `<tr><td colspan="12">No trades marked yet for ${asset.toUpperCase()}.</td></tr>`;
       return;
@@ -3075,7 +3078,52 @@
     openTradeForm();
   }
 
+  function allJournalRecords() {
+    return window.JournalAnalytics.ASSETS.flatMap((asset) =>
+      loadTrades(asset).map((trade) => ({ asset, trade }))
+    );
+  }
+
+  function journalR(value) {
+    return value == null ? "—" : `${value >= 0 ? "+" : ""}${value.toFixed(2)}R`;
+  }
+
+  function renderJournalBreakdown(id, rows) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    element.innerHTML = rows.length ? rows.map((row) => `
+      <div class="journal-mini-row"><strong>${escapeHtml(row.label)}</strong><span>${row.closed}/${row.total} closed</span><b>${journalR(row.avgR)}</b></div>
+    `).join("") : '<div class="paper-position-empty">No paper trades recorded yet.</div>';
+  }
+
+  function renderJournalAnalytics() {
+    if (!window.JournalAnalytics) return;
+    const result = window.JournalAnalytics.summary(allJournalRecords());
+    const stats = [
+      ["Closed / open", `${result.closed} / ${result.open}`],
+      ["Wins / losses", `${result.wins} / ${result.losses}`],
+      ["Win rate", result.winRate == null ? "—" : `${(result.winRate * 100).toFixed(1)}%`],
+      ["Avg planned R", journalR(result.avgPlannedR)],
+      ["Avg realized R", journalR(result.avgRealizedR)],
+    ];
+    document.getElementById("journal-stat-grid").innerHTML = stats.map(([label, value]) =>
+      `<div class="journal-stat"><span>${label}</span><strong>${value}</strong></div>`
+    ).join("");
+    renderJournalBreakdown("journal-by-market", result.byAsset);
+    renderJournalBreakdown("journal-by-location", result.byLocation);
+  }
+
+  function exportJournalCsv() {
+    const blob = new Blob([window.JournalAnalytics.csv(allJournalRecords())], { type: "text/csv;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `range-desk-paper-journal-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
   function wireTradeForm() {
+    document.getElementById("journal-export-btn").addEventListener("click", exportJournalCsv);
     document.getElementById("trade-live-btn").addEventListener("click", useLiveTradePrice);
     document.getElementById("mark-trade-btn").addEventListener("click", () => {
       if (markingMode) {
@@ -3133,6 +3181,7 @@
         stopPrice: plan.stop,
         targetPrice: plan.target,
         rewardRisk: plan.rewardRisk,
+        rangeLocation: activeRangeDecision?.status || "Unrecorded",
         description: document.getElementById("trade-form-description").value.trim(),
         createdAt: new Date().toISOString(),
       });
@@ -3637,11 +3686,11 @@
   // are all baked once per cron run into static JSON, same staleness as
   // the rest of this static site, no live ticking.
 
-  let activeSpyChart = null; // cached spy_chart.json - switching HA timeframe re-renders from this, no refetch
+  let activeSpyChart = null; // cached batch chart - switching HA timeframe re-renders from this, no refetch
   let activeSpyTrades = [];
 
-  function spyChartUrl() {
-    return "data/spy_chart.json";
+  function batchChartUrl(asset = state.asset) {
+    return `data/${asset}_chart.json`;
   }
   function spySignalsUrl() {
     return "data/spy_signals.json";
@@ -3655,56 +3704,63 @@
 
   function applyAssetVisibility(asset) {
     const isSpy = asset === "spy";
+    const isBatch = isBatchAsset(asset);
     const paperTrader = document.getElementById("paper-trader");
     const paperStatus = document.getElementById("paper-trader-status");
     const paperLiveLabel = document.getElementById("paper-trader-live-label");
+    const batchLegend = document.getElementById("spy-legend");
+    const batchNote = document.getElementById("spy-chart-note");
+    if (batchLegend) batchLegend.innerHTML = '<span class="legend-item"><i class="swatch current"></i>Last batch price — not live</span>';
+    if (batchNote) batchNote.innerHTML = `<strong>${asset.toUpperCase()} batch chart.</strong> Free Alpaca IEX historical bars are refreshed by the scheduled workflow. This is not a consolidated real-time quote or a trade signal.`;
     document.getElementById("subtitle").textContent = isSpy
       ? "SPY range research with a fail-closed validation gate."
+      : isBatch
+        ? `${asset.toUpperCase()} market context from delayed batch data — no live signal.`
       : asset === "btc"
         ? "Live BTC price, the current macro range, and a clear confirmation checklist."
         : "Live ETH price, the current rolling range, and a clear confirmation checklist.";
 
-    document.getElementById("range-select").hidden = isSpy;
-    document.getElementById("spy-timeframe-select").hidden = !isSpy;
-    document.getElementById("futures-context").hidden = isSpy; // crypto path's own renderFuturesContext() corrects this right after, for btc/eth
+    document.getElementById("range-select").hidden = isBatch;
+    document.getElementById("spy-timeframe-select").hidden = !isBatch;
+    document.getElementById("futures-context").hidden = isBatch; // crypto path's own renderFuturesContext() corrects this right after, for btc/eth
     document.getElementById("exhaustion-banner").hidden = true; // crypto path's own renderExhaustionBanner() corrects this right after, for btc/eth
-    document.getElementById("nearest-levels").hidden = isSpy;
-    document.getElementById("level-jump-wrap").hidden = isSpy;
-    document.getElementById("nearby-context").hidden = isSpy;
-    document.getElementById("trade-controls").hidden = isSpy;
-    document.getElementById("chart-legend").hidden = isSpy;
-    document.getElementById("spy-legend").hidden = !isSpy;
-    document.getElementById("liquidation-note").hidden = isSpy;
-    document.getElementById("spy-chart-note").hidden = !isSpy;
-    document.getElementById("trades-section").hidden = isSpy;
-    document.getElementById("level-table-section").hidden = isSpy;
-    document.getElementById("scorecard-section").hidden = isSpy;
+    document.getElementById("nearest-levels").hidden = isBatch;
+    document.getElementById("level-jump-wrap").hidden = isBatch;
+    document.getElementById("nearby-context").hidden = isBatch;
+    document.getElementById("trade-controls").hidden = isBatch;
+    document.getElementById("chart-legend").hidden = isBatch;
+    document.getElementById("spy-legend").hidden = !isBatch;
+    document.getElementById("liquidation-note").hidden = isBatch;
+    document.getElementById("spy-chart-note").hidden = !isBatch;
+    document.getElementById("trades-section").hidden = isBatch;
+    document.getElementById("level-table-section").hidden = isBatch;
+    document.getElementById("scorecard-section").hidden = isBatch;
     document.getElementById("spy-backtest-section").hidden = !isSpy;
     document.getElementById("spy-signals-section").hidden = !isSpy;
-    document.getElementById("crypto-explainer").hidden = isSpy;
+    document.getElementById("crypto-explainer").hidden = isBatch;
     document.getElementById("range-method-sources").hidden = asset !== "btc";
     document.getElementById("spy-explainer").hidden = !isSpy;
-    document.getElementById("chart-live-ticker").hidden = isSpy;
+    document.getElementById("chart-live-ticker").hidden = isBatch;
     document.getElementById("range-lab").hidden = asset !== "btc";
     syncAssetGuidance(asset);
-    paperTrader.classList.toggle("is-unavailable", isSpy);
-    paperStatus.textContent = isSpy
-      ? "SPY is batch data on this site, so live paper P&L is disabled rather than presenting a stale mark as real-time."
+    paperTrader.classList.toggle("is-unavailable", isBatch);
+    paperStatus.textContent = isBatch
+      ? `${asset.toUpperCase()} is batch data on this site, so live paper P&L is disabled rather than presenting a stale mark as real-time.`
       : `${asset.toUpperCase()} P&L follows Kraken's real-time trade stream. No order is sent anywhere.`;
-    paperLiveLabel.textContent = isSpy ? "Batch data" : "Live price";
-    if (isSpy) {
+    paperLiveLabel.textContent = isBatch ? "Batch data" : "Live price";
+    if (isBatch) {
       closeTradeForm();
       // Clear crypto paper entry/stop/target/liquidation lines immediately,
       // before the asynchronous SPY batch request finishes.
       renderTradeRiskLines("spy");
     }
-    renderPaperPositions(asset, isSpy ? null : lastLivePrice);
+    renderPaperPositions(asset, isBatch ? null : lastLivePrice);
     if (asset !== "btc") clearRangeLabLines();
-    if (isSpy) document.getElementById("live-badge").hidden = true;
+    if (isBatch) document.getElementById("live-badge").hidden = true;
   }
 
   function syncAssetGuidance(asset) {
-    const isSpy = asset === "spy";
+    const isSpy = isBatchAsset(asset);
     const guide = document.getElementById("quick-guide");
     const decisionJump = document.getElementById("mobile-jump-decision");
     const thirdJump = document.getElementById("mobile-jump-third");
@@ -3795,7 +3851,7 @@
         const candidate = RangeLab.candidateByKey(activeRangeLabData, activeRangeLabCandidateKey);
         if (candidate) drawRangeLabCandidate(candidate);
       }
-      if (state.asset !== "spy") {
+      if (!isBatchAsset(state.asset)) {
         renderLevels(activeLevels);
         renderRoundProximityBands(lastLivePrice, activeProximity);
         renderOrderBookWalls(activeOrderBookWalls);
@@ -3808,7 +3864,7 @@
     const details = document.getElementById("nearby-context");
     if (!details) return;
     details.addEventListener("toggle", () => {
-      if (state.asset !== "spy") renderLevels(activeLevels);
+      if (!isBatchAsset(state.asset)) renderLevels(activeLevels);
       renderOverlays();
     });
   }
@@ -3909,33 +3965,36 @@
     }
   }
 
-  async function loadAndRenderSpy() {
+  async function loadAndRenderBatch() {
+    const asset = state.asset;
     try {
-      const [chartData, signalsData, backtestData, rangeResearch] = await Promise.all([
-        fetchJson(spyChartUrl()),
-        fetchJson(spySignalsUrl()),
-        fetchJson(spyBacktestUrl()),
-        fetchJson(spyRangeResearchUrl()),
-      ]);
-      if (state.asset !== "spy") return; // user moved on while this was in flight
+      const chartData = await fetchJson(batchChartUrl(asset));
+      if (state.asset !== asset) return;
 
       activeSpyChart = chartData;
-      activeSpyTrades = signalsData.trades || [];
-
       renderHeader(chartData); // same {generated_at_utc, price} shape renderHeader already expects
-
       const bars = chartData.timeframes[state.spyTimeframe] || [];
       renderSpyChart(bars);
-      renderSpyBacktestTable(backtestData);
-      renderSpySignalsTable(activeSpyTrades);
-      renderSpyDecision(rangeResearch);
+      if (asset === "spy") {
+        const [signalsData, backtestData, rangeResearch] = await Promise.all([
+          fetchJson(spySignalsUrl()), fetchJson(spyBacktestUrl()), fetchJson(spyRangeResearchUrl()),
+        ]);
+        if (state.asset !== asset) return;
+        activeSpyTrades = signalsData.trades || [];
+        renderSpyBacktestTable(backtestData);
+        renderSpySignalsTable(activeSpyTrades);
+        renderSpyDecision(rangeResearch);
+      } else {
+        activeSpyTrades = [];
+        renderDecisionUnavailable(`${asset.toUpperCase()} is available as market context only. No validated range setup or live entry signal is calculated for this chart.`);
+      }
     } catch (err) {
-      if (state.asset !== "spy") return;
+      if (state.asset !== asset) return;
       console.error(err);
-      renderDecisionUnavailable("SPY chart or backtest data is currently unavailable.");
+      renderDecisionUnavailable(`${asset.toUpperCase()} batch chart data is currently unavailable.`);
       const banner = document.getElementById("stale-banner");
       banner.hidden = false;
-      banner.textContent = "Could not load SPY data — either the daily workflow hasn't run yet, or Yahoo's API is unreachable right now.";
+      banner.textContent = `Could not load ${asset.toUpperCase()} data — the scheduled export may not have completed yet.`;
     }
   }
 
@@ -4046,8 +4105,8 @@
     renderDecisionLoading();
     setChartLoading(true);
     try {
-      if (state.asset === "spy") {
-        await loadAndRenderSpy();
+      if (isBatchAsset(state.asset)) {
+        await loadAndRenderBatch();
         return;
       }
       const asset = state.asset;
