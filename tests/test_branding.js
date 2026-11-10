@@ -30,7 +30,7 @@ test("the public dashboard identifies William Wilson as its owner", () => {
   const html = fs.readFileSync(path.join(siteRoot, "index.html"), "utf8");
   assert.match(html, /William Wilson's Range Desk/);
   assert.match(html, /by William Wilson/);
-  assert.match(html, /<meta name="description" content="William Wilson's evidence-first live range dashboard/);
+  assert.match(html, /<meta name="description" content="William Wilson's evidence-first range dashboard/);
   assert.match(html, /<link rel="canonical" href="https:\/\/williamalexanderwilson\.github\.io\/daily-levels\/"/);
   assert.match(html, /<meta property="og:image" content="https:\/\/williamalexanderwilson\.github\.io\/daily-levels\/social-preview\.jpg"/);
   assert.match(html, /<meta name="twitter:card" content="summary_large_image"/);
@@ -50,7 +50,7 @@ test("the public dashboard identifies William Wilson as its owner", () => {
 test("the active chart controls the header mark and browser favicon", () => {
   const app = fs.readFileSync(path.join(siteRoot, "app.js"), "utf8");
   const html = fs.readFileSync(path.join(siteRoot, "index.html"), "utf8");
-  assert.match(html, /<script src="asset-brand\.js"><\/script>\s*<script src="chart-time\.js"><\/script>\s*<script src="app\.js"><\/script>/);
+  assert.match(html, /<script src="asset-brand\.js\?v=[^"]+"><\/script>\s*<script src="chart-time\.js\?v=[^"]+"><\/script>\s*<script src="app\.js\?v=[^"]+"><\/script>/);
   assert.match(app, /AssetBrand\.apply\(document, state\.asset\)/);
 });
 

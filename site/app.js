@@ -556,7 +556,7 @@
     if (!status) return;
     let message;
     if (isBatchAsset(state.asset)) {
-      message = `${state.asset.toUpperCase()} historical batch chart · Dallas time · not live`;
+      message = `${state.asset.toUpperCase()} 20-session range · Dallas time · batch IEX data`;
     } else if (fullAnalysisIsOpen()) {
       message = "Level radar · Dallas time · reacts to the real-time price";
     } else {
@@ -2357,6 +2357,74 @@
       "The chart remains batch context only. Research used Alpaca IEX, one exchange rather than the consolidated U.S. market, and is not a current entry signal.";
   }
 
+  function renderEquityRangeDecision(range, asset) {
+    if (!range || !range.available) {
+      renderDecisionUnavailable(range && range.reason
+        ? range.reason
+        : `${asset.toUpperCase()} completed-session range data is unavailable.`);
+      return;
+    }
+
+    const copy = {
+      lower_edge: {
+        badge: "Lower edge watch",
+        title: "At the lower range edge — wait for a reclaim",
+        summary: "Price is near the prior 20-session low. A touch alone is not an entry; wait for a completed candle to recover the edge before reassessing.",
+      },
+      upper_edge: {
+        badge: "Upper edge watch",
+        title: "At the upper range edge — wait for rejection",
+        summary: "Price is near the prior 20-session high. Do not short the level automatically; wait for a completed rejection back inside the edge.",
+      },
+      middle: {
+        badge: "Wait",
+        title: "Middle of the 20-session range",
+        summary: "Price is away from both range edges, so location provides no clear range-trading advantage. Patience is the intended action here.",
+      },
+      below_range: {
+        badge: "Outside range",
+        title: "Below the prior 20-session range",
+        summary: "Price has left the completed-session channel. Do not assume the old floor will reverse price; wait for acceptance or a reclaim.",
+      },
+      above_range: {
+        badge: "Outside range",
+        title: "Above the prior 20-session range",
+        summary: "Price has left the completed-session channel. Do not fade the breakout automatically; wait for acceptance or a rejection.",
+      },
+    }[range.state] || {};
+
+    setDecisionClass("wait");
+    activeRangeDecision = null;
+    activePatienceGate = null;
+    document.getElementById("decision-badge").textContent = copy.badge || "Range context";
+    document.getElementById("decision-method").textContent = `${range.method} · context only`;
+    document.getElementById("decision-source-link").hidden = true;
+    document.getElementById("decision-title").textContent = copy.title || "20-session range context";
+    document.getElementById("decision-summary").textContent = copy.summary || "No directional signal is calculated from this range.";
+    document.getElementById("decision-caveat").textContent =
+      "This is deterministic price-location context, not a validated edge or a Buy, Sell, Call, or Put instruction. Free IEX data represents one exchange rather than consolidated SIP volume.";
+
+    document.getElementById("decision-range").hidden = false;
+    document.getElementById("decision-support-caption").textContent = "20-session low";
+    document.getElementById("decision-support").textContent = compactPrice(range.low);
+    document.getElementById("decision-resistance-caption").textContent = "20-session high";
+    document.getElementById("decision-resistance").textContent = compactPrice(range.high);
+    document.getElementById("decision-position").textContent = `${range.position_pct.toFixed(0)}% through range`;
+    document.getElementById("decision-marker").style.left = `${Math.max(0, Math.min(100, range.position_pct))}%`;
+    document.getElementById("patience-gate").hidden = true;
+
+    document.getElementById("decision-metrics").hidden = false;
+    document.getElementById("decision-rr-label").textContent = "Range width";
+    document.getElementById("decision-rr").textContent = `${compactPrice(range.width)} · ${range.width_pct.toFixed(1)}%`;
+    document.getElementById("decision-rr-note").textContent = `${range.window_start}–${range.window_end}`;
+    document.getElementById("decision-support-label").textContent = "Lower watch zone";
+    document.getElementById("decision-support-odds").textContent = `${compactPrice(range.low)}–${compactPrice(range.lower_edge_max)}`;
+    document.getElementById("decision-support-note").textContent = "wait for a completed reclaim";
+    document.getElementById("decision-resistance-label").textContent = "Upper watch zone";
+    document.getElementById("decision-resistance-odds").textContent = `${compactPrice(range.upper_edge_min)}–${compactPrice(range.high)}`;
+    document.getElementById("decision-resistance-note").textContent = "wait for a completed rejection";
+  }
+
   function renderNearestLevels(levels, scorecard, currentPrice) {
     if (!levels || !levels.length || currentPrice === null || currentPrice === undefined) {
       document.getElementById("nearest-resistance-card").hidden = true;
@@ -3711,7 +3779,7 @@
     const batchLegend = document.getElementById("spy-legend");
     const batchNote = document.getElementById("spy-chart-note");
     if (batchLegend) batchLegend.innerHTML = '<span class="legend-item"><i class="swatch current"></i>Last batch price — not live</span>';
-    if (batchNote) batchNote.innerHTML = `<strong>${asset.toUpperCase()} batch chart.</strong> Free Alpaca IEX historical bars are refreshed by the scheduled workflow. This is not a consolidated real-time quote or a trade signal.`;
+    if (batchNote) batchNote.innerHTML = `<strong>${asset.toUpperCase()} 20-session range context.</strong> High, midpoint, low, and edge zones use completed regular sessions only. Free Alpaca IEX batch data covers one exchange, not the consolidated market; these levels are context, not a trade signal.`;
     document.getElementById("subtitle").textContent = isSpy
       ? "SPY range research with a fail-closed validation gate."
       : isBatch
@@ -3869,7 +3937,70 @@
     });
   }
 
-  function renderSpyChart(bars) {
+  function renderBatchRangeLines(range) {
+    if (!range || !range.available) return;
+    const zones = [
+      {
+        key: "batch-range-lower",
+        low: range.low,
+        high: range.lower_edge_max,
+        color: cssVar("--support"),
+        label: `Lower edge · ${formatPriceRange(range.low, range.lower_edge_max)}`,
+      },
+      {
+        key: "batch-range-upper",
+        low: range.upper_edge_min,
+        high: range.high,
+        color: cssVar("--resistance"),
+        label: `Upper edge · ${formatPriceRange(range.upper_edge_min, range.high)}`,
+      },
+    ];
+    for (const zone of zones) {
+      const lines = [zone.low, zone.high].map((price) => candleSeries.createPriceLine({
+        price,
+        color: zone.color,
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: "",
+      }));
+      activePriceLines.push(...lines);
+      levelLinesByKey.set(zone.key, lines);
+      currentMarkers.push({
+        ...zone,
+        mid: (zone.low + zone.high) / 2,
+        focusColor: zone.color,
+        isZone: true,
+        emphasized: true,
+        opacity: "0.10",
+        showLabel: true,
+      });
+    }
+    const midpoint = candleSeries.createPriceLine({
+      price: range.midpoint,
+      color: cssVar("--text-muted"),
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dotted,
+      axisLabelVisible: true,
+      title: "",
+    });
+    activePriceLines.push(midpoint);
+    levelLinesByKey.set("batch-range-midpoint", [midpoint]);
+    currentMarkers.push({
+      key: "batch-range-midpoint",
+      low: range.midpoint,
+      high: range.midpoint,
+      mid: range.midpoint,
+      color: cssVar("--text-muted"),
+      focusColor: cssVar("--text"),
+      label: `Midpoint · ${formatPriceRange(range.midpoint, range.midpoint)}`,
+      isZone: false,
+      emphasized: true,
+      showLabel: true,
+    });
+  }
+
+  function renderSpyChart(bars, rangeContext = null) {
     ensureChart();
     clearPriceSnapState();
     updateChartFocusStatus();
@@ -3901,12 +4032,14 @@
     candleSeries.priceScale().applyOptions({ mode: LightweightCharts.PriceScaleMode.Normal });
     chart.timeScale().fitContent();
     lastLiveUnixTime = bars.length ? bars[bars.length - 1].time : null;
+    renderBatchRangeLines(rangeContext);
+    renderOverlays();
   }
 
   function rerenderSpyTimeframe() {
     if (!activeSpyChart) return;
     const bars = activeSpyChart.timeframes[state.spyTimeframe] || [];
-    renderSpyChart(bars);
+    renderSpyChart(bars, activeSpyChart.range_context);
   }
 
   function renderSpyBacktestTable(backtest) {
@@ -3974,7 +4107,7 @@
       activeSpyChart = chartData;
       renderHeader(chartData); // same {generated_at_utc, price} shape renderHeader already expects
       const bars = chartData.timeframes[state.spyTimeframe] || [];
-      renderSpyChart(bars);
+      renderSpyChart(bars, chartData.range_context);
       if (asset === "spy") {
         const [signalsData, backtestData, rangeResearch] = await Promise.all([
           fetchJson(spySignalsUrl()), fetchJson(spyBacktestUrl()), fetchJson(spyRangeResearchUrl()),
@@ -3986,7 +4119,7 @@
         renderSpyDecision(rangeResearch);
       } else {
         activeSpyTrades = [];
-        renderDecisionUnavailable(`${asset.toUpperCase()} is available as market context only. No validated range setup or live entry signal is calculated for this chart.`);
+        renderEquityRangeDecision(chartData.range_context, asset);
       }
     } catch (err) {
       if (state.asset !== asset) return;

@@ -55,9 +55,9 @@ prospective evidence gates, alerts, and browser-local paper planning.
 | --- | --- | --- |
 | **BTC** | Kraken REST + per-trade WebSocket | Live chart, macro range, checklist, local alerts, paper planning |
 | **ETH** | Kraken REST + per-trade WebSocket | Live chart, rolling levels, checklist, local alerts, paper planning |
-| **SPY** | Alpaca IEX batch research | Historical research only; no live alert or paper P&L claim |
-| **QQQ** | Alpaca IEX batch chart | Historical market context only; no copied SPY strategy labels |
-| **NVDA** | Alpaca IEX batch chart | Historical market context only; no live signal or paper P&L claim |
+| **SPY** | Alpaca IEX batch research | 20-session range context; failed strategy test remains fail-closed |
+| **QQQ** | Alpaca IEX batch chart | 20-session range context; no live signal or paper P&L claim |
+| **NVDA** | Alpaca IEX batch chart | 20-session range context; no live signal or paper P&L claim |
 
 > **A watch area is not an entry signal.** Three completed-candle price facts
 > confirm behavior; the optional notification gate also requires measured
@@ -131,6 +131,22 @@ chart a setup worth reviewing:
 The still-forming candle is always excluded. All three conditions produce
 “setup to assess,” never an automatic order; stop placement, size, and the
 trader's own confirmation remain separate decisions.
+
+### SPY, QQQ, and NVDA completed-session ranges
+
+Each U.S. equity chart maps one fixed, reproducible channel from the prior 20
+completed regular sessions (9:30 AM–4:00 PM New York time): the highest high,
+lowest low, midpoint, and the outer 15% watch zone at each edge. The current
+session is excluded until it closes, and extended-hours prints never set a
+boundary. Price inside a watch zone means “wait for completed-candle behavior”;
+price in the middle means `WAIT`; price outside the channel is never treated as
+an automatic fade.
+
+These levels describe location, not a demonstrated trading edge. The exports
+use Alpaca's free IEX feed, which represents one exchange rather than the
+consolidated SIP market, and refresh in scheduled batches. SPY's separate
+preregistered strategy test remains negative and fail-closed even though its
+chart now shows the same descriptive range geometry.
 
 When that latest completed candle passes the gate, the chart adds a
 **LIVE LONG SETUP ✓** or **LIVE SHORT SETUP ✓** marker. An older reclaim can

@@ -182,7 +182,7 @@ test("SPY decision chart excludes retrospective Call and Put markers", () => {
   assert.doesNotMatch(app, /Historical \$\{isCall \? "Call" : "Put"\} setup/);
   assert.match(app, /tradeMarkersPlugin\.setMarkers\(\[\]\)/);
   assert.match(app, /if \(isBatch\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
-  assert.match(app, /function renderSpyChart\(bars\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
+  assert.match(app, /function renderSpyChart\(bars, rangeContext = null\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
   assert.match(html, /Batch chart — no live trade labels/);
   assert.match(html, /Historical setup records remain[\s\S]*for audit/);
 });

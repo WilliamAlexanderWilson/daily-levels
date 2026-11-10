@@ -22,6 +22,8 @@ def test_equity_payload_is_explicitly_batch_and_symbol_scoped():
     assert payload["symbol"] == "QQQ"
     assert payload["is_live"] is False
     assert payload["price"] == 111.0
+    assert payload["range_context"]["available"] is False
+    assert payload["range_context"]["is_signal"] is False
     assert set(payload["timeframes"]) == {"10", "15", "20", "30"}
     generated_unix = int(generated.timestamp())
     assert all(

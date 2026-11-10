@@ -7,6 +7,7 @@ not copied to other symbols, and no order or live-trading endpoint is used.
 import pandas as pd
 
 import config
+from src.equities.range_context import build_range_context
 from src.output import atomic_write_json
 from src.spy.export import CHART_DISPLAY_DAYS, _frame_to_json
 from src.spy.fetch import ALPACA_HISTORY_DAYS, fetch_alpaca_5m
@@ -24,6 +25,7 @@ def build_chart_payload(symbol: str, frame: pd.DataFrame, generated_at: pd.Times
         "price": float(frame["close"].iloc[-1]),
         "source": "Alpaca historical bars (free IEX feed)",
         "is_live": False,
+        "range_context": build_range_context(frame, float(frame["close"].iloc[-1]), generated_at),
         "timeframes": {
             # The shared resampler labels bars at the right edge. A 30-minute
             # bin that has only received 10 minutes of source data therefore

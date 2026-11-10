@@ -1,9 +1,29 @@
 {
   "symbol": "NVDA",
-  "generated_at_utc": "2026-11-10T17:33:33.741740+00:00",
-  "price": 167.16,
+  "generated_at_utc": "2026-11-10T17:34:12.340287+00:00",
+  "price": 166.73,
   "source": "Alpaca historical bars (free IEX feed)",
   "is_live": false,
+  "range_context": {
+    "available": true,
+    "method": "Prior 20 completed regular sessions",
+    "lookback_sessions": 20,
+    "edge_fraction": 0.15,
+    "window_start": "2026-10-13",
+    "window_end": "2026-11-09",
+    "high": 228.64,
+    "upper_edge_min": 219.88,
+    "midpoint": 199.44,
+    "lower_edge_max": 179.0,
+    "low": 170.24,
+    "width": 58.39999999999998,
+    "width_pct": 29.281989570798224,
+    "position_pct": -6.010273972602775,
+    "state": "below_range",
+    "is_signal": false,
+    "session_scope": "U.S. regular session, 9:30 AM\u20134:00 PM New York time",
+    "source_limit": "Alpaca free IEX feed; one exchange, not consolidated SIP"
+  },
   "timeframes": {
     "10": [
       {
