@@ -15,15 +15,17 @@ def test_equity_payload_is_explicitly_batch_and_symbol_scoped():
         },
         index=index,
     )
-    generated = pd.Timestamp("2026-11-10T00:00:00Z")
+    # Generation may precede the newest source row when a paginated fetch
+    # crosses a timeframe boundary. No exported completed bar may be newer.
+    generated = pd.Timestamp("2026-11-09T15:00:00Z")
     payload = build_chart_payload("QQQ", frame, generated)
     assert payload["symbol"] == "QQQ"
     assert payload["is_live"] is False
     assert payload["price"] == 111.0
     assert set(payload["timeframes"]) == {"10", "15", "20", "30"}
-    source_latest = int(frame.index.max().timestamp())
+    generated_unix = int(generated.timestamp())
     assert all(
-        bar["time"] <= source_latest
+        bar["time"] <= generated_unix
         for bars in payload["timeframes"].values()
         for bar in bars
     )

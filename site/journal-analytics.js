@@ -16,7 +16,7 @@
   function realizedR(trade) {
     const risk = finite(trade && trade.riskDollars);
     const entry = finite(trade && trade.price);
-    const exit = finite(trade && trade.exitPrice);
+    const exit = validExit(trade);
     const size = finite(trade && trade.size);
     const leverage = finite(trade && trade.leverage);
     if (!(risk > 0) || entry === null || exit === null || !(size > 0) || !(leverage > 0)) return null;
@@ -24,9 +24,14 @@
     return (size * leverage * ((exit - entry) / entry) * direction) / risk;
   }
 
+  function validExit(trade) {
+    const exit = finite(trade && trade.exitPrice);
+    return exit !== null && exit > 0 ? exit : null;
+  }
+
   function summary(records) {
     const rows = Array.isArray(records) ? records : [];
-    const closed = rows.filter((row) => finite(row.trade && row.trade.exitPrice) !== null);
+    const closed = rows.filter((row) => validExit(row.trade) !== null);
     const results = closed.map((row) => ({ ...row, r: realizedR(row.trade) })).filter((row) => row.r !== null);
     const wins = results.filter((row) => row.r > 0).length;
     const losses = results.filter((row) => row.r < 0).length;
@@ -36,7 +41,7 @@
       acc[label] ||= { label, total: 0, closed: 0, realized: [] };
       acc[label].total += 1;
       const r = realizedR(row.trade);
-      if (finite(row.trade && row.trade.exitPrice) !== null) acc[label].closed += 1;
+      if (validExit(row.trade) !== null) acc[label].closed += 1;
       if (r !== null) acc[label].realized.push(r);
       return acc;
     }, {})).map((item) => ({
@@ -67,7 +72,7 @@
     for (const row of records || []) {
       const t = row.trade || {};
       lines.push([
-        String(row.asset || "").toUpperCase(), t.exitPrice == null ? "open" : "closed",
+        String(row.asset || "").toUpperCase(), validExit(t) === null ? "open" : "closed",
         t.time ? new Date(t.time * 1000).toISOString() : "", t.exitTime ? new Date(t.exitTime * 1000).toISOString() : "",
         t.direction, t.price, t.exitPrice, t.stopPrice, t.targetPrice, t.rewardRisk,
         realizedR(t), t.rangeLocation || "Unrecorded", t.description || "",

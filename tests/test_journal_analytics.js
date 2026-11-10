@@ -36,3 +36,14 @@ test("an explicit null exit remains open and never becomes a fabricated loss", (
   assert.equal(result.losses, 0);
   assert.equal(result.avgRealizedR, null);
 });
+
+test("zero, string-zero, malformed, and missing legacy exits remain open", () => {
+  for (const exitPrice of [0, "0", "not-a-price", undefined]) {
+    const trade = { direction: "long", price: 100, size: 100, leverage: 1, riskDollars: 10 };
+    if (exitPrice !== undefined) trade.exitPrice = exitPrice;
+    const result = Journal.summary([{ asset: "btc", trade }]);
+    assert.equal(result.open, 1);
+    assert.equal(result.closed, 0);
+    assert.equal(result.avgRealizedR, null);
+  }
+});

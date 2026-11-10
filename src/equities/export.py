@@ -17,7 +17,7 @@ SYMBOLS = ("QQQ", "NVDA")
 
 def build_chart_payload(symbol: str, frame: pd.DataFrame, generated_at: pd.Timestamp) -> dict:
     timeframes = build_timeframes(frame)
-    source_latest = frame.index.max()
+    completed_cutoff = min(frame.index.max(), generated_at)
     return {
         "symbol": symbol,
         "generated_at_utc": generated_at.isoformat(),
@@ -29,7 +29,7 @@ def build_chart_payload(symbol: str, frame: pd.DataFrame, generated_at: pd.Times
             # bin that has only received 10 minutes of source data therefore
             # carries a future label and must not be published as complete.
             str(minutes): _frame_to_json(
-                timeframes[minutes][timeframes[minutes].index <= source_latest],
+                timeframes[minutes][timeframes[minutes].index <= completed_cutoff],
                 CHART_DISPLAY_DAYS,
             )
             for minutes in TIMEFRAMES_MINUTES
