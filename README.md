@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="site/favicon.svg" width="88" height="88" alt="Range Desk monogram" />
+  <img src="site/favicon.svg" width="88" height="88" alt="Range Desk BTC, ETH, and SPY market mark" />
 </p>
 
 <h1 align="center">Range Desk</h1>

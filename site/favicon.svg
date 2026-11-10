@@ -1,6 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
-  <title id="title">Range Desk</title>
-  <desc id="description">A white R on a deep green rounded square.</desc>
-  <rect width="128" height="128" rx="28" fill="#28634d"/>
-  <path fill="#ffffff" d="M38 31h29c19 0 31 10 31 27 0 12-6 21-17 25l20 30H80L63 86h-7v27H38V31Zm18 16v24h10c9 0 14-4 14-12s-5-12-14-12H56Z"/>
+  <title id="title">Range Desk market mark</title>
+  <desc id="description">Bitcoin, Ethereum, and equity-market symbols arranged as a three-market mark.</desc>
+  <rect width="128" height="128" rx="28" fill="#10151b"/>
+
+  <circle cx="64" cy="39" r="27" fill="#f7931a" stroke="#10151b" stroke-width="5"/>
+  <text x="64" y="49" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="31" font-weight="700" text-anchor="middle">₿</text>
+
+  <circle cx="39" cy="84" r="27" fill="#627eea" stroke="#10151b" stroke-width="5"/>
+  <path fill="#fff" d="M39 65 27.5 84.5 39 91l11.5-6.5L39 65Zm0 28.2-11.5-6.5L39 103l11.5-16.3L39 93.2Z"/>
+
+  <circle cx="89" cy="84" r="27" fill="#2f7d5d" stroke="#10151b" stroke-width="5"/>
+  <path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.5" d="m75 94 8-9 7 4 12-15"/>
+  <path fill="#fff" d="m99 72 7-2-2 7-5-5Z"/>
 </svg>

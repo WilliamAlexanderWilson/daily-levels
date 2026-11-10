@@ -10,7 +10,10 @@ test("the public dashboard identifies William Wilson as its owner", () => {
   assert.match(html, /William Wilson's Range Desk/);
   assert.match(html, /by William Wilson/);
   assert.match(html, /<meta name="description" content="William Wilson's evidence-first live range dashboard/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/williamalexanderwilson\.github\.io\/daily-levels\/"/);
   assert.match(html, /<link rel="icon" type="image\/svg\+xml" href="favicon\.svg"/);
+  assert.match(html, /<a class="brand-mark" href="\.\/" aria-label="Range Desk home">/);
+  assert.match(html, /<img src="favicon\.svg" width="42" height="42" alt=""/);
   assert.match(html, />Source code<\/a>/);
   assert.match(html, />Research notes<\/a>/);
   assert.equal(fs.existsSync(path.join(siteRoot, "favicon.svg")), true);
