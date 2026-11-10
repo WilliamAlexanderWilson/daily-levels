@@ -332,6 +332,10 @@
         background: { type: "solid", color: "rgba(0, 0, 0, 0)" },
         textColor: cssVar("--text"),
       },
+      localization: {
+        locale: "en-US",
+        timeFormatter: ChartTime.formatDallasCrosshair,
+      },
       grid: {
         vertLines: { color: cssVar("--border") },
         horzLines: { color: cssVar("--border") },
@@ -363,7 +367,17 @@
       // floor so multi-year compression is possible - individual candles
       // get thin, which is the correct tradeoff for a decade-scale
       // overview, not a bug to work around.
-      timeScale: { timeVisible: true, borderColor: cssVar("--border"), minBarSpacing: 0.05 },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+        borderColor: cssVar("--border"),
+        minBarSpacing: 0.05,
+        // Keep the newest Dallas-time label clear of the right price scale;
+        // without this small gutter the final "M" in labels such as "10 AM"
+        // can be clipped at the pane boundary.
+        rightOffsetPixels: 44,
+        tickMarkFormatter: ChartTime.formatDallasAxisTick,
+      },
       rightPriceScale: { borderColor: cssVar("--border") },
     });
 
@@ -540,13 +554,13 @@
     if (!status) return;
     let message;
     if (state.asset === "spy") {
-      message = "SPY historical backtest · not live";
+      message = "SPY historical backtest · Dallas time · not live";
     } else if (fullAnalysisIsOpen()) {
-      message = "Level radar · reacts to the real-time price";
+      message = "Level radar · Dallas time · reacts to the real-time price";
     } else {
       message = state.asset === "btc"
-        ? "BTC macro range $60k–$80k · real-time Kraken stream"
-        : "Rolling range · real-time Kraken stream";
+        ? "BTC macro range $60k–$80k · Dallas time · real-time Kraken stream"
+        : "Rolling range · Dallas time · real-time Kraken stream";
     }
     if (status.textContent !== message) status.textContent = message;
   }
@@ -1043,7 +1057,9 @@
       const windowBars = levelsWindowDays * candlesPerDay;
       const marginBars = Math.round(windowBars * 0.08);
       const from = Math.max(0, candleCount - windowBars - marginBars);
-      const to = candleCount + 1;
+      // Leave enough future-space for the final 12-hour time tick to render
+      // completely instead of being clipped by the right price scale.
+      const to = candleCount + 14;
       chart.timeScale().setVisibleLogicalRange({ from, to });
     } else {
       chart.timeScale().fitContent();
