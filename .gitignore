@@ -6,3 +6,6 @@ __pycache__/
 .DS_Store
 site/data/*.tmp
 .env
+node_modules/
+playwright-report/
+test-results/
