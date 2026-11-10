@@ -2880,16 +2880,23 @@ tr.low-confidence-row {
 }
 
 .brand-mark {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border-radius: 9px;
-  color: #fff;
-  background: var(--accent);
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
+  display: block;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--border) 78%, transparent);
+}
+
+.brand-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.brand-mark:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .brand-copy { min-width: 0; }
@@ -3197,7 +3204,7 @@ main { padding-top: 0.75rem; }
     min-height: 64px;
     padding: 0.65rem 0;
   }
-  .brand-mark { width: 34px; height: 34px; }
+  .brand-mark { width: 38px; height: 38px; border-radius: 10px; }
   .brand-purpose { display: none; }
   .brand-owner { display: none; }
   .subtitle { max-width: 100%; margin-inline: 0; font-size: 0.7rem; }
