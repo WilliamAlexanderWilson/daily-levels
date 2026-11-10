@@ -25,3 +25,10 @@ test("versioned assets prevent an old BTC app bundle from rendering new tabs", (
   assert.match(index, /styles\.css\?v=equity-ranges-v1/);
   assert.match(index, /app\.js\?v=equity-ranges-v1/);
 });
+
+test("a new batch fetch clears the prior asset before the request can fail", () => {
+  const loader = app.match(/async function loadAndRenderBatch\(\) \{[\s\S]*?\n  \}/)[0];
+  assert.ok(loader.indexOf("activeSpyChart = null") < loader.indexOf("await fetchJson"));
+  assert.ok(loader.indexOf("renderSpyChart([], null)") < loader.indexOf("await fetchJson"));
+  assert.ok(loader.indexOf('document.getElementById("price-label").textContent = "—"') < loader.indexOf("await fetchJson"));
+});

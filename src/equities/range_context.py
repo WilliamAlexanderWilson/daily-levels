@@ -41,13 +41,18 @@ def completed_session_ohlc(frame: pd.DataFrame, generated_at: pd.Timestamp) -> p
     for session_date, day in regular.groupby(regular.index.date):
         if session_date > today:
             continue
-        if session_date == today:
-            # A same-day range is accepted only after the regular close and
-            # only when the source reached the final ten minutes. IEX can omit
-            # quiet five-minute buckets, so requiring exactly 78 rows would
-            # incorrectly discard otherwise complete sessions.
-            if now_et.hour < 16 or day.index.max().time() < pd.Timestamp("15:50").time():
-                continue
+        if session_date == today and now_et.hour < 16:
+            continue
+        # Every included day—not just today—must span the regular session.
+        # Paginated or interrupted historical fetches can end at noon and
+        # otherwise look like a legitimate prior day. IEX can omit quiet
+        # five-minute buckets, so check the session endpoints instead of
+        # requiring exactly 78 rows.
+        if (
+            day.index.min().time() > pd.Timestamp("09:40").time()
+            or day.index.max().time() < pd.Timestamp("15:50").time()
+        ):
+            continue
         rows.append(
             {
                 "session": pd.Timestamp(session_date),

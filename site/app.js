@@ -4100,6 +4100,15 @@
 
   async function loadAndRenderBatch() {
     const asset = state.asset;
+    // Clear the prior asset before starting the next fetch. If the request
+    // fails, an NVDA heading must never sit over a stale QQQ chart (or any
+    // other cross-asset combination).
+    activeSpyChart = null;
+    activeSpyTrades = [];
+    renderSpyChart([], null);
+    renderDecisionLoading();
+    document.getElementById("price-label").textContent = "—";
+    document.getElementById("live-badge").hidden = true;
     try {
       const chartData = await fetchJson(batchChartUrl(asset));
       if (state.asset !== asset) return;

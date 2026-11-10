@@ -31,6 +31,30 @@ def test_current_incomplete_session_is_excluded():
     assert sessions.index[-1].date().isoformat() == "2026-09-28"
 
 
+def test_historical_partial_session_is_also_excluded_from_the_channel():
+    frame = _sessions(21, include_partial=True)
+    partial_date = frame.index[-1].tz_convert(ET).date()
+    frame.loc[frame.index.tz_convert(ET).date == partial_date, "high"] = 999
+    generated = pd.Timestamp("2026-10-01 17:00", tz=ET)
+    result = build_range_context(frame, 112.0, generated)
+    assert result["available"] is True
+    assert result["window_end"] == "2026-09-28"
+    assert result["high"] == pytest.approx(121.0)
+
+
+def test_unverified_early_close_fails_closed_instead_of_setting_a_boundary():
+    frame = _sessions(21)
+    last_date = frame.index[-1].tz_convert(ET).date()
+    local_times = frame.index.tz_convert(ET)
+    keep = (local_times.date != last_date) | (local_times.time <= pd.Timestamp("13:00").time())
+    frame = frame[keep]
+    frame.loc[frame.index.tz_convert(ET).date == last_date, "low"] = 1
+    result = build_range_context(frame, 112.0, pd.Timestamp("2026-10-01 17:00", tz=ET))
+    assert result["available"] is True
+    assert result["window_end"] == "2026-09-28"
+    assert result["low"] == pytest.approx(98.0)
+
+
 def test_channel_uses_prior_20_completed_sessions_and_fixed_edges():
     frame = _sessions(21)
     generated = pd.Timestamp("2026-10-01 17:00", tz=ET)
