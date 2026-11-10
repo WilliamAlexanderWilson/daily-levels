@@ -1,15 +1,31 @@
 {
-  "generated_at_utc": "2026-11-10T17:33:17.720599+00:00",
-  "price": 746.97,
+  "generated_at_utc": "2026-11-10T17:37:18.322108+00:00",
+  "price": 746.0,
+  "symbol": "SPY",
+  "source": "Alpaca historical bars (free IEX feed)",
+  "is_live": false,
+  "range_context": {
+    "available": true,
+    "method": "Prior 20 completed regular sessions",
+    "lookback_sessions": 20,
+    "edge_fraction": 0.15,
+    "window_start": "2026-10-13",
+    "window_end": "2026-11-09",
+    "high": 778.75,
+    "upper_edge_min": 771.85,
+    "midpoint": 755.75,
+    "lower_edge_max": 739.65,
+    "low": 732.75,
+    "width": 46.0,
+    "width_pct": 6.086668871981475,
+    "position_pct": 28.804347826086957,
+    "state": "middle",
+    "is_signal": false,
+    "session_scope": "U.S. regular session, 9:30 AM\u20134:00 PM New York time",
+    "source_limit": "Alpaca free IEX feed; one exchange, not consolidated SIP"
+  },
   "timeframes": {
     "10": [
-      {
-        "time": 1789148400,
-        "open": 765.8506530480671,
-        "high": 766.2,
-        "low": 765.79,
-        "close": 765.93125
-      },
       {
         "time": 1789149000,
         "open": 765.8909515240335,
@@ -12860,7 +12876,14 @@
         "open": 746.9820861236208,
         "high": 747.38,
         "low": 746.32,
-        "close": 746.7662500000001
+        "close": 746.7587500000001
+      },
+      {
+        "time": 1794332700,
+        "open": 746.8704180618104,
+        "high": 746.8704180618104,
+        "low": 745.91,
+        "close": 746.3025
       }
     ],
     "15": [
@@ -21688,18 +21711,11 @@
         "time": 1794332700,
         "open": 747.0165384685115,
         "high": 747.38,
-        "low": 746.775,
-        "close": 746.9749999999999
+        "low": 745.91,
+        "close": 746.51625
       }
     ],
     "20": [
-      {
-        "time": 1789148400,
-        "open": 765.5840708922665,
-        "high": 766.315,
-        "low": 765.5840708922665,
-        "close": 765.9675000000001
-      },
       {
         "time": 1789149600,
         "open": 765.7757854461333,
@@ -28502,7 +28518,14 @@
         "open": 747.2090401004414,
         "high": 747.73,
         "low": 746.32,
-        "close": 747.0799999999999
+        "close": 747.0725
+      },
+      {
+        "time": 1794333300,
+        "open": 747.1407700502207,
+        "high": 747.1407700502207,
+        "low": 745.91,
+        "close": 746.3025
       }
     ],
     "30": [
@@ -33200,8 +33223,8 @@
         "time": 1794332700,
         "open": 747.5745413217372,
         "high": 747.73,
-        "low": 746.32,
-        "close": 747.0799999999999
+        "low": 745.91,
+        "close": 746.735
       }
     ]
   }

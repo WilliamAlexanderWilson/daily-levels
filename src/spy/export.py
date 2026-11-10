@@ -23,6 +23,7 @@ import json
 import pandas as pd
 
 import config
+from src.equities.range_context import build_range_context
 from src.output import atomic_write_json
 from src.spy.backtest import run_backtest, summarize
 from src.spy.exhaustion_signal import find_signals
@@ -86,6 +87,10 @@ def main() -> int:
     chart_payload = {
         "generated_at_utc": generated_at_utc.isoformat(),
         "price": price,
+        "symbol": SYMBOL,
+        "source": "Alpaca historical bars (free IEX feed)",
+        "is_live": False,
+        "range_context": build_range_context(real_5m, price, generated_at_utc),
         "timeframes": {
             str(minutes): _frame_to_json(timeframes[minutes], CHART_DISPLAY_DAYS) for minutes in TIMEFRAMES_MINUTES
         },
