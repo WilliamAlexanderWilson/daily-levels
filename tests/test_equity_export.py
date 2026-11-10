@@ -21,3 +21,9 @@ def test_equity_payload_is_explicitly_batch_and_symbol_scoped():
     assert payload["is_live"] is False
     assert payload["price"] == 111.0
     assert set(payload["timeframes"]) == {"10", "15", "20", "30"}
+    source_latest = int(frame.index.max().timestamp())
+    assert all(
+        bar["time"] <= source_latest
+        for bars in payload["timeframes"].values()
+        for bar in bars
+    )

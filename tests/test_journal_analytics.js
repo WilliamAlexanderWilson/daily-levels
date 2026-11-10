@@ -26,3 +26,13 @@ test("journal CSV exports explicit paper-trade fields", () => {
   assert.match(csv, /"BTC","closed"/);
   assert.match(csv, /"long-watch"/);
 });
+
+test("an explicit null exit remains open and never becomes a fabricated loss", () => {
+  const result = Journal.summary([{ asset: "btc", trade: {
+    direction: "long", price: 100, exitPrice: null, size: 100, leverage: 1, riskDollars: 10,
+  } }]);
+  assert.equal(result.open, 1);
+  assert.equal(result.closed, 0);
+  assert.equal(result.losses, 0);
+  assert.equal(result.avgRealizedR, null);
+});
