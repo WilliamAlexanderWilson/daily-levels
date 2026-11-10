@@ -760,6 +760,13 @@ full ~2-year window regardless of what the chart draws. Historical setup
 markers are deliberately not rendered on the main decision chart; they remain
 in the audit table under Research & details.
 
+The time axis is intentionally locked to **all history loaded for the selected
+view**. Switching timeframes, resizing the browser, or using mouse, trackpad,
+and touch gestures cannot pan or zoom away part of that sample. The equity
+chart's loaded sample is the 60-day display window described above; its
+approximately two-year research sample remains in the backtest outputs rather
+than being shipped as a multi-megabyte browser chart.
+
 **Premiums are modeled, not real quotes.** No free source publishes
 historical SPY options chains, so `src/spy/options_pricing.py` prices the
 ATM 2-trading-day option with Black-Scholes, using the daily VIX close as a
