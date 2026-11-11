@@ -1326,10 +1326,10 @@
     if (!status) return;
     status.textContent = eligible
       ? `D · ${matches.length} completed HA doji${matches.length === 1 ? "" : "s"}`
-      : "D · HA dojis start at 15m";
+      : "D · HA dojis require at least 1m";
     status.title = eligible
       ? `This ${intervalMinutes}-minute view marks completed Heikin Ashi candles whose body is no more than 10% of the full high-low range. D means doji; the forming candle is excluded.`
-      : "Heikin Ashi doji markers begin on the 15-minute timeframe. The forming candle is never marked.";
+      : "Heikin Ashi doji markers require a timeframe of at least one minute. The forming candle is never marked.";
   }
 
   function renderChart(candles, range, levelsWindowDays) {

@@ -8,7 +8,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function (CandleStyle) {
   "use strict";
 
-  const MIN_TIMEFRAME_MINUTES = 15;
+  const MIN_TIMEFRAME_MINUTES = 1;
   const MAX_BODY_RATIO = 0.1;
 
   function measure(bar) {

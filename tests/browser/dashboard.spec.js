@@ -81,7 +81,7 @@ test("SPY renders every published interval and keeps deep links on desktop and m
       const timeScale = { subscribeVisibleLogicalRangeChange() {}, fitContent() {}, getVisibleLogicalRange() { return null; } };
       window.LightweightCharts = {
         createChart() { return { addSeries() { return series; }, subscribeClick() {}, subscribeCrosshairMove() {}, timeScale() { return timeScale; } }; },
-        createSeriesMarkers() { return { setMarkers() {} }; },
+        createSeriesMarkers() { return { setMarkers(markers) { window.__spyMarkers = markers; } }; },
         CandlestickSeries: {}, HistogramSeries: {}, CrosshairMode: { Normal: 0 },
         LineStyle: { Dotted: 0, Dashed: 1, Solid: 2 }, PriceScaleMode: { Normal: 0 }
       };
@@ -98,13 +98,21 @@ test("SPY renders every published interval and keeps deep links on desktop and m
     const bars = await page.evaluate(() => window.__spyCandles || []);
     expect(bars.length, `${minutes}m chart has published bars`).toBeGreaterThan(0);
     expect(bars.every((bar, index) => index === 0 || bar.time > bars[index - 1].time)).toBe(true);
+    if (["1", "5", "10"].includes(minutes)) {
+      const markers = await page.evaluate(() => window.__spyMarkers || []);
+      expect(markers.filter((marker) => marker.text === "D").length,
+        `${minutes}m chart has completed SPY doji markers`).toBeGreaterThan(0);
+      await expect(page.locator("#doji-study-status")).toContainText(/completed HA dojis/);
+    }
   }
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(select).toHaveValue("240");
   await page.locator('[data-asset="qqq"]').click();
   await expect(select.locator("option")).toHaveText(["10m", "15m", "20m", "30m"]);
+  expect(await page.evaluate(() => (window.__spyMarkers || []).some((marker) => marker.text === "D"))).toBe(false);
   await page.locator('[data-asset="xau"]').click();
   await expect(select.locator("option")).toHaveText(["15m", "30m", "1H", "4H"]);
+  expect(await page.evaluate(() => (window.__spyMarkers || []).some((marker) => marker.text === "D"))).toBe(false);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
 });
 
