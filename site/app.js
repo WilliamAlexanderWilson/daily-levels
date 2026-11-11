@@ -8,6 +8,8 @@
   const LIVE_RECONNECT_MAX_MS = 30000;
   const LIVE_STREAM_STALE_MS = 15000;
   const DERIVED_RENDER_THROTTLE_MS = 400;
+  const AUTO_BATCH_HISTORY_PAGES = 8;
+  const AUTO_CRYPTO_HISTORY_PAGES = 4;
   const KRAKEN_OHLC_URL = "https://api.kraken.com/0/public/OHLC";
   const KRAKEN_DEPTH_URL = "https://api.kraken.com/0/public/Depth";
   const ASSET_PAIRS = { btc: "BTC/USD", eth: "ETH/USD" };
@@ -333,6 +335,7 @@
   let olderHistoryExhausted = false;
   let olderHistoryGeneration = 0;
   let historyNavigationArmed = false;
+  let historyPagesRemaining = 0;
   let activeBatchArchiveManifest = null;
   let loadedBatchArchivePaths = new Set();
 
@@ -348,6 +351,7 @@
     olderHistoryLoading = false;
     olderHistoryExhausted = false;
     historyNavigationArmed = false;
+    historyPagesRemaining = 0;
     latestVisibleLogicalRange = null;
     activeBatchArchiveManifest = null;
     loadedBatchArchivePaths = new Set();
@@ -356,6 +360,8 @@
 
   function markHistoryNavigation() {
     historyNavigationArmed = true;
+    historyPagesRemaining = isBatchAsset(state.asset)
+      ? AUTO_BATCH_HISTORY_PAGES : AUTO_CRYPTO_HISTORY_PAGES;
   }
 
   function scheduleFullHistoryFit() {
@@ -429,9 +435,9 @@
         secondsVisible: false,
         borderColor: cssVar("--border"),
         minBarSpacing: 0.05,
-        // Leave both edges unlocked so click-drag navigation behaves like a
-        // normal trading chart in every zoom state. "Fit all" is the explicit
-        // reset that returns the complete candle history to the viewport.
+        // Let the user pan and zoom freely inside loaded history. The history
+        // handler pages left when possible and keeps the first bar visible at
+        // the source boundary.
         fixLeftEdge: false,
         fixRightEdge: false,
         // Keep the newest Dallas-time label clear of the right price scale;
@@ -535,6 +541,9 @@
       renderOverlays();
       updateLatestChartControl(logicalRange);
       maybeLoadOlderCryptoHistory(logicalRange);
+      if (olderHistoryExhausted || (!olderHistoryLoading && !historyNavigationArmed)) {
+        keepHistoryOnScreen(logicalRange);
+      }
     });
     const chartResizeObserver = new ResizeObserver(scheduleFullHistoryFit);
     chartResizeObserver.observe(container);
@@ -1134,6 +1143,8 @@
   // which previously cropped itself to the level-calculation window.
   function fitAllLoadedHistory() {
     if (!chart) return;
+    historyNavigationArmed = false;
+    historyPagesRemaining = 0;
     chart.timeScale().fitContent();
   }
 
@@ -1202,6 +1213,8 @@
     const previousEarliest = activeCandles[0].time;
     olderHistoryLoading = true;
     historyNavigationArmed = false;
+    historyPagesRemaining = Math.max(0, historyPagesRemaining - 1);
+    let loaded = false;
     setHistoryStatus("Loading older candles…");
     try {
       const older = await fetchCoinbaseHistoryPage(productId, range, previousEarliest);
@@ -1223,12 +1236,13 @@
       const visibleRange = latestVisibleLogicalRange || chart.timeScale().getVisibleLogicalRange();
       applyMergedCryptoHistory(merged, range);
       restorePrependedHistoryViewport(visibleRange, added);
+      loaded = true;
       setHistoryStatus(`Loaded ${added.toLocaleString()} older candles · scroll left for more`);
     } catch (error) {
       console.error("older history page unavailable", error);
       setHistoryStatus("Older history unavailable — current chart remains usable");
     } finally {
-      if (generation === olderHistoryGeneration) olderHistoryLoading = false;
+      finishOlderHistoryPage(generation, loaded);
     }
   }
 
@@ -1238,9 +1252,13 @@
       if (state.asset !== asset) return;
       activeBatchArchiveManifest = manifest;
       setHistoryStatus(batchArchiveInstruction());
+      if (historyNavigationArmed) maybeLoadOlderCryptoHistory(chart?.timeScale().getVisibleLogicalRange());
     } catch (error) {
+      if (state.asset !== asset) return;
       console.error(`${asset} archive manifest unavailable`, error);
       setHistoryStatus("Older archive unavailable — recent chart remains usable");
+      historyNavigationArmed = false;
+      keepHistoryOnScreen(chart?.timeScale().getVisibleLogicalRange());
     }
   }
 
@@ -1271,11 +1289,14 @@
     if (!next) {
       olderHistoryExhausted = true;
       setHistoryStatus(`Earliest published history reached${batchArchiveStart() ? ` · ${batchArchiveStart()}` : ""}`);
+      finishOlderHistoryPage(olderHistoryGeneration, false);
       return;
     }
     const generation = olderHistoryGeneration;
     olderHistoryLoading = true;
     historyNavigationArmed = false;
+    historyPagesRemaining = Math.max(0, historyPagesRemaining - 1);
+    let loaded = false;
     setHistoryStatus(`Loading ${next.month}…`);
     try {
       const older = await fetchJson(`data/${next.path}`);
@@ -1284,21 +1305,57 @@
       const merged = CandleHistory.mergeOlder(older, current);
       activeSpyChart.timeframes[timeframe] = merged;
       renderSpyChart(merged, activeSpyChart.range_context, merged.length - current.length);
+      loaded = true;
       setHistoryStatus(`Loaded ${next.month} · scroll left for more`);
     } catch (error) {
       console.error("batch archive chunk unavailable", error);
       setHistoryStatus("Older archive chunk unavailable — current chart remains usable");
     } finally {
-      if (generation === olderHistoryGeneration) olderHistoryLoading = false;
+      finishOlderHistoryPage(generation, loaded);
     }
+  }
+
+  function keepHistoryOnScreen(logicalRange) {
+    if (!chart || !activeDisplayCandles.length) return;
+    const safeRange = CandleHistory.keepOldestBarVisible(logicalRange);
+    if (safeRange) chart.timeScale().setVisibleLogicalRange(safeRange);
+  }
+
+  function finishOlderHistoryPage(generation, loaded) {
+    if (generation !== olderHistoryGeneration) return;
+    olderHistoryLoading = false;
+    const logicalRange = chart?.timeScale().getVisibleLogicalRange();
+    if (loaded && !olderHistoryExhausted && historyPagesRemaining > 0) {
+      // A single drag can move beyond one chunk. Continue paging if needed,
+      // and stay armed if the user is still dragging toward the new edge.
+      historyNavigationArmed = true;
+      if (CandleHistory.needsOlderBars(logicalRange)) {
+        setTimeout(() => {
+          if (generation === olderHistoryGeneration && historyNavigationArmed && chart) {
+            maybeLoadOlderCryptoHistory(chart.timeScale().getVisibleLogicalRange());
+          }
+        }, isBatchAsset(state.asset) ? 0 : 150);
+      }
+      return;
+    }
+    historyNavigationArmed = false;
+    if (loaded && !olderHistoryExhausted && historyPagesRemaining === 0
+        && CandleHistory.needsOlderBars(logicalRange)) {
+      setHistoryStatus("More history available · drag left again to continue");
+    }
+    keepHistoryOnScreen(logicalRange);
   }
 
   function maybeLoadOlderCryptoHistory(logicalRange) {
     if (!historyNavigationArmed || !candleSeries || !logicalRange) return;
-    const bars = candleSeries.barsInLogicalRange(logicalRange);
-    if (!bars || bars.barsBefore >= 25) return;
+    if (!CandleHistory.needsOlderBars(logicalRange)) return;
+    if (olderHistoryExhausted || (!isBatchAsset(state.asset) && state.range === "1d")) {
+      historyNavigationArmed = false;
+      keepHistoryOnScreen(logicalRange);
+      return;
+    }
     if (isBatchAsset(state.asset)) loadOlderBatchHistory();
-    else if (state.range !== "1d") loadOlderCryptoHistory();
+    else loadOlderCryptoHistory();
   }
 
   function syncSeriesMarkers() {
@@ -4547,9 +4604,11 @@
     });
     document.getElementById("spy-timeframe-select").addEventListener("change", (e) => {
       state.spyTimeframe = e.target.value;
+      olderHistoryGeneration += 1;
       olderHistoryLoading = false;
       olderHistoryExhausted = false;
       historyNavigationArmed = false;
+      historyPagesRemaining = 0;
       setHistoryStatus(activeBatchArchiveManifest ? batchArchiveInstruction() : "");
       writeHash();
       rerenderSpyTimeframe();

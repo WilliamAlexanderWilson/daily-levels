@@ -25,8 +25,8 @@ test("versioned assets prevent an old BTC app bundle from rendering new tabs", (
   assert.match(index, /styles\.css\?v=deep-history-xau-v1/);
   assert.match(index, /candle-style\.js\?v=spy-doji-v1/);
   assert.match(index, /doji-study\.js\?v=spy-small-doji-v1/);
-  assert.match(index, /candle-history\.js\?v=deep-history-v1/);
-  assert.match(index, /app\.js\?v=full-history-v1/);
+  assert.match(index, /candle-history\.js\?v=history-viewport-v1/);
+  assert.match(index, /app\.js\?v=history-viewport-v1/);
 });
 
 test("crypto charts can page backward beyond Kraken's 720-candle window", () => {
@@ -34,7 +34,7 @@ test("crypto charts can page backward beyond Kraken's 720-candle window", () => 
   assert.match(app, /CandleHistory\.requestWindow/);
   assert.match(app, /CandleHistory\.fromCoinbaseRows/);
   assert.match(app, /CandleHistory\.mergeOlder/);
-  assert.match(app, /barsInLogicalRange/);
+  assert.match(app, /CandleHistory\.needsOlderBars/);
   assert.match(app, /loadOlderCryptoHistory/);
 });
 

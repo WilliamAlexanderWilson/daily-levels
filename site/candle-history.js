@@ -66,5 +66,19 @@
     return [...byTime.values()].sort((a, b) => a.time - b.time);
   }
 
-  return { RANGE_CONFIG, requestWindow, fromCoinbaseRows, mergeOlder };
+  function needsOlderBars(logicalRange) {
+    // This still works when the entire viewport is left of the first bar;
+    // barsInLogicalRange() can return null in that case.
+    return Number.isFinite(logicalRange?.from) && logicalRange.from < 25;
+  }
+
+  function keepOldestBarVisible(logicalRange) {
+    if (!Number.isFinite(logicalRange?.from) || !Number.isFinite(logicalRange?.to)
+        || logicalRange.to <= logicalRange.from) return null;
+    const width = logicalRange.to - logicalRange.from;
+    const left = -Math.min(10, Math.max(2, width * 0.05));
+    return logicalRange.from < left - 0.001 ? { from: left, to: left + width } : null;
+  }
+
+  return { RANGE_CONFIG, requestWindow, fromCoinbaseRows, mergeOlder, needsOlderBars, keepOldestBarVisible };
 });
