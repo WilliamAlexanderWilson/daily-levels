@@ -10,7 +10,7 @@
   const KRAKEN_OHLC_URL = "https://api.kraken.com/0/public/OHLC";
   const KRAKEN_DEPTH_URL = "https://api.kraken.com/0/public/Depth";
   const ASSET_PAIRS = { btc: "BTC/USD", eth: "ETH/USD" };
-  const BATCH_ASSETS = new Set(["spy", "qqq", "nvda"]);
+  const BATCH_ASSETS = new Set(["spy", "qqq", "nvda", "xau"]);
   const isBatchAsset = (asset) => BATCH_ASSETS.has(asset);
   // Kraken's public OHLC endpoint always returns just the most recent 720
   // candles no matter what `since` is set to (confirmed directly: since=1
@@ -52,9 +52,9 @@
   function readHash() {
     const params = new URLSearchParams(location.hash.replace(/^#/, ""));
     const asset = params.get("asset");
-    if (["eth", "spy", "qqq", "nvda"].includes(asset)) state.asset = asset;
+    if (["eth", "spy", "qqq", "nvda", "xau"].includes(asset)) state.asset = asset;
     const range = params.get("range");
-    if (isBatchAsset(state.asset) && /^(10|15|20|30)m?$/.test(range || "")) {
+    if (isBatchAsset(state.asset) && /^(10|15|20|30|60|240)m?$/.test(range || "")) {
       state.spyTimeframe = range.replace("m", "");
     } else if (range && RANGE_INTERVALS[range]) {
       state.range = range;
@@ -327,6 +327,33 @@
   let macroRangeFramedKey = null; // frame the sourced BTC range once per chart load without fighting later manual zooms
   let macroAutoPriceRange = null; // last range set by macro framing; live ticks may extend only this untouched automatic view
   let historyFitFrame = null; // refit only after the chart's own responsive resize has settled
+  let olderHistoryLoading = false;
+  let olderHistoryExhausted = false;
+  let olderHistoryGeneration = 0;
+  let historyNavigationArmed = false;
+  let activeBatchArchiveManifest = null;
+  let loadedBatchArchivePaths = new Set();
+
+  function setHistoryStatus(message = "") {
+    const status = document.getElementById("history-load-status");
+    if (!status) return;
+    status.textContent = message;
+    status.hidden = !message;
+  }
+
+  function resetOlderHistoryState() {
+    olderHistoryGeneration += 1;
+    olderHistoryLoading = false;
+    olderHistoryExhausted = false;
+    historyNavigationArmed = false;
+    activeBatchArchiveManifest = null;
+    loadedBatchArchivePaths = new Set();
+    setHistoryStatus("");
+  }
+
+  function markHistoryNavigation() {
+    historyNavigationArmed = true;
+  }
 
   function scheduleFullHistoryFit() {
     if (historyFitFrame !== null) cancelAnimationFrame(historyFitFrame);
@@ -497,7 +524,13 @@
       container.style.cursor = near ? "pointer" : "default";
     });
 
-    chart.timeScale().subscribeVisibleLogicalRangeChange(renderOverlays);
+    container.addEventListener("wheel", markHistoryNavigation, { passive: true });
+    container.addEventListener("pointerdown", markHistoryNavigation, { passive: true });
+    container.addEventListener("touchstart", markHistoryNavigation, { passive: true });
+    chart.timeScale().subscribeVisibleLogicalRangeChange((logicalRange) => {
+      renderOverlays();
+      maybeLoadOlderCryptoHistory(logicalRange);
+    });
     const chartResizeObserver = new ResizeObserver(scheduleFullHistoryFit);
     chartResizeObserver.observe(container);
     window.addEventListener("resize", scheduleFullHistoryFit);
@@ -604,13 +637,15 @@
     let message;
     const style = state.candleStyle === "heikin-ashi" ? "Heikin Ashi" : "Regular candles";
     if (isBatchAsset(state.asset)) {
-      message = `${state.asset.toUpperCase()} 20-session range · ${style} · Dallas time · all loaded batch history`;
+      message = state.asset === "xau"
+        ? `XAU gold benchmark · ${style} · Dallas time · complete published archive · delayed batch data`
+        : `${state.asset.toUpperCase()} 20-session range · ${style} · Dallas time · complete published archive`;
     } else if (fullAnalysisIsOpen()) {
       message = `Level radar · ${style} · Dallas time · all loaded history · reacts to the real-time price`;
     } else {
       message = state.asset === "btc"
-        ? `BTC macro range $60k–$80k · ${style} · Dallas time · all loaded history · real-time Kraken stream`
-        : `Rolling range · ${style} · Dallas time · all loaded history · real-time Kraken stream`;
+        ? `BTC macro range $60k–$80k · ${style} · Dallas time · Kraken live + Coinbase paged history`
+        : `Rolling range · ${style} · Dallas time · Kraken live + Coinbase paged history`;
     }
     if (status.textContent !== message) status.textContent = message;
   }
@@ -1095,6 +1130,129 @@
   function fitAllLoadedHistory() {
     if (!chart) return;
     chart.timeScale().fitContent();
+  }
+
+  async function fetchCoinbaseHistoryPage(productId, range, beforeUnix) {
+    const plan = CandleHistory.requestWindow(range, beforeUnix);
+    if (!plan) return [];
+    const url = `${COINBASE_CANDLES_URL}/${productId}/candles?granularity=${plan.granularity}`
+      + `&start=${new Date(plan.startUnix * 1000).toISOString()}`
+      + `&end=${new Date(plan.endUnix * 1000).toISOString()}`;
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Coinbase history fetch failed: ${response.status}`);
+    const rows = await response.json();
+    if (!Array.isArray(rows)) throw new Error(`Coinbase error: ${rows.message || "unexpected response"}`);
+    return CandleHistory.fromCoinbaseRows(rows, range, beforeUnix);
+  }
+
+  function applyMergedCryptoHistory(candles, range) {
+    activeCandles = candles;
+    activeDisplayCandles = CandleStyle.forStyle(candles, state.candleStyle);
+    candleSeries.setData(activeDisplayCandles.map((bar) => ({
+      time: toTimePoint(bar, range), open: bar.open, high: bar.high, low: bar.low, close: bar.close,
+    })));
+    volumeSeries.setData(activeDisplayCandles.map((bar) => ({
+      time: toTimePoint(bar, range),
+      value: bar.volume,
+      color: bar.close >= bar.open ? cssVar("--support") : cssVar("--resistance"),
+    })));
+    renderDojiMarkers(candles, RANGE_INTERVALS[range], range, {
+      completedThroughUnix: Date.now() / 1000,
+      timeIsClose: false,
+    });
+    renderTradeMarkers(state.asset, range, candles);
+  }
+
+  async function loadOlderCryptoHistory() {
+    const asset = state.asset;
+    const range = state.range;
+    const productId = COINBASE_PRODUCT_IDS[asset];
+    if (olderHistoryLoading || olderHistoryExhausted || !productId || range === "1d" || !activeCandles.length) return;
+    const generation = olderHistoryGeneration;
+    const previousEarliest = activeCandles[0].time;
+    olderHistoryLoading = true;
+    historyNavigationArmed = false;
+    setHistoryStatus("Loading older candles…");
+    try {
+      const older = await fetchCoinbaseHistoryPage(productId, range, previousEarliest);
+      if (generation !== olderHistoryGeneration || state.asset !== asset || state.range !== range) return;
+      if (!older.length) {
+        olderHistoryExhausted = true;
+        setHistoryStatus("Earliest available history reached");
+        return;
+      }
+      const merged = CandleHistory.mergeOlder(older, activeCandles);
+      const added = merged.length - activeCandles.length;
+      if (added <= 0 || merged[0].time >= previousEarliest) {
+        olderHistoryExhausted = true;
+        setHistoryStatus("Earliest available history reached");
+        return;
+      }
+      applyMergedCryptoHistory(merged, range);
+      fitAllLoadedHistory();
+      setHistoryStatus(`Loaded ${added.toLocaleString()} older candles · scroll left for more`);
+    } catch (error) {
+      console.error("older history page unavailable", error);
+      setHistoryStatus("Older history unavailable — current chart remains usable");
+    } finally {
+      if (generation === olderHistoryGeneration) olderHistoryLoading = false;
+    }
+  }
+
+  async function loadBatchArchiveManifest(asset) {
+    try {
+      const manifest = await fetchJson(`data/archive/${asset}/manifest.json`);
+      if (state.asset !== asset) return;
+      activeBatchArchiveManifest = manifest;
+      setHistoryStatus("Scroll left to load older published history");
+    } catch (error) {
+      console.error(`${asset} archive manifest unavailable`, error);
+      setHistoryStatus("Older archive unavailable — recent chart remains usable");
+    }
+  }
+
+  async function loadOlderBatchHistory() {
+    if (olderHistoryLoading || olderHistoryExhausted || !activeSpyChart || !activeBatchArchiveManifest) return;
+    const asset = state.asset;
+    const timeframe = state.spyTimeframe;
+    const current = (activeSpyChart.timeframes || {})[timeframe] || [];
+    if (!current.length) return;
+    const earliest = current[0].time;
+    const entries = ((activeBatchArchiveManifest.timeframes || {})[timeframe] || [])
+      .filter((entry) => entry.first < earliest && !loadedBatchArchivePaths.has(entry.path))
+      .sort((left, right) => right.first - left.first);
+    const next = entries[0];
+    if (!next) {
+      olderHistoryExhausted = true;
+      setHistoryStatus("Earliest published history reached");
+      return;
+    }
+    const generation = olderHistoryGeneration;
+    olderHistoryLoading = true;
+    historyNavigationArmed = false;
+    setHistoryStatus(`Loading ${next.month}…`);
+    try {
+      const older = await fetchJson(`data/${next.path}`);
+      if (generation !== olderHistoryGeneration || state.asset !== asset || state.spyTimeframe !== timeframe) return;
+      loadedBatchArchivePaths.add(next.path);
+      const merged = CandleHistory.mergeOlder(older, current);
+      activeSpyChart.timeframes[timeframe] = merged;
+      renderSpyChart(merged, activeSpyChart.range_context);
+      setHistoryStatus(`Loaded ${next.month} · scroll left for more`);
+    } catch (error) {
+      console.error("batch archive chunk unavailable", error);
+      setHistoryStatus("Older archive chunk unavailable — current chart remains usable");
+    } finally {
+      if (generation === olderHistoryGeneration) olderHistoryLoading = false;
+    }
+  }
+
+  function maybeLoadOlderCryptoHistory(logicalRange) {
+    if (!historyNavigationArmed || !candleSeries || !logicalRange) return;
+    const bars = candleSeries.barsInLogicalRange(logicalRange);
+    if (!bars || bars.barsBefore >= 25) return;
+    if (isBatchAsset(state.asset)) loadOlderBatchHistory();
+    else if (state.range !== "1d") loadOlderCryptoHistory();
   }
 
   function syncSeriesMarkers() {
@@ -2493,8 +2651,9 @@
     document.getElementById("decision-source-link").hidden = true;
     document.getElementById("decision-title").textContent = copy.title || "20-session range context";
     document.getElementById("decision-summary").textContent = copy.summary || "No directional signal is calculated from this range.";
-    document.getElementById("decision-caveat").textContent =
-      "This is deterministic price-location context, not a validated edge or a Buy, Sell, Call, or Put instruction. Free IEX data represents one exchange rather than consolidated SIP volume.";
+    document.getElementById("decision-caveat").textContent = asset === "xau"
+      ? "This is deterministic benchmark location, not a validated edge or a Buy or Sell instruction. PF_XAUTUSD is a delayed Kraken gold benchmark—not an executable interbank XAU/USD quote."
+      : "This is deterministic price-location context, not a validated edge or a Buy, Sell, Call, or Put instruction. Free IEX data represents one exchange rather than consolidated SIP volume.";
 
     document.getElementById("decision-range").hidden = false;
     document.getElementById("decision-support-caption").textContent = "20-session low";
@@ -3864,6 +4023,18 @@
     return "data/spy_range_reclaim.json";
   }
 
+  function syncBatchTimeframeOptions(asset, timeframes = {}) {
+    const select = document.getElementById("spy-timeframe-select");
+    if (!select) return;
+    const labels = { "10": "10m", "15": "15m", "20": "20m", "30": "30m", "60": "1H", "240": "4H" };
+    const preferred = asset === "xau" ? ["15", "30", "60", "240"] : ["10", "15", "20", "30"];
+    const available = preferred.filter((key) => Array.isArray(timeframes[key]));
+    const choices = available.length ? available : preferred;
+    select.innerHTML = choices.map((key) => `<option value="${key}">${labels[key]}</option>`).join("");
+    if (!choices.includes(state.spyTimeframe)) state.spyTimeframe = choices[0];
+    select.value = state.spyTimeframe;
+  }
+
   function applyAssetVisibility(asset) {
     const isSpy = asset === "spy";
     const isBatch = isBatchAsset(asset);
@@ -3873,9 +4044,13 @@
     const batchLegend = document.getElementById("spy-legend");
     const batchNote = document.getElementById("spy-chart-note");
     if (batchLegend) batchLegend.innerHTML = '<span class="legend-item"><i class="swatch current"></i>Last batch price — not live</span>';
-    if (batchNote) batchNote.innerHTML = `<strong>${asset.toUpperCase()} 20-session range context.</strong> High, midpoint, low, and edge zones use completed regular sessions only. Free Alpaca IEX batch data covers one exchange, not the consolidated market; these levels are context, not a trade signal.`;
+    if (batchNote) batchNote.innerHTML = asset === "xau"
+      ? `<strong>XAU gold benchmark context.</strong> This is Kraken's PF_XAUTUSD spot-index archive, published in delayed batches. It is a gold-price proxy—not an interbank XAU/USD execution quote or a trade signal.`
+      : `<strong>${asset.toUpperCase()} 20-session range context.</strong> High, midpoint, low, and edge zones use completed regular sessions only. Free Alpaca IEX batch data covers one exchange, not the consolidated market; these levels are context, not a trade signal.`;
     document.getElementById("subtitle").textContent = isSpy
       ? "SPY range research with a fail-closed validation gate."
+      : asset === "xau"
+        ? "Gold benchmark context from a delayed XAU archive — no live signal."
       : isBatch
         ? `${asset.toUpperCase()} market context from delayed batch data — no live signal.`
       : asset === "btc"
@@ -4222,9 +4397,11 @@
       if (state.asset !== asset) return;
 
       activeSpyChart = chartData;
+      syncBatchTimeframeOptions(asset, chartData.timeframes || {});
       renderHeader(chartData); // same {generated_at_utc, price} shape renderHeader already expects
       const regularBars = (chartData.timeframes || {})[state.spyTimeframe] || [];
       renderSpyChart(regularBars, chartData.range_context);
+      loadBatchArchiveManifest(asset);
       if (asset === "spy") {
         const [signalsData, backtestData, rangeResearch] = await Promise.all([
           fetchJson(spySignalsUrl()), fetchJson(spyBacktestUrl()), fetchJson(spyRangeResearchUrl()),
@@ -4276,6 +4453,7 @@
         lastLivePrice = null;
         lastLiveTickAt = null;
         activeRangeDecision = null;
+        resetOlderHistoryState();
         setActiveButtons();
         renderChartLiveTicker("reconnecting");
         writeHash();
@@ -4295,6 +4473,7 @@
     });
     document.getElementById("range-select").addEventListener("change", (e) => {
       state.range = e.target.value;
+      resetOlderHistoryState();
       setActiveButtons();
       writeHash();
       setMarkingMode(false);
@@ -4303,6 +4482,10 @@
     });
     document.getElementById("spy-timeframe-select").addEventListener("change", (e) => {
       state.spyTimeframe = e.target.value;
+      olderHistoryLoading = false;
+      olderHistoryExhausted = false;
+      historyNavigationArmed = false;
+      setHistoryStatus(activeBatchArchiveManifest ? "Scroll left to load older published history" : "");
       writeHash();
       rerenderSpyTimeframe();
     });

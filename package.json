@@ -2,7 +2,7 @@
   "name": "range-desk",
   "version": "1.0.0",
   "private": true,
-  "description": "Evidence-first market context for BTC, ETH, SPY, QQQ, and NVDA.",
+  "description": "Evidence-first market context for BTC, ETH, SPY, QQQ, NVDA, and XAU gold.",
   "scripts": {
     "test": "node --test tests/*.js",
     "test:browser": "playwright test",

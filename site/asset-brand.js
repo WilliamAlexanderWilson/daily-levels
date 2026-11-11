@@ -11,6 +11,7 @@
     spy: Object.freeze({ label: "SPY", mark: "brand-spy.svg" }),
     qqq: Object.freeze({ label: "QQQ", mark: "brand-qqq.svg" }),
     nvda: Object.freeze({ label: "NVIDIA", mark: "brand-nvda.svg" }),
+    xau: Object.freeze({ label: "XAU Gold", mark: "brand-xau.svg" }),
   });
 
   function forAsset(asset) {

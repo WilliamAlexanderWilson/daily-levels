@@ -42,7 +42,7 @@ test("the public dashboard identifies William Wilson as its owner", () => {
   assert.equal(fs.existsSync(path.join(siteRoot, "favicon.svg")), true);
   assert.equal(fs.existsSync(path.join(siteRoot, "social-preview.jpg")), true);
   assert.equal(fs.existsSync(path.join(siteRoot, "..", "docs", "assets", "range-desk-dashboard.jpg")), true);
-  for (const asset of ["btc", "eth", "spy", "qqq", "nvda"]) {
+  for (const asset of ["btc", "eth", "spy", "qqq", "nvda", "xau"]) {
     assert.equal(fs.existsSync(path.join(siteRoot, `brand-${asset}.svg`)), true);
   }
 });
@@ -50,8 +50,16 @@ test("the public dashboard identifies William Wilson as its owner", () => {
 test("the active chart controls the header mark and browser favicon", () => {
   const app = fs.readFileSync(path.join(siteRoot, "app.js"), "utf8");
   const html = fs.readFileSync(path.join(siteRoot, "index.html"), "utf8");
-  assert.match(html, /<script src="asset-brand\.js\?v=[^"]+"><\/script>\s*<script src="chart-time\.js\?v=[^"]+"><\/script>\s*<script src="candle-style\.js\?v=[^"]+"><\/script>\s*<script src="doji-study\.js\?v=[^"]+"><\/script>\s*<script src="app\.js\?v=[^"]+"><\/script>/);
+  assert.match(html, /<script src="asset-brand\.js\?v=[^"]+"><\/script>\s*<script src="chart-time\.js\?v=[^"]+"><\/script>\s*<script src="candle-style\.js\?v=[^"]+"><\/script>\s*<script src="doji-study\.js\?v=[^"]+"><\/script>\s*<script src="candle-history\.js\?v=[^"]+"><\/script>\s*<script src="app\.js\?v=[^"]+"><\/script>/);
   assert.match(app, /AssetBrand\.apply\(document, state\.asset\)/);
+});
+
+test("XAU is visibly disclosed as a delayed gold benchmark", () => {
+  const app = fs.readFileSync(path.join(siteRoot, "app.js"), "utf8");
+  const html = fs.readFileSync(path.join(siteRoot, "index.html"), "utf8");
+  assert.match(html, /data-asset="xau"/);
+  assert.match(app, /PF_XAUTUSD/);
+  assert.match(app, /not an interbank XAU\/USD execution quote/);
 });
 
 test("the public product images meet their publishing contracts", () => {

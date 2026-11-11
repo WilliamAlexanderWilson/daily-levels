@@ -93,6 +93,12 @@ jobs:
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
         run: python -m src.equities.export || echo "Equity chart export failed, continuing with prior QQQ/NVDA data"
 
+      - name: Refresh XAU gold benchmark archive
+        # Public Kraken Futures chart data, paged server-side because this
+        # endpoint does not expose browser CORS headers. This is published as
+        # a delayed benchmark and never labeled as a live execution quote.
+        run: python -m src.metals.export || echo "XAU export failed, continuing with the prior gold archive"
+
       - name: Commit and push data
         id: commit
         run: |

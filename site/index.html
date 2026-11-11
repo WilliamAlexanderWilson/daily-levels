@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="William Wilson's evidence-first range dashboard for BTC, ETH, SPY, QQQ, and NVDA research." />
+  <meta name="description" content="William Wilson's evidence-first range dashboard for BTC, ETH, SPY, QQQ, NVDA, and XAU gold research." />
   <meta name="author" content="William Wilson" />
   <meta name="theme-color" content="#0c0f12" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="#f5f6f7" media="(prefers-color-scheme: light)" />
   <meta property="og:title" content="Range Desk by William Wilson" />
-  <meta property="og:description" content="Range context, confirmation checks, and risk-first paper planning for BTC, ETH, SPY, QQQ, and NVDA research." />
+  <meta property="og:description" content="Range context, confirmation checks, and risk-first paper planning for BTC, ETH, SPY, QQQ, NVDA, and XAU gold research." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://williamalexanderwilson.github.io/daily-levels/" />
   <meta property="og:site_name" content="Range Desk" />
@@ -18,13 +18,13 @@
   <meta property="og:image:alt" content="Range Desk by William Wilson with a live BTC dashboard preview" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Range Desk by William Wilson" />
-  <meta name="twitter:description" content="Evidence-first range context for BTC, ETH, SPY, QQQ, and NVDA." />
+  <meta name="twitter:description" content="Evidence-first range context for BTC, ETH, SPY, QQQ, NVDA, and XAU gold." />
   <meta name="twitter:image" content="https://williamalexanderwilson.github.io/daily-levels/social-preview.jpg" />
   <meta name="twitter:image:alt" content="Range Desk by William Wilson with a live BTC dashboard preview" />
   <link rel="canonical" href="https://williamalexanderwilson.github.io/daily-levels/" />
-  <title>William Wilson's Range Desk — BTC, ETH, SPY, QQQ &amp; NVDA</title>
+  <title>William Wilson's Range Desk — BTC, ETH, SPY, QQQ, NVDA &amp; XAU</title>
   <link id="site-favicon" rel="icon" type="image/svg+xml" href="brand-btc.svg" />
-  <link rel="stylesheet" href="styles.css?v=fluid-chart-v1" />
+  <link rel="stylesheet" href="styles.css?v=deep-history-xau-v1" />
 </head>
 <body>
   <header class="site-header">
@@ -51,6 +51,7 @@
         <button type="button" data-asset="spy" class="toggle-btn" aria-pressed="false">SPY</button>
         <button type="button" data-asset="qqq" class="toggle-btn" aria-pressed="false">QQQ</button>
         <button type="button" data-asset="nvda" class="toggle-btn" aria-pressed="false">NVDA</button>
+        <button type="button" data-asset="xau" class="toggle-btn" aria-pressed="false">XAU</button>
       </div>
       <select id="range-select" class="range-select" aria-label="Timeframe">
         <option value="1m">1m</option>
@@ -66,6 +67,8 @@
         <option value="15" selected>15m</option>
         <option value="20">20m</option>
         <option value="30">30m</option>
+        <option value="60">1H</option>
+        <option value="240">4H</option>
       </select>
       <div class="toggle-group candle-style-toggle" id="candle-style-toggle" role="group" aria-label="Candle style">
         <button type="button" data-candle-style="regular" class="toggle-btn active" aria-pressed="true" title="Actual market open, high, low, and close">Regular</button>
@@ -73,6 +76,7 @@
       </div>
       <span id="doji-study-status" class="study-status" aria-live="polite" title="SPY completed Heikin Ashi candles whose body is no more than 10% of the full high-low range" hidden>D · SPY HA dojis start at 15m</span>
       <button type="button" id="fit-chart-btn" class="chart-control-btn" title="Restore the complete loaded history and automatic price scale">Fit all</button>
+      <span id="history-load-status" class="history-load-status" aria-live="polite" hidden></span>
     </div>
 
     <section id="market-clock" class="market-clock" aria-labelledby="market-clock-title">
@@ -822,14 +826,15 @@
   <script src="range-lab.js?v=spy-doji-v1"></script>
   <script src="liquidation-risk.js?v=spy-doji-v1"></script>
   <script src="live-stream.js?v=spy-doji-v1"></script>
-  <script src="market-sessions.js?v=spy-doji-v1"></script>
+  <script src="market-sessions.js?v=deep-history-xau-v1"></script>
   <script src="paper-trader.js?v=spy-doji-v1"></script>
-  <script src="journal-analytics.js?v=spy-doji-v1"></script>
+  <script src="journal-analytics.js?v=deep-history-xau-v1"></script>
   <script src="decision-lock.js?v=spy-doji-v1"></script>
-  <script src="asset-brand.js?v=spy-doji-v1"></script>
+  <script src="asset-brand.js?v=deep-history-xau-v1"></script>
   <script src="chart-time.js?v=spy-doji-v1"></script>
   <script src="candle-style.js?v=spy-doji-v1"></script>
   <script src="doji-study.js?v=spy-doji-v1"></script>
-  <script src="app.js?v=free-pan-v1"></script>
+  <script src="candle-history.js?v=deep-history-v1"></script>
+  <script src="app.js?v=deep-history-v1"></script>
 </body>
 </html>
