@@ -171,6 +171,11 @@ When that latest completed candle passes the gate, the chart adds a
 **LIVE LONG SETUP ✓** or **LIVE SHORT SETUP ✓** marker. An older reclaim can
 remain useful history, but it cannot masquerade as a current live setup.
 
+SPY, QQQ, NVDA, and XAU each show their own batch publication time in Dallas
+time. A batch older than 18 hours gets an asset-specific stale warning. If one
+of these exports fails, the scheduled workflow retains its prior files, lets
+unaffected changes deploy, then fails with a summary naming the affected asset.
+
 The optional **setup alert** starts with those same three price facts, then
 also requires (4) one of the asset's two measured volatility-leading sessions
 to be open or within 30 minutes and (5) the selected minimum range

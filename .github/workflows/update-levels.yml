@@ -73,31 +73,58 @@ jobs:
         run: python -m src.session_reactions.cli || echo "Session reaction refresh failed, continuing with the prior artifact"
 
       - name: Run SPY exhaustion-reversal backtest
+        id: spy_export
         # Also ungated: pulls Alpaca's ~2-year 5m window + Yahoo's VIX,
         # recomputes signals/backtest fresh every trigger (~every 3h)
         # rather than once a day - a trading-day-old signal chart shouldn't
-        # wait for the next 5am Central run. Best-effort: an Alpaca/Yahoo
-        # hiccup here shouldn't fail the whole workflow and block the
-        # BTC/ETH commit+deploy below. Needs ALPACA_API_KEY/
+        # wait for the next 5am Central run. An Alpaca/Yahoo hiccup here
+        # leaves the prior SPY files in place and lets other data deploy;
+        # the workflow then reports the SPY failure. Needs ALPACA_API_KEY/
         # ALPACA_SECRET_KEY set as repo secrets (Settings -> Secrets and
         # variables -> Actions) - a free data-only key from alpaca.markets,
         # not a trading key, nothing here ever places an order.
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-        run: python -m src.spy.export || echo "SPY export failed, continuing with yesterday's SPY data"
+        run: |
+          if python -m src.spy.export; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::SPY export failed; retaining the prior SPY data"
+            git restore -- site/data/spy_chart.json site/data/spy_signals.json site/data/spy_backtest.json site/data/spy_session_reactions.json site/data/spy_range_open_forward.json site/data/archive/spy
+            git clean -fd -- site/data/archive/spy
+          fi
 
       - name: Refresh QQQ and NVDA context charts
+        id: equity_export
         env:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
-        run: python -m src.equities.export || echo "Equity chart export failed, continuing with prior QQQ/NVDA data"
+        run: |
+          if python -m src.equities.export; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::QQQ/NVDA export failed; retaining the prior equity data"
+            git restore -- site/data/qqq_chart.json site/data/nvda_chart.json site/data/archive/qqq site/data/archive/nvda
+            git clean -fd -- site/data/archive/qqq site/data/archive/nvda
+          fi
 
       - name: Refresh XAU gold benchmark archive
+        id: xau_export
         # Public Kraken Futures chart data, paged server-side because this
         # endpoint does not expose browser CORS headers. This is published as
         # a delayed benchmark and never labeled as a live execution quote.
-        run: python -m src.metals.export || echo "XAU export failed, continuing with the prior gold archive"
+        run: |
+          if python -m src.metals.export; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::XAU export failed; retaining the prior gold data"
+            git restore -- site/data/xau_chart.json site/data/archive/xau
+            git clean -fd -- site/data/archive/xau
+          fi
 
       - name: Commit and push data
         id: commit
@@ -130,3 +157,18 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v4
         if: steps.commit.outputs.changed == 'true'
+
+      # Let unaffected data commit and deploy first, then make a failed batch
+      # refresh visible as a failed workflow rather than a green run.
+      - name: Report batch export failures
+        if: ${{ always() && (steps.spy_export.outputs.ok == 'false' || steps.equity_export.outputs.ok == 'false' || steps.xau_export.outputs.ok == 'false') }}
+        env:
+          SPY_OK: ${{ steps.spy_export.outputs.ok }}
+          EQUITY_OK: ${{ steps.equity_export.outputs.ok }}
+          XAU_OK: ${{ steps.xau_export.outputs.ok }}
+        run: |
+          echo "### Batch data refresh failed" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$SPY_OK" = false ]; then echo "- SPY kept its prior published data." >> "$GITHUB_STEP_SUMMARY"; fi
+          if [ "$EQUITY_OK" = false ]; then echo "- QQQ and NVDA kept their prior published data." >> "$GITHUB_STEP_SUMMARY"; fi
+          if [ "$XAU_OK" = false ]; then echo "- XAU kept its prior published data." >> "$GITHUB_STEP_SUMMARY"; fi
+          exit 1

@@ -42,6 +42,34 @@ test("the active market controls the visible brand and browser identity", async 
   await expect(page).toHaveURL(/#asset=xau&range=15m$/);
 });
 
+test("a stale XAU batch identifies its age without overflowing the page", async ({ page }) => {
+  await page.route("https://cdn.jsdelivr.net/**", (route) => route.fulfill({
+    contentType: "application/javascript",
+    body: `
+      const priceScale = { applyOptions() {}, setAutoScale() {}, getVisibleRange() { return null; }, width() { return 50; } };
+      const series = { setData() {}, priceScale() { return priceScale; }, createPriceLine() { return { applyOptions() {} }; },
+        removePriceLine() {}, priceToCoordinate() { return null; } };
+      const timeScale = { subscribeVisibleLogicalRangeChange() {}, fitContent() {}, getVisibleLogicalRange() { return null; } };
+      window.LightweightCharts = {
+        createChart() { return { addSeries() { return series; }, subscribeClick() {}, subscribeCrosshairMove() {}, timeScale() { return timeScale; } }; },
+        createSeriesMarkers() { return { setMarkers() {} }; },
+        CandlestickSeries: {}, HistogramSeries: {}, CrosshairMode: { Normal: 0 },
+        LineStyle: { Dotted: 0, Dashed: 1, Solid: 2 }, PriceScaleMode: { Normal: 0 }
+      };
+    `,
+  }));
+  await page.route("**/data/xau_chart.json", async (route) => {
+    const response = await route.fetch();
+    const chart = await response.json();
+    chart.generated_at_utc = new Date(Date.now() - 19 * 3_600_000).toISOString();
+    await route.fulfill({ response, json: chart });
+  });
+  await page.goto("/#asset=xau&range=15m", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#generated-label")).toContainText("XAU batch published");
+  await expect(page.locator("#stale-banner")).toContainText("XAU batch data was published 19 hours ago");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+});
+
 test("chart timestamps use Dallas 12-hour time and follow daylight saving", async ({ page }) => {
   await openDashboard(page);
   const labels = await page.evaluate(() => ({
