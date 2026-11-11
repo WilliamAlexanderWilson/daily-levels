@@ -25,7 +25,7 @@ test("versioned assets prevent an old BTC app bundle from rendering new tabs", (
   assert.match(index, /styles\.css\?v=fluid-chart-v1/);
   assert.match(index, /candle-style\.js\?v=spy-doji-v1/);
   assert.match(index, /doji-study\.js\?v=spy-doji-v1/);
-  assert.match(index, /app\.js\?v=spy-doji-v1/);
+  assert.match(index, /app\.js\?v=chart-edges-v1/);
 });
 
 test("regular and Heikin Ashi styles are explicit reversible controls", () => {
@@ -58,6 +58,8 @@ test("every timeframe opens fitted and then supports normal chart navigation", (
   assert.match(app, /horzTouchDrag: true/);
   assert.match(app, /axisPressedMouseMove: \{ time: true, price: true \}/);
   assert.match(app, /pinch: true/);
+  assert.match(app, /fixLeftEdge: true/);
+  assert.match(app, /fixRightEdge: true/);
   assert.doesNotMatch(app, /setVisibleLogicalRange/);
   assert.doesNotMatch(app, /function applyDefaultZoom/);
   assert.match(app, /function renderChart[\s\S]*?fitAllLoadedHistory\(\)/);
