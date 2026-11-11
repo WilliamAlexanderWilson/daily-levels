@@ -30,16 +30,19 @@ test("does not mark a live forming candle until its interval ends", () => {
   }).length, 1);
 });
 
-test("starts at 15 minutes and excludes flat no-range bars", () => {
-  assert.equal(DojiStudy.findCompleted(candles, {
-    intervalMinutes: 10,
-    completedThroughUnix: 9999,
-  }).length, 0);
+test("starts at one minute and excludes flat no-range bars", () => {
+  assert.equal(DojiStudy.MIN_TIMEFRAME_MINUTES, 1);
+  for (const intervalMinutes of [0, NaN]) {
+    assert.equal(DojiStudy.findCompleted(candles, {
+      intervalMinutes,
+      completedThroughUnix: 9999,
+    }).length, 0);
+  }
   assert.equal(DojiStudy.isDoji({ open: 10, high: 10, low: 10, close: 10 }), false);
 });
 
-test("uses the same completed-candle rule at 15m, 30m, 1H, 4H, and Daily", () => {
-  for (const intervalMinutes of [15, 30, 60, 240, 1440]) {
+test("uses the same completed-candle rule from 1m through Daily", () => {
+  for (const intervalMinutes of [1, 5, 10, 15, 30, 60, 240, 1440]) {
     const result = DojiStudy.findCompleted([candles[0]], {
       intervalMinutes,
       completedThroughUnix: intervalMinutes * 60,
@@ -49,10 +52,18 @@ test("uses the same completed-candle rule at 15m, 30m, 1H, 4H, and Daily", () =>
 });
 
 test("supports equity bars whose timestamp is already the close boundary", () => {
-  const result = DojiStudy.findCompleted([candles[0]], {
-    intervalMinutes: 15,
-    completedThroughUnix: 0,
-    timeIsClose: true,
-  });
-  assert.equal(result.length, 1);
+  for (const intervalMinutes of [1, 5, 10, 15]) {
+    const forming = DojiStudy.findCompleted([candles[0]], {
+      intervalMinutes,
+      completedThroughUnix: -1,
+      timeIsClose: true,
+    });
+    const completed = DojiStudy.findCompleted([candles[0]], {
+      intervalMinutes,
+      completedThroughUnix: 0,
+      timeIsClose: true,
+    });
+    assert.equal(forming.length, 0, `${intervalMinutes}m bar must be complete`);
+    assert.equal(completed.length, 1, `${intervalMinutes}m close is inclusive`);
+  }
 });

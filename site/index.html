@@ -76,7 +76,7 @@
         <button type="button" data-candle-style="regular" class="toggle-btn active" aria-pressed="true" title="Actual market open, high, low, and close">Regular</button>
         <button type="button" data-candle-style="heikin-ashi" class="toggle-btn" aria-pressed="false" title="Smoothed Heikin Ashi candles; values are derived, not traded prices">Heikin Ashi</button>
       </div>
-      <span id="doji-study-status" class="study-status" aria-live="polite" title="SPY completed Heikin Ashi candles whose body is no more than 10% of the full high-low range" hidden>D · SPY HA dojis start at 15m</span>
+      <span id="doji-study-status" class="study-status" aria-live="polite" title="SPY completed Heikin Ashi candles whose body is no more than 10% of the full high-low range" hidden>D · SPY completed HA dojis</span>
       <button type="button" id="fit-chart-btn" class="chart-control-btn" title="Restore the complete loaded history and automatic price scale">Fit all</button>
       <button type="button" id="latest-chart-btn" class="chart-control-btn" title="Return to the newest candle at the current zoom" hidden>Latest</button>
       <span id="history-load-status" class="history-load-status" aria-live="polite" hidden></span>
@@ -836,8 +836,8 @@
   <script src="asset-brand.js?v=deep-history-xau-v1"></script>
   <script src="chart-time.js?v=spy-doji-v1"></script>
   <script src="candle-style.js?v=spy-doji-v1"></script>
-  <script src="doji-study.js?v=spy-doji-v1"></script>
+  <script src="doji-study.js?v=spy-small-doji-v1"></script>
   <script src="candle-history.js?v=deep-history-v1"></script>
-  <script src="app.js?v=spy-timeframes-v1"></script>
+  <script src="app.js?v=spy-small-doji-v1"></script>
 </body>
 </html>
