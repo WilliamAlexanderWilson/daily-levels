@@ -21,6 +21,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
+  actions: read
   contents: write
   pages: write
   id-token: write
@@ -153,6 +154,12 @@ jobs:
         if: steps.commit.outputs.changed == 'true'
         with:
           path: site
+
+      - name: Wait for Pages artifact indexing
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/wait-for-pages-artifact.sh
 
       - id: deployment
         uses: actions/deploy-pages@v4
