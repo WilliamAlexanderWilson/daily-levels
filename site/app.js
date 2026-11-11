@@ -294,6 +294,7 @@
   let levelLinesByKey = new Map();
   let wallLinesByKey = new Map();
   let lastLiveUnixTime = null; // guards against feeding series.update() a time older than its last bar
+  let latestVisibleLogicalRange = null; // event value can lead getVisibleLogicalRange() during a fast history response
 
   // the daily levels + scorecard, kept around so the nearest-level cards
   // can react to the real-time price, not just the initial data load.
@@ -347,6 +348,7 @@
     olderHistoryLoading = false;
     olderHistoryExhausted = false;
     historyNavigationArmed = false;
+    latestVisibleLogicalRange = null;
     activeBatchArchiveManifest = null;
     loadedBatchArchivePaths = new Set();
     setHistoryStatus("");
@@ -529,7 +531,9 @@
     container.addEventListener("pointerdown", markHistoryNavigation, { passive: true });
     container.addEventListener("touchstart", markHistoryNavigation, { passive: true });
     chart.timeScale().subscribeVisibleLogicalRangeChange((logicalRange) => {
+      latestVisibleLogicalRange = logicalRange;
       renderOverlays();
+      updateLatestChartControl(logicalRange);
       maybeLoadOlderCryptoHistory(logicalRange);
     });
     const chartResizeObserver = new ResizeObserver(scheduleFullHistoryFit);
@@ -1133,6 +1137,31 @@
     chart.timeScale().fitContent();
   }
 
+  function updateLatestChartControl(logicalRange) {
+    const button = document.getElementById("latest-chart-btn");
+    if (!button) return;
+    const lastIndex = activeDisplayCandles.length - 1;
+    const visibleBars = logicalRange ? logicalRange.to - logicalRange.from : 0;
+    const distance = logicalRange ? logicalRange.to - lastIndex : 0;
+    // Free panning is intentional. Offer a way home when the latest bar is
+    // off-screen or future whitespace takes a meaningful part of the chart.
+    button.hidden = lastIndex < 0 || !logicalRange
+      || (distance >= -3 && distance <= Math.max(3, visibleBars * 0.12));
+    const batch = isBatchAsset(state.asset);
+    button.textContent = batch ? "Newest" : "Latest";
+    button.title = batch
+      ? "Return to the newest published candle at the current zoom"
+      : "Return to the latest candle at the current zoom";
+  }
+
+  function restorePrependedHistoryViewport(visibleRange, addedBars) {
+    if (!visibleRange || !Number.isFinite(addedBars) || addedBars <= 0) return;
+    chart.timeScale().setVisibleLogicalRange({
+      from: visibleRange.from + addedBars,
+      to: visibleRange.to + addedBars,
+    });
+  }
+
   async function fetchCoinbaseHistoryPage(productId, range, beforeUnix) {
     const plan = CandleHistory.requestWindow(range, beforeUnix);
     if (!plan) return [];
@@ -1189,8 +1218,11 @@
         setHistoryStatus("Earliest available history reached");
         return;
       }
+      // setData() renumbers every existing logical bar after a prepend.
+      // Preserve the user's exact zoom and candle positions during paging.
+      const visibleRange = latestVisibleLogicalRange || chart.timeScale().getVisibleLogicalRange();
       applyMergedCryptoHistory(merged, range);
-      fitAllLoadedHistory();
+      restorePrependedHistoryViewport(visibleRange, added);
       setHistoryStatus(`Loaded ${added.toLocaleString()} older candles · scroll left for more`);
     } catch (error) {
       console.error("older history page unavailable", error);
@@ -1238,7 +1270,7 @@
       loadedBatchArchivePaths.add(next.path);
       const merged = CandleHistory.mergeOlder(older, current);
       activeSpyChart.timeframes[timeframe] = merged;
-      renderSpyChart(merged, activeSpyChart.range_context);
+      renderSpyChart(merged, activeSpyChart.range_context, merged.length - current.length);
       setHistoryStatus(`Loaded ${next.month} · scroll left for more`);
     } catch (error) {
       console.error("batch archive chunk unavailable", error);
@@ -4287,9 +4319,12 @@
     });
   }
 
-  function renderSpyChart(regularBars, rangeContext = null) {
+  function renderSpyChart(regularBars, rangeContext = null, prependedBars = 0) {
     ensureChart();
-    clearPriceSnapState();
+    const visibleRange = prependedBars > 0
+      ? (latestVisibleLogicalRange || chart.timeScale().getVisibleLogicalRange())
+      : null;
+    if (!visibleRange) clearPriceSnapState();
     updateChartFocusStatus();
     // SPY has no levels/heatmap of its own - strip any leftover crypto
     // price lines/labels/liquidation rows rather than leaving them drawn
@@ -4326,7 +4361,8 @@
       timeIsClose: true,
     });
     candleSeries.priceScale().applyOptions({ mode: LightweightCharts.PriceScaleMode.Normal });
-    fitAllLoadedHistory();
+    if (visibleRange) restorePrependedHistoryViewport(visibleRange, prependedBars);
+    else fitAllLoadedHistory();
     lastLiveUnixTime = regularBars.length ? regularBars[regularBars.length - 1].time : null;
     renderBatchRangeLines(rangeContext);
     renderOverlays();
@@ -4528,6 +4564,9 @@
       clearPriceSnapState();
       fitAllLoadedHistory();
       renderOverlays();
+    });
+    document.getElementById("latest-chart-btn").addEventListener("click", () => {
+      if (chart) chart.timeScale().scrollToRealTime();
     });
 
     const refreshBtn = document.getElementById("refresh-btn");

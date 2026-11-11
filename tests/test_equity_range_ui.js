@@ -26,7 +26,7 @@ test("versioned assets prevent an old BTC app bundle from rendering new tabs", (
   assert.match(index, /candle-style\.js\?v=spy-doji-v1/);
   assert.match(index, /doji-study\.js\?v=spy-doji-v1/);
   assert.match(index, /candle-history\.js\?v=deep-history-v1/);
-  assert.match(index, /app\.js\?v=batch-freshness-v1/);
+  assert.match(index, /app\.js\?v=chart-nav-v1/);
 });
 
 test("crypto charts can page backward beyond Kraken's 720-candle window", () => {
@@ -77,7 +77,9 @@ test("every timeframe opens fitted and then supports normal chart navigation", (
   assert.match(app, /pinch: true/);
   assert.match(app, /fixLeftEdge: false/);
   assert.match(app, /fixRightEdge: false/);
-  assert.doesNotMatch(app, /setVisibleLogicalRange/);
+  assert.match(app, /restorePrependedHistoryViewport/);
+  assert.match(app, /setVisibleLogicalRange/);
+  assert.match(index, /id="latest-chart-btn"/);
   assert.doesNotMatch(app, /function applyDefaultZoom/);
   assert.match(app, /function renderChart[\s\S]*?fitAllLoadedHistory\(\)/);
   assert.match(app, /function renderSpyChart[\s\S]*?fitAllLoadedHistory\(\)/);
