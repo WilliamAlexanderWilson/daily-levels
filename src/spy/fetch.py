@@ -6,10 +6,9 @@ Two sources, for two different jobs:
   - Alpaca (data.alpaca.markets) for genuine 1-minute SPY chart bars and
     the separate 5-minute bars the signal detection and backtest run on.
     Needs a free API key (see ALPACA_API_KEY/ALPACA_SECRET_KEY below) but,
-    confirmed live on
-    2026-10-08, gives real 5-minute bars back to at least 2016 on the free
-    IEX feed - genuinely paginated via next_page_token, not truncated to a
-    rolling window the way Yahoo's free endpoint is. This is what fixes the
+    currently gives real bars back to July 2020 on the free IEX feed
+    (checked 2026-11-11) - genuinely paginated via next_page_token, not
+    truncated to a rolling window the way Yahoo's free endpoint is. This fixes the
     60-day sample-size ceiling the first version of this backtest shipped
     with.
   - Yahoo Finance's public chart endpoint for VIX, still - no key, and
@@ -93,21 +92,22 @@ def _alpaca_headers() -> dict:
     return {"APCA-API-KEY-ID": api_key, "APCA-API-SECRET-KEY": secret_key}
 
 
-def _fetch_alpaca_intraday(symbol: str, minutes: int, days: int) -> pd.DataFrame:
-    """Real Alpaca IEX OHLCV bars over the last `days` calendar days,
-    indexed by UTC timestamp. Paginates via next_page_token until
-    Alpaca stops returning one - unlike Yahoo's intraday endpoint, this
-    isn't silently truncated to a rolling window; `days` is honored for
-    real (confirmed live back to at least 2016 on the free IEX feed)."""
+def fetch_alpaca_window(
+    symbol: str, minutes: int, start: pd.Timestamp, end: pd.Timestamp
+) -> pd.DataFrame:
+    """Fetch every available IEX bar in an explicit UTC window, with pagination."""
     if minutes not in (1, 5):
         raise ValueError("Alpaca source interval must be 1 or 5 minutes")
-    end = pd.Timestamp.now(tz="UTC")
-    start = end - pd.Timedelta(days=days)
+    start = pd.Timestamp(start)
+    end = pd.Timestamp(end)
+    if start.tzinfo is None or end.tzinfo is None or start >= end:
+        raise ValueError("Alpaca window needs timezone-aware start before end")
     headers = _alpaca_headers()
     url = ALPACA_BARS_URL.format(symbol=symbol)
 
     all_bars = []
     page_token = None
+    seen_tokens = set()
     while True:
         params = {
             "timeframe": f"{minutes}Min",
@@ -134,15 +134,24 @@ def _fetch_alpaca_intraday(symbol: str, minutes: int, days: int) -> pd.DataFrame
         page_token = payload.get("next_page_token")
         if not page_token:
             break
+        if page_token in seen_tokens:
+            raise RuntimeError(f"Alpaca repeated a page token for {symbol} {minutes}m")
+        seen_tokens.add(page_token)
 
     if not all_bars:
-        raise ValueError(f"Alpaca returned no bars for {symbol} over the last {days} days")
+        raise ValueError(f"Alpaca returned no {minutes}m IEX bars for {symbol} in {start} to {end}")
 
     df = pd.DataFrame(all_bars).rename(
         columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"}
     )
     df["time"] = pd.to_datetime(df["time"], utc=True)
     return df.set_index("time")[["open", "high", "low", "close", "volume"]].sort_index()
+
+
+def _fetch_alpaca_intraday(symbol: str, minutes: int, days: int) -> pd.DataFrame:
+    """Real Alpaca IEX OHLCV bars over the last `days` calendar days."""
+    end = pd.Timestamp.now(tz="UTC")
+    return fetch_alpaca_window(symbol, minutes, end - pd.Timedelta(days=days), end)
 
 
 def fetch_alpaca_1m(symbol: str = "SPY", days: int = ALPACA_HISTORY_DAYS) -> pd.DataFrame:

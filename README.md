@@ -42,9 +42,10 @@ prospective evidence gates, alerts, and browser-local paper planning.
 
 - **Live where the data is genuinely live.** BTC and ETH use Kraken's
   per-trade WebSocket stream; REST supplies history and reconnect fallback.
-- **History loads without truncation.** Crypto intraday views page backward
-  from Coinbase when the Kraken window ends; batch charts load immutable
-  monthly archives as you scroll left instead of shipping a huge first page.
+- **History loads progressively.** Crypto intraday views page backward
+  from Coinbase when the Kraken window ends; batch charts load monthly
+  archives as you scroll left instead of shipping a huge first page. Each
+  provider's actual earliest available data remains the boundary.
 - **Fail-closed by design.** Missing evidence, stale marks, unverified market
   calendars, and failed holdout tests produce `WAIT`—not a manufactured call.
 - **Research is separated from execution.** Historical observations,
@@ -789,25 +790,24 @@ secrets (Settings → Secrets and variables → Actions) — `update-levels.yml`
 passes them through as env vars to the SPY export step.
 
 **Sample depth vs. chart display are two different numbers, on purpose.**
-Signal detection and the backtest run on `ALPACA_HISTORY_DAYS` (~2 years,
-`src/spy/fetch.py`) of real 5-minute data — confirmed live, Alpaca's free
-IEX feed actually goes back to at least 2016, genuinely paginated via
-`next_page_token` rather than truncated to a rolling window the way
-Yahoo's intraday endpoint is. But the exported CHART only shows the most
-recent `CHART_DISPLAY_DAYS` (60, `src/spy/export.py`) of each timeframe:
-two years of 10-minute candles would be both an enormous JSON payload
-committed to git on every 3-hour cron run and visually unreadable as a
-candlestick chart. The signal history table and backtest stats reflect the
-full ~2-year window regardless of what the chart draws. Historical setup
-markers are deliberately not rendered on the main decision chart; they remain
-in the audit table under Research & details.
+Signal detection and the backtest still run on `ALPACA_HISTORY_DAYS` (~2 years,
+`src/spy/fetch.py`) of real 5-minute data. The chart archive is separate:
+SPY, QQQ, and NVDA monthly chunks extend back to the first bars returned by
+the configured free IEX feed, July 2020 as checked on November 11, 2026.
+Alpaca paginates this source with `next_page_token`. The browser initially
+downloads only a small recent chart payload; older months load on left scroll.
+The scheduled exporter retains those older chunks as its two-year source
+window advances. Historical setup markers remain in the Research audit table
+and are never drawn as Call/Put arrows on the main chart. The research
+sample and its backtest statistics remain the bounded ~2-year window.
 
 The time axis initially fits **all history loaded for the selected view**.
 You can drag to pan, use a wheel or trackpad to zoom, pinch on touch screens,
-and drag either axis. **Fit all** restores the complete sample. The equity
-chart's loaded sample is the 60-day display window described above; its
-approximately two-year research sample remains in the backtest outputs rather
-than being shipped as a multi-megabyte browser chart.
+and drag either axis. **Fit all** restores the history currently loaded in
+that view. Scroll left repeatedly to load older monthly chunks. The status
+line shows the earliest published month; the first browser payload is compact.
+XAU's configured Kraken PF_XAUTUSD benchmark currently starts on September 11,
+2025; an earlier-range request returned no candles on November 11, 2026.
 
 **Premiums are modeled, not real quotes.** No free source publishes
 historical SPY options chains, so `src/spy/options_pricing.py` prices the
