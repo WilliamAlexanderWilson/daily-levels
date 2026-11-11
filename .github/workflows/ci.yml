@@ -47,7 +47,7 @@ jobs:
 
   browser:
     name: Browser smoke tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -64,7 +64,10 @@ jobs:
         run: npm ci
 
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        # Install the browser binary without an apt round trip. Ubuntu 26's
+        # mirror DNS failure prevented the browser tests from starting;
+        # the browser tests will expose any missing runtime library.
+        run: npx playwright install chromium
 
       - name: Run desktop and mobile browser tests
         run: npm run test:browser

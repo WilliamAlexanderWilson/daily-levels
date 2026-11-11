@@ -26,7 +26,7 @@ test("versioned assets prevent an old BTC app bundle from rendering new tabs", (
   assert.match(index, /candle-style\.js\?v=spy-doji-v1/);
   assert.match(index, /doji-study\.js\?v=spy-doji-v1/);
   assert.match(index, /candle-history\.js\?v=deep-history-v1/);
-  assert.match(index, /app\.js\?v=chart-nav-v1/);
+  assert.match(index, /app\.js\?v=spy-timeframes-v1/);
 });
 
 test("crypto charts can page backward beyond Kraken's 720-candle window", () => {

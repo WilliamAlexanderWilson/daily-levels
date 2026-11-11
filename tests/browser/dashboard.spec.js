@@ -70,6 +70,44 @@ test("a stale XAU batch identifies its age without overflowing the page", async 
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
 });
 
+test("SPY renders every published interval and keeps deep links on desktop and mobile", async ({ page }) => {
+  await page.route("https://cdn.jsdelivr.net/**", (route) => route.fulfill({
+    contentType: "application/javascript",
+    body: `
+      const priceScale = { applyOptions() {}, setAutoScale() {}, getVisibleRange() { return null; }, width() { return 50; } };
+      const series = { setData(data) { if (data.length && 'open' in data[0]) window.__spyCandles = data; },
+        priceScale() { return priceScale; }, createPriceLine() { return { applyOptions() {} }; },
+        removePriceLine() {}, priceToCoordinate() { return null; } };
+      const timeScale = { subscribeVisibleLogicalRangeChange() {}, fitContent() {}, getVisibleLogicalRange() { return null; } };
+      window.LightweightCharts = {
+        createChart() { return { addSeries() { return series; }, subscribeClick() {}, subscribeCrosshairMove() {}, timeScale() { return timeScale; } }; },
+        createSeriesMarkers() { return { setMarkers() {} }; },
+        CandlestickSeries: {}, HistogramSeries: {}, CrosshairMode: { Normal: 0 },
+        LineStyle: { Dotted: 0, Dashed: 1, Solid: 2 }, PriceScaleMode: { Normal: 0 }
+      };
+    `,
+  }));
+  await page.goto("/#asset=spy&range=15m", { waitUntil: "domcontentloaded" });
+  const select = page.locator("#spy-timeframe-select");
+  await expect(select).toBeVisible();
+  await expect(select.locator("option")).toHaveText(["1m", "5m", "10m", "15m", "20m", "30m", "1H", "4H"]);
+  await expect.poll(() => page.evaluate(() => window.__spyCandles?.length || 0)).toBeGreaterThan(0);
+  for (const minutes of ["1", "5", "10", "15", "20", "30", "60", "240"]) {
+    await select.selectOption(minutes);
+    await expect(page).toHaveURL(new RegExp(`#asset=spy&range=${minutes}m$`));
+    const bars = await page.evaluate(() => window.__spyCandles || []);
+    expect(bars.length, `${minutes}m chart has published bars`).toBeGreaterThan(0);
+    expect(bars.every((bar, index) => index === 0 || bar.time > bars[index - 1].time)).toBe(true);
+  }
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(select).toHaveValue("240");
+  await page.locator('[data-asset="qqq"]').click();
+  await expect(select.locator("option")).toHaveText(["10m", "15m", "20m", "30m"]);
+  await page.locator('[data-asset="xau"]').click();
+  await expect(select.locator("option")).toHaveText(["15m", "30m", "1H", "4H"]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+});
+
 test("chart timestamps use Dallas 12-hour time and follow daylight saving", async ({ page }) => {
   await openDashboard(page);
   const labels = await page.evaluate(() => ({
