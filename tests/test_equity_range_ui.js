@@ -22,7 +22,7 @@ test("equity range copy remains context-only and never a direct signal", () => {
 });
 
 test("versioned assets prevent an old BTC app bundle from rendering new tabs", () => {
-  assert.match(index, /styles\.css\?v=spy-doji-v1/);
+  assert.match(index, /styles\.css\?v=fluid-chart-v1/);
   assert.match(index, /candle-style\.js\?v=spy-doji-v1/);
   assert.match(index, /doji-study\.js\?v=spy-doji-v1/);
   assert.match(index, /app\.js\?v=spy-doji-v1/);
@@ -66,6 +66,15 @@ test("every timeframe opens fitted and then supports normal chart navigation", (
   assert.match(app, /new ResizeObserver\(scheduleFullHistoryFit\)/);
   assert.match(app, /historyFitFrame = requestAnimationFrame\(\(\) => \{[\s\S]*?historyFitFrame = requestAnimationFrame/);
   assert.match(app, /all loaded batch history/);
+});
+
+test("the chart workspace fills wide screens with a small responsive edge", () => {
+  const css = fs.readFileSync(path.join(__dirname, "..", "site", "styles.css"), "utf8");
+  assert.match(css, /--shell-gutter: clamp\(0\.75rem, 1\.5vw, 2rem\)/);
+  assert.match(css, /\.site-header[\s\S]*?width: calc\(100% - \(2 \* var\(--shell-gutter\)\)\)/);
+  assert.match(css, /main \{[\s\S]*?max-width: none/);
+  assert.match(css, /height: clamp\(560px, 68svh, 920px\)/);
+  assert.match(css, /height: clamp\(390px, 64svh, 620px\)/);
 });
 
 test("a new batch fetch clears the prior asset before the request can fail", () => {
