@@ -1,7 +1,7 @@
 {
   "symbol": "NVDA",
-  "generated_at_utc": "2026-11-11T20:07:17.260694+00:00",
-  "price": 174.92,
+  "generated_at_utc": "2026-11-11T22:36:17.270039+00:00",
+  "price": 168.27,
   "source": "Alpaca historical bars (free IEX feed)",
   "is_live": false,
   "range_context": {
@@ -9,17 +9,17 @@
     "method": "Prior 20 completed regular sessions",
     "lookback_sessions": 20,
     "edge_fraction": 0.15,
-    "window_start": "2026-10-14",
-    "window_end": "2026-11-10",
-    "high": 225.975,
-    "upper_edge_min": 216.96224999999998,
-    "midpoint": 195.9325,
-    "lower_edge_max": 174.90275,
+    "window_start": "2026-10-15",
+    "window_end": "2026-11-11",
+    "high": 222.18,
+    "upper_edge_min": 213.7365,
+    "midpoint": 194.035,
+    "lower_edge_max": 174.3335,
     "low": 165.89,
-    "width": 60.08500000000001,
-    "width_pct": 30.66617329947814,
-    "position_pct": 15.028709328451361,
-    "state": "middle",
+    "width": 56.29000000000002,
+    "width_pct": 29.01023011312393,
+    "position_pct": 4.228104459051382,
+    "state": "lower_edge",
     "is_signal": false,
     "session_scope": "U.S. regular session, 9:30 AM\u20134:00 PM New York time",
     "source_limit": "Alpaca free IEX feed; one exchange, not consolidated SIP"
@@ -13059,6 +13059,48 @@
         "high": 175.87,
         "low": 175.455,
         "close": 175.545
+      },
+      {
+        "time": 1794427800,
+        "open": 175.575,
+        "high": 175.7,
+        "low": 174.75,
+        "close": 174.815
+      },
+      {
+        "time": 1794428400,
+        "open": 174.83,
+        "high": 175.26,
+        "low": 174.72,
+        "close": 174.83
+      },
+      {
+        "time": 1794429000,
+        "open": 174.83,
+        "high": 174.97,
+        "low": 174.55,
+        "close": 174.8
+      },
+      {
+        "time": 1794429600,
+        "open": 174.8,
+        "high": 174.88,
+        "low": 174.45,
+        "close": 174.695
+      },
+      {
+        "time": 1794430200,
+        "open": 174.685,
+        "high": 175.27,
+        "low": 174.515,
+        "close": 174.935
+      },
+      {
+        "time": 1794430800,
+        "open": 174.92,
+        "high": 174.92,
+        "low": 173.3,
+        "close": 173.85
       }
     ],
     "15": [
@@ -22021,6 +22063,34 @@
         "high": 175.87,
         "low": 175.455,
         "close": 175.545
+      },
+      {
+        "time": 1794428100,
+        "open": 175.575,
+        "high": 175.7,
+        "low": 174.72,
+        "close": 174.98
+      },
+      {
+        "time": 1794429000,
+        "open": 174.98,
+        "high": 175.26,
+        "low": 174.55,
+        "close": 174.8
+      },
+      {
+        "time": 1794429900,
+        "open": 174.8,
+        "high": 174.88,
+        "low": 174.45,
+        "close": 174.73
+      },
+      {
+        "time": 1794430800,
+        "open": 174.72,
+        "high": 175.27,
+        "low": 173.3,
+        "close": 173.85
       }
     ],
     "20": [
@@ -28862,6 +28932,27 @@
         "high": 175.87,
         "low": 175.11,
         "close": 175.545
+      },
+      {
+        "time": 1794428400,
+        "open": 175.575,
+        "high": 175.7,
+        "low": 174.72,
+        "close": 174.83
+      },
+      {
+        "time": 1794429600,
+        "open": 174.83,
+        "high": 174.97,
+        "low": 174.45,
+        "close": 174.695
+      },
+      {
+        "time": 1794430800,
+        "open": 174.685,
+        "high": 175.27,
+        "low": 173.3,
+        "close": 173.85
       }
     ],
     "30": [
@@ -33533,6 +33624,20 @@
         "high": 175.87,
         "low": 174.9,
         "close": 175.545
+      },
+      {
+        "time": 1794429000,
+        "open": 175.575,
+        "high": 175.7,
+        "low": 174.55,
+        "close": 174.8
+      },
+      {
+        "time": 1794430800,
+        "open": 174.8,
+        "high": 175.27,
+        "low": 173.3,
+        "close": 173.85
       }
     ]
   }

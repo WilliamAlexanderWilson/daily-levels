@@ -2,7 +2,7 @@
   "schema_version": 1,
   "study_version": "range-open-forward-v1",
   "asset": "btc",
-  "generated_at_utc": "2026-11-11T01:47:28.104313+00:00",
+  "generated_at_utc": "2026-11-11T22:35:20.951457+00:00",
   "forward_start_utc": "2026-11-08T00:00:00+00:00",
   "source": {
     "name": "Coinbase Exchange BTC-USD/ETH-USD candles",
@@ -28,12 +28,12 @@
     ]
   },
   "summary": {
-    "total_events": 18,
+    "total_events": 21,
     "wait_events": 0,
-    "pending_events": 2,
-    "resolved_edge_session_rows": 16,
-    "resolved_edge_events": 11,
-    "resolved_lower_edge_events": 11,
+    "pending_events": 0,
+    "resolved_edge_session_rows": 21,
+    "resolved_edge_events": 15,
+    "resolved_lower_edge_events": 15,
     "resolved_upper_edge_events": 0,
     "evidence_gate_passed": false,
     "positive_directional_60m_rate_pct": null
@@ -610,7 +610,7 @@
       "opening_price": 73697.88,
       "range_position_pct": 7.15,
       "location": "lower-edge",
-      "status": "pending",
+      "status": "resolved",
       "horizons": {
         "15": {
           "raw_return_pct": -0.1733,
@@ -624,12 +624,15 @@
           "raw_return_pct": -0.352,
           "direction_aligned_return_pct": -0.352
         },
-        "120": null
+        "120": {
+          "raw_return_pct": -0.2732,
+          "direction_aligned_return_pct": -0.2732
+        }
       },
-      "max_favorable_excursion_pct": null,
-      "max_adverse_excursion_pct": null,
-      "sweep_reclaim": null,
-      "resolved_at_utc": null
+      "max_favorable_excursion_pct": 0.3141,
+      "max_adverse_excursion_pct": 0.6039,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-11T02:00:00+00:00"
     },
     {
       "id": "btc|hong-kong|2026-11-11T01:30:00+00:00",
@@ -642,20 +645,134 @@
       "opening_price": 73678.44,
       "range_position_pct": 7.02,
       "location": "lower-edge",
-      "status": "pending",
+      "status": "resolved",
       "horizons": {
         "15": {
           "raw_return_pct": 0.1057,
           "direction_aligned_return_pct": 0.1057
         },
-        "30": null,
-        "60": null,
-        "120": null
+        "30": {
+          "raw_return_pct": -0.2469,
+          "direction_aligned_return_pct": -0.2469
+        },
+        "60": {
+          "raw_return_pct": -0.57,
+          "direction_aligned_return_pct": -0.57
+        },
+        "120": {
+          "raw_return_pct": -0.0089,
+          "direction_aligned_return_pct": -0.0089
+        }
       },
-      "max_favorable_excursion_pct": null,
-      "max_adverse_excursion_pct": null,
-      "sweep_reclaim": null,
-      "resolved_at_utc": null
+      "max_favorable_excursion_pct": 0.3406,
+      "max_adverse_excursion_pct": 0.7715,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-11T03:30:00+00:00"
+    },
+    {
+      "id": "btc|london|2026-11-11T08:00:00+00:00",
+      "session_key": "london",
+      "session_name": "London",
+      "opened_at_utc": "2026-11-11T08:00:00+00:00",
+      "range_start_utc": "2026-09-12T08:00:00+00:00",
+      "range_low": 72643.48,
+      "range_high": 87397.0,
+      "opening_price": 73992.28,
+      "range_position_pct": 9.14,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": 0.0424,
+          "direction_aligned_return_pct": 0.0424
+        },
+        "30": {
+          "raw_return_pct": -0.3966,
+          "direction_aligned_return_pct": -0.3966
+        },
+        "60": {
+          "raw_return_pct": -0.4788,
+          "direction_aligned_return_pct": -0.4788
+        },
+        "120": {
+          "raw_return_pct": -0.3812,
+          "direction_aligned_return_pct": -0.3812
+        }
+      },
+      "max_favorable_excursion_pct": 0.128,
+      "max_adverse_excursion_pct": 0.7113,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-11T10:00:00+00:00"
+    },
+    {
+      "id": "btc|xetra|2026-11-11T08:00:00+00:00",
+      "session_key": "xetra",
+      "session_name": "Frankfurt",
+      "opened_at_utc": "2026-11-11T08:00:00+00:00",
+      "range_start_utc": "2026-09-12T08:00:00+00:00",
+      "range_low": 72643.48,
+      "range_high": 87397.0,
+      "opening_price": 73992.28,
+      "range_position_pct": 9.14,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": 0.0424,
+          "direction_aligned_return_pct": 0.0424
+        },
+        "30": {
+          "raw_return_pct": -0.3966,
+          "direction_aligned_return_pct": -0.3966
+        },
+        "60": {
+          "raw_return_pct": -0.4788,
+          "direction_aligned_return_pct": -0.4788
+        },
+        "120": {
+          "raw_return_pct": -0.3812,
+          "direction_aligned_return_pct": -0.3812
+        }
+      },
+      "max_favorable_excursion_pct": 0.128,
+      "max_adverse_excursion_pct": 0.7113,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-11T10:00:00+00:00"
+    },
+    {
+      "id": "btc|new-york|2026-11-11T14:30:00+00:00",
+      "session_key": "new-york",
+      "session_name": "New York",
+      "opened_at_utc": "2026-11-11T14:30:00+00:00",
+      "range_start_utc": "2026-09-12T14:30:00+00:00",
+      "range_low": 72643.48,
+      "range_high": 87397.0,
+      "opening_price": 73451.04,
+      "range_position_pct": 5.47,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": 0.1656,
+          "direction_aligned_return_pct": 0.1656
+        },
+        "30": {
+          "raw_return_pct": 0.0449,
+          "direction_aligned_return_pct": 0.0449
+        },
+        "60": {
+          "raw_return_pct": 0.1785,
+          "direction_aligned_return_pct": 0.1785
+        },
+        "120": {
+          "raw_return_pct": 1.0752,
+          "direction_aligned_return_pct": 1.0752
+        }
+      },
+      "max_favorable_excursion_pct": 1.2837,
+      "max_adverse_excursion_pct": 0.2135,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-11T16:30:00+00:00"
     }
   ]
 }
