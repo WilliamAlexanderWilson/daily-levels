@@ -8,6 +8,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
@@ -28,5 +29,9 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+      - name: Wait for Pages artifact indexing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/wait-for-pages-artifact.sh
       - id: deployment
         uses: actions/deploy-pages@v4

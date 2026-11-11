@@ -323,6 +323,12 @@ update. `deploy-pages.yml` still exists for the case of editing `site/`
 directly and pushing it yourself with your own credentials, which does
 trigger normally.
 
+Both deployment paths wait for the uploaded Pages artifact to appear in the
+Actions API before calling `deploy-pages`. This avoids an observed artifact
+indexing race; rerunning a failed deployment job can instead create two
+same-named artifacts, so start a fresh workflow run if a deployment retry is
+needed.
+
 To (re)enable Pages on a fork or a new repo:
 
 ```bash
