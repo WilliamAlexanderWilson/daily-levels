@@ -414,6 +414,7 @@
 
   function assetContext(asset) {
     if (["spy", "qqq", "nvda"].includes(asset)) return `${asset.toUpperCase()} focus · New York is the primary cash-session open.`;
+    if (asset === "xau") return "XAU gold trades globally · London and New York are key liquidity windows.";
     return `${asset.toUpperCase()} trades 24/7 · cash opens can still change liquidity and volatility.`;
   }
 
@@ -679,7 +680,7 @@
   }
 
   function setAsset(asset) {
-    activeAsset = ["eth", "spy", "qqq", "nvda"].includes(asset) ? asset : "btc";
+    activeAsset = ["eth", "spy", "qqq", "nvda", "xau"].includes(asset) ? asset : "btc";
     render();
     if (["btc", "eth", "spy"].includes(activeAsset)) {
       loadReactionData(activeAsset);

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title description">
+  <title id="title">XAU Gold</title>
+  <desc id="description">A dark XAU monogram on a gold coin.</desc>
+  <rect width="128" height="128" rx="28" fill="#10151b"/>
+  <circle cx="64" cy="64" r="45" fill="#d7b24a"/>
+  <text x="64" y="73" fill="#15130d" font-family="Arial, Helvetica, sans-serif" font-size="31" font-weight="800" text-anchor="middle">XAU</text>
+</svg>

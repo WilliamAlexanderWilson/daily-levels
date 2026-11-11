@@ -7,6 +7,7 @@ not copied to other symbols, and no order or live-trading endpoint is used.
 import pandas as pd
 
 import config
+from src.chart_archive import write_monthly_archive
 from src.equities.range_context import build_range_context
 from src.output import atomic_write_json
 from src.spy.export import CHART_DISPLAY_DAYS, _frame_to_json
@@ -39,6 +40,18 @@ def build_chart_payload(symbol: str, frame: pd.DataFrame, generated_at: pd.Times
     }
 
 
+def build_complete_timeframes(frame: pd.DataFrame, generated_at: pd.Timestamp) -> dict[str, list[dict]]:
+    timeframes = build_timeframes(frame)
+    completed_cutoff = min(frame.index.max(), generated_at)
+    return {
+        str(minutes): _frame_to_json(
+            timeframes[minutes][timeframes[minutes].index <= completed_cutoff],
+            ALPACA_HISTORY_DAYS,
+        )
+        for minutes in TIMEFRAMES_MINUTES
+    }
+
+
 def main() -> int:
     generated_at = pd.Timestamp.now(tz="UTC")
     for symbol in SYMBOLS:
@@ -46,6 +59,7 @@ def main() -> int:
         frame = fetch_alpaca_5m(symbol)
         payload = build_chart_payload(symbol, frame, generated_at)
         atomic_write_json(f"{config.DATA_DIR}/{symbol.lower()}_chart.json", payload)
+        write_monthly_archive(symbol.lower(), build_complete_timeframes(frame, generated_at), payload["source"])
         print(f"  wrote {symbol} chart ({len(frame)} source bars)")
     return 0
 

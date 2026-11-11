@@ -22,10 +22,27 @@ test("equity range copy remains context-only and never a direct signal", () => {
 });
 
 test("versioned assets prevent an old BTC app bundle from rendering new tabs", () => {
-  assert.match(index, /styles\.css\?v=fluid-chart-v1/);
+  assert.match(index, /styles\.css\?v=deep-history-xau-v1/);
   assert.match(index, /candle-style\.js\?v=spy-doji-v1/);
   assert.match(index, /doji-study\.js\?v=spy-doji-v1/);
-  assert.match(index, /app\.js\?v=free-pan-v1/);
+  assert.match(index, /candle-history\.js\?v=deep-history-v1/);
+  assert.match(index, /app\.js\?v=deep-history-v1/);
+});
+
+test("crypto charts can page backward beyond Kraken's 720-candle window", () => {
+  assert.match(index, /id="history-load-status"/);
+  assert.match(app, /CandleHistory\.requestWindow/);
+  assert.match(app, /CandleHistory\.fromCoinbaseRows/);
+  assert.match(app, /CandleHistory\.mergeOlder/);
+  assert.match(app, /barsInLogicalRange/);
+  assert.match(app, /loadOlderCryptoHistory/);
+});
+
+test("batch charts page backward through monthly published archives", () => {
+  assert.match(app, /loadBatchArchiveManifest/);
+  assert.match(app, /loadOlderBatchHistory/);
+  assert.match(app, /data\/archive\/\$\{asset\}\/manifest\.json/);
+  assert.match(app, /loadedBatchArchivePaths/);
 });
 
 test("regular and Heikin Ashi styles are explicit reversible controls", () => {
@@ -67,7 +84,7 @@ test("every timeframe opens fitted and then supports normal chart navigation", (
   assert.match(app, /getElementById\("fit-chart-btn"\)[\s\S]*?fitAllLoadedHistory\(\)/);
   assert.match(app, /new ResizeObserver\(scheduleFullHistoryFit\)/);
   assert.match(app, /historyFitFrame = requestAnimationFrame\(\(\) => \{[\s\S]*?historyFitFrame = requestAnimationFrame/);
-  assert.match(app, /all loaded batch history/);
+  assert.match(app, /complete published archive/);
 });
 
 test("the chart workspace fills wide screens with a small responsive edge", () => {

@@ -6,14 +6,10 @@ none), so unlike BTC/ETH this can't be polled live from the browser - it's
 baked once per cron run, same as the crypto level engine, and goes stale
 on the same schedule (~3h, best-effort).
 
-Signal detection and the backtest run over the FULL fetched history
-(ALPACA_HISTORY_DAYS, ~2 years) for real sample size. The exported CHART
-itself is deliberately trimmed to CHART_DISPLAY_DAYS - showing two years of
-10-minute candles would be both an enormous JSON payload committed to git
-on every cron run and visually unreadable (thousands of slivers), and
-nobody needs to see that far back on an intraday chart anyway. The signal
-list and backtest stats are computed from the full window regardless of
-what the chart displays.
+Signal detection and the backtest use the complete configured
+ALPACA_HISTORY_DAYS window. The browser starts with a fast recent payload;
+the same complete window is also published as monthly archive chunks that
+load as the user scrolls left.
 
     python -m src.spy.export
 """
@@ -23,6 +19,7 @@ import json
 import pandas as pd
 
 import config
+from src.chart_archive import write_monthly_archive
 from src.equities.range_context import build_range_context
 from src.output import atomic_write_json
 from src.spy.backtest import run_backtest, summarize
@@ -34,7 +31,7 @@ from src.session_reactions.forward import update_forward_payload
 
 SYMBOL = "SPY"
 CONFLUENCE_LEVELS = (1, 2, 3, 4)
-CHART_DISPLAY_DAYS = 60  # what actually gets drawn - independent of how deep the backtest's own sample goes
+CHART_DISPLAY_DAYS = 60  # fast initial payload; the complete window is published as monthly chunks
 
 
 def _frame_to_json(frame: pd.DataFrame, display_days: int) -> list[dict]:
@@ -84,6 +81,9 @@ def main() -> int:
     generated_at_utc = pd.Timestamp.now(tz="UTC")
     price = float(real_5m["close"].iloc[-1])
 
+    complete_timeframes = {
+        str(minutes): _frame_to_json(timeframes[minutes], ALPACA_HISTORY_DAYS) for minutes in TIMEFRAMES_MINUTES
+    }
     chart_payload = {
         "generated_at_utc": generated_at_utc.isoformat(),
         "price": price,
@@ -96,6 +96,7 @@ def main() -> int:
         },
     }
     atomic_write_json(f"{config.DATA_DIR}/spy_chart.json", chart_payload)
+    write_monthly_archive("spy", complete_timeframes, chart_payload["source"])
 
     all_trades = run_backtest(signals, real_5m, vix_daily, min_confirmed=1)
     signals_payload = {

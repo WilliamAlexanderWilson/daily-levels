@@ -5,7 +5,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const ASSETS = ["btc", "eth", "spy", "qqq", "nvda"];
+  const ASSETS = ["btc", "eth", "spy", "qqq", "nvda", "xau"];
 
   function finite(value) {
     if (value === null || value === undefined || value === "") return null;

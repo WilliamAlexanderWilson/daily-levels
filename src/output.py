@@ -13,11 +13,17 @@ from src.levels.daily_diff import compute_diff
 from src.levels.structural_reclaim_audit import build_structural_reclaim_audit
 
 
-def atomic_write_json(path: str, data: dict | list) -> None:
+def atomic_write_json(path: str, data: dict | list, *, compact: bool = False) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp_path = f"{path}.tmp"
     with open(tmp_path, "w") as f:
-        json.dump(data, f, indent=2, default=str)
+        json.dump(
+            data,
+            f,
+            indent=None if compact else 2,
+            separators=(",", ":") if compact else None,
+            default=str,
+        )
     os.replace(tmp_path, path)
 
 

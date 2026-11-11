@@ -35,6 +35,11 @@ test("the active market controls the visible brand and browser identity", async 
   await page.locator('[data-asset="nvda"]').click();
   await expectBrand(page, "nvda", "NVIDIA");
   await expect(page.locator("#subtitle")).toContainText("no live signal");
+
+  await page.locator('[data-asset="xau"]').click();
+  await expectBrand(page, "xau", "XAU Gold");
+  await expect(page.locator("#subtitle")).toContainText("Gold benchmark");
+  await expect(page).toHaveURL(/#asset=xau&range=15m$/);
 });
 
 test("chart timestamps use Dallas 12-hour time and follow daylight saving", async ({ page }) => {

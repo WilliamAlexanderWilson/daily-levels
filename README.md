@@ -5,7 +5,7 @@
 <h1 align="center">Range Desk</h1>
 
 <p align="center">
-  <strong>Evidence-first market context for BTC, ETH, SPY, QQQ, and NVDA.</strong><br />
+  <strong>Evidence-first market context for BTC, ETH, SPY, QQQ, NVDA, and XAU gold.</strong><br />
   Built by William Wilson to make price location, confirmation, and risk easier to assess without pretending uncertainty is a signal.
 </p>
 
@@ -42,6 +42,9 @@ prospective evidence gates, alerts, and browser-local paper planning.
 
 - **Live where the data is genuinely live.** BTC and ETH use Kraken's
   per-trade WebSocket stream; REST supplies history and reconnect fallback.
+- **History loads without truncation.** Crypto intraday views page backward
+  from Coinbase when the Kraken window ends; batch charts load immutable
+  monthly archives as you scroll left instead of shipping a huge first page.
 - **Fail-closed by design.** Missing evidence, stale marks, unverified market
   calendars, and failed holdout tests produce `WAIT`—not a manufactured call.
 - **Research is separated from execution.** Historical observations,
@@ -56,7 +59,7 @@ prospective evidence gates, alerts, and browser-local paper planning.
 - **SPY-only completed Heikin Ashi dojis.** SPY's loaded 15-minute-or-higher
   views mark completed derived candles whose body is no more than 10% of the
   full range. The forming candle is excluded, the markers are context—not
-  entries—and BTC, ETH, QQQ, and NVDA do not display this study.
+  entries—and BTC, ETH, QQQ, NVDA, and XAU do not display this study.
 
 | Market | Data path | Current product boundary |
 | --- | --- | --- |
@@ -65,6 +68,7 @@ prospective evidence gates, alerts, and browser-local paper planning.
 | **SPY** | Alpaca IEX batch research | 20-session range context; failed strategy test remains fail-closed |
 | **QQQ** | Alpaca IEX batch chart | 20-session range context; no live signal or paper P&L claim |
 | **NVDA** | Alpaca IEX batch chart | 20-session range context; no live signal or paper P&L claim |
+| **XAU** | Kraken PF_XAUTUSD spot-index archive | Delayed gold benchmark context; not an interbank execution quote or live signal |
 
 > **A watch area is not an entry signal.** Three completed-candle price facts
 > confirm behavior; the optional notification gate also requires measured
@@ -155,6 +159,14 @@ consolidated SIP market, and refresh in scheduled batches. SPY's separate
 preregistered strategy test remains negative and fail-closed even though its
 chart now shows the same descriptive range geometry.
 
+### XAU gold benchmark
+
+The XAU tab uses Kraken's public `PF_XAUTUSD` spot-index chart as delayed gold
+benchmark context. The scheduled exporter pages the source into monthly
+archives and the browser loads older months only when requested. The UI does
+not call this an executable interbank XAU/USD quote, does not attach a live
+paper P&L stream, and does not turn the 20-day location range into a signal.
+
 When that latest completed candle passes the gate, the chart adds a
 **LIVE LONG SETUP ✓** or **LIVE SHORT SETUP ✓** marker. An older reclaim can
 remain useful history, but it cannot masquerade as a current live setup.
@@ -174,7 +186,7 @@ pass validation.
 
 ## Global market-open clock
 
-All five market views share one compact global-session clock. It keeps
+All six market views share one compact global-session clock. It keeps
 the chronologically next major market open visible with a one-second countdown
 in William's Dallas/Central time, while a collapsed list shows seven regular
 sessions ranked from observed median 60-minute movement when at least 20
