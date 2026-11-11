@@ -1,4 +1,4 @@
-"""Export a two-year XAU gold benchmark archive from Kraken Futures charts.
+"""Export available XAU gold benchmark history from Kraken Futures charts.
 
 The public chart is the PF_XAUTUSD spot-index series. It is useful price
 context, but it is not represented as an executable interbank XAU/USD quote.
@@ -18,7 +18,7 @@ from src.chart_archive import write_monthly_archive
 from src.output import atomic_write_json
 
 CHART_URL = "https://futures.kraken.com/api/charts/v1/spot/PF_XAUTUSD/15m"
-HISTORY_DAYS = 730
+HISTORY_DAYS = 730  # Query window; the source currently begins in September 2025.
 TIMEFRAMES = (15, 30, 60, 240)
 CHART_DISPLAY_DAYS = 60
 

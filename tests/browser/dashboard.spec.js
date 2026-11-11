@@ -92,6 +92,7 @@ test("SPY renders every published interval and keeps deep links on desktop and m
   await expect(select).toBeVisible();
   await expect(select.locator("option")).toHaveText(["1m", "5m", "10m", "15m", "20m", "30m", "1H", "4H"]);
   await expect.poll(() => page.evaluate(() => window.__spyCandles?.length || 0)).toBeGreaterThan(0);
+  await expect(page.locator("#history-load-status")).toContainText("archive starts Jul 2020");
   for (const minutes of ["1", "5", "10", "15", "20", "30", "60", "240"]) {
     await select.selectOption(minutes);
     await expect(page).toHaveURL(new RegExp(`#asset=spy&range=${minutes}m$`));
@@ -109,9 +110,13 @@ test("SPY renders every published interval and keeps deep links on desktop and m
   await expect(select).toHaveValue("240");
   await page.locator('[data-asset="qqq"]').click();
   await expect(select.locator("option")).toHaveText(["10m", "15m", "20m", "30m"]);
+  await expect(page.locator("#history-load-status")).toContainText("archive starts Jul 2020");
   expect(await page.evaluate(() => (window.__spyMarkers || []).some((marker) => marker.text === "D"))).toBe(false);
+  await page.locator('[data-asset="nvda"]').click();
+  await expect(page.locator("#history-load-status")).toContainText("archive starts Jul 2020");
   await page.locator('[data-asset="xau"]').click();
   await expect(select.locator("option")).toHaveText(["15m", "30m", "1H", "4H"]);
+  await expect(page.locator("#history-load-status")).toContainText("archive starts Sep 2025");
   expect(await page.evaluate(() => (window.__spyMarkers || []).some((marker) => marker.text === "D"))).toBe(false);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
 });

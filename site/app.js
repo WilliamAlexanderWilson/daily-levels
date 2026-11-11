@@ -643,8 +643,8 @@
     const style = state.candleStyle === "heikin-ashi" ? "Heikin Ashi" : "Regular candles";
     if (isBatchAsset(state.asset)) {
       message = state.asset === "xau"
-        ? `XAU gold benchmark · ${style} · Dallas time · complete published archive · delayed batch data`
-        : `${state.asset.toUpperCase()} 20-session range · ${style} · Dallas time · complete published archive`;
+        ? `XAU gold benchmark · ${style} · Dallas time · monthly history on scroll · delayed batch data`
+        : `${state.asset.toUpperCase()} 20-session range · ${style} · Dallas time · monthly history on scroll`;
     } else if (fullAnalysisIsOpen()) {
       message = `Level radar · ${style} · Dallas time · all loaded history · reacts to the real-time price`;
     } else {
@@ -1237,11 +1237,24 @@
       const manifest = await fetchJson(`data/archive/${asset}/manifest.json`);
       if (state.asset !== asset) return;
       activeBatchArchiveManifest = manifest;
-      setHistoryStatus("Scroll left to load older published history");
+      setHistoryStatus(batchArchiveInstruction());
     } catch (error) {
       console.error(`${asset} archive manifest unavailable`, error);
       setHistoryStatus("Older archive unavailable — recent chart remains usable");
     }
+  }
+
+  function batchArchiveStart() {
+    const first = activeBatchArchiveManifest?.timeframes?.[state.spyTimeframe]?.[0];
+    return first ? new Date(first.first * 1000).toLocaleDateString("en-US", {
+      month: "short", year: "numeric", timeZone: "UTC",
+    }) : null;
+  }
+
+  function batchArchiveInstruction() {
+    const start = batchArchiveStart();
+    return start ? `Scroll left to load older history · archive starts ${start}`
+      : "Scroll left to load older published history";
   }
 
   async function loadOlderBatchHistory() {
@@ -1257,7 +1270,7 @@
     const next = entries[0];
     if (!next) {
       olderHistoryExhausted = true;
-      setHistoryStatus("Earliest published history reached");
+      setHistoryStatus(`Earliest published history reached${batchArchiveStart() ? ` · ${batchArchiveStart()}` : ""}`);
       return;
     }
     const generation = olderHistoryGeneration;
@@ -4537,7 +4550,7 @@
       olderHistoryLoading = false;
       olderHistoryExhausted = false;
       historyNavigationArmed = false;
-      setHistoryStatus(activeBatchArchiveManifest ? "Scroll left to load older published history" : "");
+      setHistoryStatus(activeBatchArchiveManifest ? batchArchiveInstruction() : "");
       writeHash();
       rerenderSpyTimeframe();
     });
