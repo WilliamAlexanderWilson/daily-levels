@@ -399,6 +399,12 @@
         secondsVisible: false,
         borderColor: cssVar("--border"),
         minBarSpacing: 0.05,
+        // Keep navigation useful without allowing the candle set to be
+        // dragged completely away from the viewport. Both edge locks still
+        // allow pan/zoom inside the loaded history; they only remove empty
+        // time before the first bar and after the newest bar.
+        fixLeftEdge: true,
+        fixRightEdge: true,
         // Keep the newest Dallas-time label clear of the right price scale;
         // without this small gutter the final "M" in labels such as "10 AM"
         // can be clipped at the pane boundary.
