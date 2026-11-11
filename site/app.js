@@ -2,6 +2,7 @@
   "use strict";
 
   const STALE_HOURS = 26;
+  const BATCH_STALE_HOURS = 18;
   const FALLBACK_POLL_MS = 10000;
   const ORDER_BOOK_POLL_MS = 10000;
   const LIVE_RECONNECT_MAX_MS = 30000;
@@ -3798,22 +3799,34 @@
 
   function renderHeader(levelsData, currentPrice = levelsData.price) {
     const generated = new Date(levelsData.generated_at_utc);
-    const formatted = new Intl.DateTimeFormat("en-US", {
+    const batch = isBatchAsset(state.asset);
+    const assetName = state.asset.toUpperCase();
+    const validDate = Number.isFinite(generated.getTime());
+    const formatted = validDate ? new Intl.DateTimeFormat("en-US", {
       dateStyle: "medium",
       timeStyle: "short",
       timeZone: "America/Chicago",
-    }).format(generated);
+    }).format(generated) + " CT" : "timestamp unavailable";
 
-    document.getElementById("generated-label").textContent = `Levels calculated ${formatted} CT`;
+    document.getElementById("generated-label").textContent = batch
+      ? `${assetName} batch published ${formatted}`
+      : `Levels calculated ${formatted}`;
     document.getElementById("price-label").textContent = currentPrice.toLocaleString(undefined, {
       maximumFractionDigits: 2,
     });
 
     const hoursOld = (Date.now() - generated.getTime()) / 3_600_000;
     const banner = document.getElementById("stale-banner");
-    if (hoursOld > STALE_HOURS) {
+    if (!validDate || hoursOld < -1 / 12) {
       banner.hidden = false;
-      banner.textContent = `Data is ${hoursOld.toFixed(0)} hours old and may be stale — the daily run may have failed.`;
+      banner.textContent = batch
+        ? `${assetName} batch timestamp is unavailable or invalid. Check the published data before using this context.`
+        : "Level timestamp is unavailable or invalid. Check the published data before using this context.";
+    } else if (hoursOld > (batch ? BATCH_STALE_HOURS : STALE_HOURS)) {
+      banner.hidden = false;
+      banner.textContent = batch
+        ? `${assetName} batch data was published ${hoursOld.toFixed(0)} hours ago and may be stale. Check the scheduled export.`
+        : `Data is ${hoursOld.toFixed(0)} hours old and may be stale — the daily run may have failed.`;
     } else {
       banner.hidden = true;
     }
