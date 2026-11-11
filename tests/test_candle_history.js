@@ -38,3 +38,16 @@ test("filters overlap and lets current Kraken candles win", () => {
   assert.equal(merged.length, 2);
   assert.equal(merged[1].close, 30);
 });
+
+test("detects an overscroll even when no candle remains in the viewport", () => {
+  assert.equal(CandleHistory.needsOlderBars({ from: -1800, to: -800 }), true);
+  assert.equal(CandleHistory.needsOlderBars({ from: 30, to: 130 }), false);
+  assert.equal(CandleHistory.needsOlderBars(null), false);
+});
+
+test("keeps the oldest candle on screen without changing zoom", () => {
+  assert.deepEqual(CandleHistory.keepOldestBarVisible({ from: -1800, to: -800 }),
+    { from: -10, to: 990 });
+  assert.equal(CandleHistory.keepOldestBarVisible({ from: -5, to: 995 }), null);
+  assert.equal(CandleHistory.keepOldestBarVisible({ from: 0, to: 100 }), null);
+});

@@ -366,7 +366,9 @@ These are two independent systems that happen to share one page:
 - Every timeframe opens fitted to all history loaded for that view. Mouse,
   trackpad, and touch navigation can then pan or zoom both axes, while the
   **Fit all** control restores the complete-history frame and automatic price
-  scale.
+  scale. A leftward drag loads multiple older pages when needed; at the source's
+  earliest candle, the chart keeps that candle visible instead of panning into
+  an empty viewport.
 - The **Regular / Heikin Ashi** control changes candle presentation only.
   BTC/ETH Heikin Ashi bars are derived in the browser from the real Kraken
   series, and equity Heikin Ashi bars are derived from each exported real-OHLC
@@ -804,7 +806,8 @@ sample and its backtest statistics remain the bounded ~2-year window.
 The time axis initially fits **all history loaded for the selected view**.
 You can drag to pan, use a wheel or trackpad to zoom, pinch on touch screens,
 and drag either axis. **Fit all** restores the history currently loaded in
-that view. Scroll left repeatedly to load older monthly chunks. The status
+that view. Scroll left to load older monthly chunks; a long drag can load
+several chunks, and another drag continues if more are available. The status
 line shows the earliest published month; the first browser payload is compact.
 XAU's configured Kraken PF_XAUTUSD benchmark currently starts on September 11,
 2025; an earlier-range request returned no candles on November 11, 2026.
