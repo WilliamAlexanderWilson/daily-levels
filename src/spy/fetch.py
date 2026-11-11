@@ -3,9 +3,10 @@ src/fetch.py on purpose - that file is Kraken-only (crypto), and SPY needs
 its own sources entirely.
 
 Two sources, for two different jobs:
-  - Alpaca (data.alpaca.markets) for the 5-minute SPY bars the signal
-    detection and backtest run on. Needs a free API key (see
-    ALPACA_API_KEY/ALPACA_SECRET_KEY below) but, confirmed live on
+  - Alpaca (data.alpaca.markets) for genuine 1-minute SPY chart bars and
+    the separate 5-minute bars the signal detection and backtest run on.
+    Needs a free API key (see ALPACA_API_KEY/ALPACA_SECRET_KEY below) but,
+    confirmed live on
     2026-10-08, gives real 5-minute bars back to at least 2016 on the free
     IEX feed - genuinely paginated via next_page_token, not truncated to a
     rolling window the way Yahoo's free endpoint is. This is what fixes the
@@ -92,12 +93,14 @@ def _alpaca_headers() -> dict:
     return {"APCA-API-KEY-ID": api_key, "APCA-API-SECRET-KEY": secret_key}
 
 
-def fetch_alpaca_5m(symbol: str = "SPY", days: int = ALPACA_HISTORY_DAYS) -> pd.DataFrame:
-    """Real 5-minute OHLCV bars for `symbol` over the last `days` calendar
-    days, indexed by UTC timestamp. Paginates via next_page_token until
+def _fetch_alpaca_intraday(symbol: str, minutes: int, days: int) -> pd.DataFrame:
+    """Real Alpaca IEX OHLCV bars over the last `days` calendar days,
+    indexed by UTC timestamp. Paginates via next_page_token until
     Alpaca stops returning one - unlike Yahoo's intraday endpoint, this
     isn't silently truncated to a rolling window; `days` is honored for
     real (confirmed live back to at least 2016 on the free IEX feed)."""
+    if minutes not in (1, 5):
+        raise ValueError("Alpaca source interval must be 1 or 5 minutes")
     end = pd.Timestamp.now(tz="UTC")
     start = end - pd.Timedelta(days=days)
     headers = _alpaca_headers()
@@ -107,7 +110,7 @@ def fetch_alpaca_5m(symbol: str = "SPY", days: int = ALPACA_HISTORY_DAYS) -> pd.
     page_token = None
     while True:
         params = {
-            "timeframe": "5Min",
+            "timeframe": f"{minutes}Min",
             "start": start.isoformat(),
             "end": end.isoformat(),
             "limit": ALPACA_PAGE_LIMIT,
@@ -140,3 +143,13 @@ def fetch_alpaca_5m(symbol: str = "SPY", days: int = ALPACA_HISTORY_DAYS) -> pd.
     )
     df["time"] = pd.to_datetime(df["time"], utc=True)
     return df.set_index("time")[["open", "high", "low", "close", "volume"]].sort_index()
+
+
+def fetch_alpaca_1m(symbol: str = "SPY", days: int = ALPACA_HISTORY_DAYS) -> pd.DataFrame:
+    """Genuine one-minute IEX bars for the SPY chart, never synthesized from 5m."""
+    return _fetch_alpaca_intraday(symbol, 1, days)
+
+
+def fetch_alpaca_5m(symbol: str = "SPY", days: int = ALPACA_HISTORY_DAYS) -> pd.DataFrame:
+    """Five-minute IEX bars for the existing SPY research and equity exports."""
+    return _fetch_alpaca_intraday(symbol, 5, days)

@@ -757,6 +757,13 @@ rejection-side wick exceeds the full range of at least one trend candle
 before it, entered as an ATM option 2 trading days out, targeting +20% /
 stopping at -10% of the option's premium.
 
+The SPY **chart** is separate from that frozen 5-minute-input research. It
+publishes genuine Alpaca IEX 1-minute regular-session bars and completed
+1m, 5m, 10m, 15m, 30m, 1H, and 4H views, plus the existing 20m view. The
+initial 1m view covers a small recent window; older bars load from monthly
+archives as the chart is scrolled left. These are delayed batch candles, not
+a live SPY quote or a signal.
+
 **Data source: Alpaca for SPY, Yahoo for VIX — not Kraken.** SPY is a
 stock, so `src/spy/fetch.py` pulls 5-minute SPY bars from Alpaca's market
 data API (`data.alpaca.markets`, free IEX feed, needs a free API key - see
@@ -870,7 +877,8 @@ src/
     scorecard.py                 # aggregates outcomes per level type per asset
     cli.py                        # entry point: python -m src.backtest.cli
   spy/                         # SPY exhaustion-reversal options backtest — Alpaca+Yahoo, not Kraken, different rules entirely
-    fetch.py                    # Alpaca 5m SPY candles (~2y, needs ALPACA_API_KEY/SECRET) + Yahoo daily VIX
+    fetch.py                    # Alpaca 1m chart and 5m research bars (~2y, needs API credentials) + Yahoo daily VIX
+    chart_timeframes.py         # regular-session 1m/5m/10m/15m/20m/30m/1H/4H display bars
     heikin_ashi.py                # 5m -> 10m/15m/20m/30m resample (anchored to 9:30 ET open) + HA transform
     exhaustion_signal.py           # doji/trend-wick signal detection, tags confluence count rather than assuming one
     options_pricing.py              # Black-Scholes, VIX as an IV proxy — a model, not real quotes

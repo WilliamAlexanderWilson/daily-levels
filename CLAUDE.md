@@ -114,7 +114,8 @@ src/
   context/
     futures.py                 # open interest + funding rate, server-side (no CORS on Kraken's side)
   spy/                        # SPY exhaustion-reversal options backtest — Alpaca+Yahoo, not Kraken, own rules entirely
-    fetch.py                   # Alpaca 5m SPY candles (~2y, needs ALPACA_API_KEY/SECRET) + Yahoo daily VIX
+    fetch.py                   # Alpaca 1m chart / 5m research bars (~2y, needs API credentials) + Yahoo daily VIX
+    chart_timeframes.py        # regular-session SPY chart bars for 1m/5m/10m/15m/20m/30m/1H/4H
     heikin_ashi.py               # 5m -> 10m/15m/20m/30m resample (anchored to 9:30 ET) + HA transform
     exhaustion_signal.py          # doji/trend-wick signal detection, confluence count reported not assumed
     options_pricing.py             # Black-Scholes, VIX as an IV proxy — a model, not real quotes

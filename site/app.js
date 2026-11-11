@@ -55,7 +55,7 @@
     const asset = params.get("asset");
     if (["eth", "spy", "qqq", "nvda", "xau"].includes(asset)) state.asset = asset;
     const range = params.get("range");
-    if (isBatchAsset(state.asset) && /^(10|15|20|30|60|240)m?$/.test(range || "")) {
+    if (isBatchAsset(state.asset) && /^(1|5|10|15|20|30|60|240)m?$/.test(range || "")) {
       state.spyTimeframe = range.replace("m", "");
     } else if (range && RANGE_INTERVALS[range]) {
       state.range = range;
@@ -4071,8 +4071,10 @@
   function syncBatchTimeframeOptions(asset, timeframes = {}) {
     const select = document.getElementById("spy-timeframe-select");
     if (!select) return;
-    const labels = { "10": "10m", "15": "15m", "20": "20m", "30": "30m", "60": "1H", "240": "4H" };
-    const preferred = asset === "xau" ? ["15", "30", "60", "240"] : ["10", "15", "20", "30"];
+    const labels = { "1": "1m", "5": "5m", "10": "10m", "15": "15m", "20": "20m", "30": "30m", "60": "1H", "240": "4H" };
+    const preferred = asset === "spy"
+      ? ["1", "5", "10", "15", "20", "30", "60", "240"]
+      : asset === "xau" ? ["15", "30", "60", "240"] : ["10", "15", "20", "30"];
     const available = preferred.filter((key) => Array.isArray(timeframes[key]));
     const choices = available.length ? available : preferred;
     select.innerHTML = choices.map((key) => `<option value="${key}">${labels[key]}</option>`).join("");
@@ -4088,10 +4090,11 @@
     const paperLiveLabel = document.getElementById("paper-trader-live-label");
     const batchLegend = document.getElementById("spy-legend");
     const batchNote = document.getElementById("spy-chart-note");
+    const spyCandleNote = asset === "spy" ? " SPY candles also show regular-session IEX prints published in delayed batches." : "";
     if (batchLegend) batchLegend.innerHTML = '<span class="legend-item"><i class="swatch current"></i>Last batch price — not live</span>';
     if (batchNote) batchNote.innerHTML = asset === "xau"
       ? `<strong>XAU gold benchmark context.</strong> This is Kraken's PF_XAUTUSD spot-index archive, published in delayed batches. It is a gold-price proxy—not an interbank XAU/USD execution quote or a trade signal.`
-      : `<strong>${asset.toUpperCase()} 20-session range context.</strong> High, midpoint, low, and edge zones use completed regular sessions only. Free Alpaca IEX batch data covers one exchange, not the consolidated market; these levels are context, not a trade signal.`;
+      : `<strong>${asset.toUpperCase()} 20-session range context.</strong> High, midpoint, low, and edge zones use completed regular sessions only. Free Alpaca IEX batch data covers one exchange, not the consolidated market; these levels are context, not a trade signal.${spyCandleNote}`;
     document.getElementById("subtitle").textContent = isSpy
       ? "SPY range research with a fail-closed validation gate."
       : asset === "xau"
