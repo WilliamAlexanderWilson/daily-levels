@@ -2,33 +2,33 @@
   {
     "tolerance_fraction": 1.0,
     "touches": 708,
-    "resolved": 700,
+    "resolved": 701,
     "holds": 492,
-    "breaks": 208,
-    "hold_rate_pct": 70.28571428571428,
+    "breaks": 209,
+    "hold_rate_pct": 70.18544935805991,
     "low_confidence": false
   },
   {
     "tolerance_fraction": 0.5,
-    "touches": 646,
+    "touches": 645,
     "resolved": 638,
-    "holds": 413,
-    "breaks": 225,
-    "hold_rate_pct": 64.73354231974922,
+    "holds": 412,
+    "breaks": 226,
+    "hold_rate_pct": 64.57680250783699,
     "low_confidence": false
   },
   {
     "tolerance_fraction": 0.25,
-    "touches": 601,
+    "touches": 600,
     "resolved": 593,
-    "holds": 344,
-    "breaks": 249,
-    "hold_rate_pct": 58.01011804384486,
+    "holds": 343,
+    "breaks": 250,
+    "hold_rate_pct": 57.84148397976391,
     "low_confidence": false
   },
   {
     "tolerance_fraction": 0.1,
-    "touches": 543,
+    "touches": 542,
     "resolved": 532,
     "holds": 258,
     "breaks": 274,
@@ -37,7 +37,7 @@
   },
   {
     "tolerance_fraction": 0.05,
-    "touches": 531,
+    "touches": 530,
     "resolved": 518,
     "holds": 229,
     "breaks": 289,
@@ -46,7 +46,7 @@
   },
   {
     "tolerance_fraction": 0.02,
-    "touches": 525,
+    "touches": 524,
     "resolved": 508,
     "holds": 212,
     "breaks": 296,
