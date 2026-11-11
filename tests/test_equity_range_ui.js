@@ -22,10 +22,10 @@ test("equity range copy remains context-only and never a direct signal", () => {
 });
 
 test("versioned assets prevent an old BTC app bundle from rendering new tabs", () => {
-  assert.match(index, /styles\.css\?v=doji-study-v1/);
-  assert.match(index, /candle-style\.js\?v=doji-study-v1/);
-  assert.match(index, /doji-study\.js\?v=doji-study-v1/);
-  assert.match(index, /app\.js\?v=doji-study-v1/);
+  assert.match(index, /styles\.css\?v=spy-doji-v1/);
+  assert.match(index, /candle-style\.js\?v=spy-doji-v1/);
+  assert.match(index, /doji-study\.js\?v=spy-doji-v1/);
+  assert.match(index, /app\.js\?v=spy-doji-v1/);
 });
 
 test("regular and Heikin Ashi styles are explicit reversible controls", () => {
@@ -38,8 +38,11 @@ test("regular and Heikin Ashi styles are explicit reversible controls", () => {
   assert.match(app, /params\.set\("style", "ha"\)/);
 });
 
-test("completed 15-minute-and-higher Heikin Ashi dojis are marked consistently", () => {
+test("completed Heikin Ashi dojis are a SPY-only study", () => {
   assert.match(index, /id="doji-study-status"/);
+  assert.match(index, /id="doji-study-status"[^>]*hidden/);
+  assert.match(app, /const enabled = state\.asset === "spy"/);
+  assert.match(app, /document\.getElementById\("doji-study-status"\)\.hidden = asset !== "spy"/);
   assert.match(app, /DojiStudy\.findCompleted\(candles/);
   assert.match(app, /Number\(intervalMinutes\) >= DojiStudy\.MIN_TIMEFRAME_MINUTES/);
   assert.match(app, /text: "D"/);
@@ -47,17 +50,19 @@ test("completed 15-minute-and-higher Heikin Ashi dojis are marked consistently",
   assert.match(app, /timeIsClose: false/);
 });
 
-test("every timeframe stays fitted to all loaded history", () => {
+test("every timeframe opens fitted and then supports normal chart navigation", () => {
   assert.match(app, /function fitAllLoadedHistory\(\)/);
-  assert.match(app, /handleScroll: false/);
-  assert.match(app, /axisPressedMouseMove: \{ time: false, price: true \}/);
-  assert.match(app, /mouseWheel: false/);
-  assert.match(app, /pinch: false/);
+  assert.match(index, /id="fit-chart-btn"/);
+  assert.match(app, /mouseWheel: true/);
+  assert.match(app, /pressedMouseMove: true/);
+  assert.match(app, /horzTouchDrag: true/);
+  assert.match(app, /axisPressedMouseMove: \{ time: true, price: true \}/);
+  assert.match(app, /pinch: true/);
   assert.doesNotMatch(app, /setVisibleLogicalRange/);
   assert.doesNotMatch(app, /function applyDefaultZoom/);
   assert.match(app, /function renderChart[\s\S]*?fitAllLoadedHistory\(\)/);
   assert.match(app, /function renderSpyChart[\s\S]*?fitAllLoadedHistory\(\)/);
-  assert.match(app, /if \(addedNewCandle\) \{[\s\S]*?fitAllLoadedHistory\(\)/);
+  assert.match(app, /getElementById\("fit-chart-btn"\)[\s\S]*?fitAllLoadedHistory\(\)/);
   assert.match(app, /new ResizeObserver\(scheduleFullHistoryFit\)/);
   assert.match(app, /historyFitFrame = requestAnimationFrame\(\(\) => \{[\s\S]*?historyFitFrame = requestAnimationFrame/);
   assert.match(app, /all loaded batch history/);
