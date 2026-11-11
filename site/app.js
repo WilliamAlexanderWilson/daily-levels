@@ -405,15 +405,20 @@
         rightOffsetPixels: 44,
         tickMarkFormatter: ChartTime.formatDallasAxisTick,
       },
-      // This dashboard is an overview, not a free-pan trading terminal.
-      // Keep the complete loaded sample visible at all times so wheel,
-      // trackpad, touch, or drag gestures cannot strand the chart on only
-      // part of its history. Price-axis scaling stays available below.
-      handleScroll: false,
+      // Start from all loaded history, but keep normal chart navigation:
+      // drag to pan, wheel/trackpad or pinch to zoom, and drag either axis
+      // to refine the view. The explicit Fit all button restores the
+      // complete-history frame at any time.
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: false,
+      },
       handleScale: {
-        axisPressedMouseMove: { time: false, price: true },
-        mouseWheel: false,
-        pinch: false,
+        axisPressedMouseMove: { time: true, price: true },
+        mouseWheel: true,
+        pinch: true,
       },
       rightPriceScale: { borderColor: cssVar("--border") },
     });
@@ -1096,6 +1101,13 @@
 
   function renderDojiMarkers(candles, intervalMinutes, range, options = {}) {
     const status = document.getElementById("doji-study-status");
+    const enabled = state.asset === "spy";
+    if (status) status.hidden = !enabled;
+    if (!enabled) {
+      dojiChartMarkers = [];
+      syncSeriesMarkers();
+      return;
+    }
     const eligible = Number(intervalMinutes) >= DojiStudy.MIN_TIMEFRAME_MINUTES;
     const matches = eligible
       ? DojiStudy.findCompleted(candles, {
@@ -1309,7 +1321,6 @@
         completedThroughUnix: Date.now() / 1000,
         timeIsClose: false,
       });
-      fitAllLoadedHistory();
     }
     lastLiveUnixTime = candle.time;
 
@@ -3422,8 +3433,8 @@
   // window first, so "un-snap" always lands back on the same framing
   // regardless of whether the user panned around while a level was
   // snapped, then measure that window's candles and set the price range
-  // to fit them directly. The time axis remains locked to all loaded
-  // history; only the price-axis framing changes here.
+  // to fit them directly. This deliberately returns the time axis to the
+  // full-history frame; ordinary drag/zoom remains available afterward.
   function resetPriceSnap() {
     clearPriceSnapState();
     if (!activeCandles.length || !candleSeries) return;
@@ -3887,6 +3898,11 @@
     document.getElementById("range-method-sources").hidden = asset !== "btc";
     document.getElementById("spy-explainer").hidden = !isSpy;
     document.getElementById("chart-live-ticker").hidden = isBatch;
+    document.getElementById("doji-study-status").hidden = asset !== "spy";
+    if (asset !== "spy") {
+      dojiChartMarkers = [];
+      syncSeriesMarkers();
+    }
     document.getElementById("range-lab").hidden = asset !== "btc";
     syncAssetGuidance(asset);
     paperTrader.classList.toggle("is-unavailable", isBatch);
@@ -4305,6 +4321,12 @@
         renderOrderBookWalls(activeOrderBookWalls);
         renderTradeMarkers(state.asset, state.range, activeCandles);
       });
+    });
+
+    document.getElementById("fit-chart-btn").addEventListener("click", () => {
+      clearPriceSnapState();
+      fitAllLoadedHistory();
+      renderOverlays();
     });
 
     const refreshBtn = document.getElementById("refresh-btn");

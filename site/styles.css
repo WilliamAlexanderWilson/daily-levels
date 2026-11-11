@@ -372,6 +372,26 @@ main > * { min-width: 0; }
   white-space: nowrap;
 }
 
+.chart-control-btn {
+  min-height: 36px;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 750;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chart-control-btn:hover,
+.chart-control-btn:focus-visible {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
 .range-select {
   background: var(--surface);
   color: var(--text);

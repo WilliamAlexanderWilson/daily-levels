@@ -53,9 +53,10 @@ prospective evidence gates, alerts, and browser-local paper planning.
 - **Two honest candle views.** Regular candles show actual OHLC; optional
   Heikin Ashi candles smooth the same series for trend reading and are clearly
   treated as derived values rather than tradable prices.
-- **Completed Heikin Ashi dojis.** Every loaded 15-minute-or-higher view marks
-  completed derived candles whose body is no more than 10% of the full range.
-  The forming candle is excluded, and the markers are context—not entries.
+- **SPY-only completed Heikin Ashi dojis.** SPY's loaded 15-minute-or-higher
+  views mark completed derived candles whose body is no more than 10% of the
+  full range. The forming candle is excluded, the markers are context—not
+  entries—and BTC, ETH, QQQ, and NVDA do not display this study.
 
 | Market | Data path | Current product boundary |
 | --- | --- | --- |
@@ -338,9 +339,10 @@ These are two independent systems that happen to share one page:
   forming candle on every trade, so both the ticker and candle move without
   waiting for a timer. The REST fetch remains a 10-second reconnect fallback
   only, with retry/backoff for Kraken's occasional missing CORS response.
-- Every timeframe stays fitted to all history loaded for that view. Horizontal
-  panning and time zoom are disabled so a gesture cannot accidentally hide
-  earlier candles; the price scale remains inspectable.
+- Every timeframe opens fitted to all history loaded for that view. Mouse,
+  trackpad, and touch navigation can then pan or zoom both axes, while the
+  **Fit all** control restores the complete-history frame and automatic price
+  scale.
 - The **Regular / Heikin Ashi** control changes candle presentation only.
   BTC/ETH Heikin Ashi bars are derived in the browser from the real Kraken
   series, and equity Heikin Ashi bars are derived from each exported real-OHLC
@@ -770,9 +772,9 @@ full ~2-year window regardless of what the chart draws. Historical setup
 markers are deliberately not rendered on the main decision chart; they remain
 in the audit table under Research & details.
 
-The time axis is intentionally locked to **all history loaded for the selected
-view**. Switching timeframes, resizing the browser, or using mouse, trackpad,
-and touch gestures cannot pan or zoom away part of that sample. The equity
+The time axis initially fits **all history loaded for the selected view**.
+You can drag to pan, use a wheel or trackpad to zoom, pinch on touch screens,
+and drag either axis. **Fit all** restores the complete sample. The equity
 chart's loaded sample is the 60-day display window described above; its
 approximately two-year research sample remains in the backtest outputs rather
 than being shipped as a multi-megabyte browser chart.
