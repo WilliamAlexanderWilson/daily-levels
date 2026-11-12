@@ -1,7 +1,7 @@
 {
   "symbol": "QQQ",
-  "generated_at_utc": "2026-11-12T20:46:12.301093+00:00",
-  "price": 687.175,
+  "generated_at_utc": "2026-11-12T22:13:44.098456+00:00",
+  "price": 689.38,
   "source": "Alpaca historical bars (free IEX feed)",
   "is_live": false,
   "range_context": {
@@ -9,16 +9,16 @@
     "method": "Prior 20 completed regular sessions",
     "lookback_sessions": 20,
     "edge_fraction": 0.15,
-    "window_start": "2026-10-15",
-    "window_end": "2026-11-11",
-    "high": 729.375,
-    "upper_edge_min": 717.05925,
-    "midpoint": 688.3225,
-    "lower_edge_max": 659.58575,
+    "window_start": "2026-10-16",
+    "window_end": "2026-11-12",
+    "high": 727.95,
+    "upper_edge_min": 715.8480000000001,
+    "midpoint": 687.61,
+    "lower_edge_max": 659.372,
     "low": 647.27,
-    "width": 82.10500000000002,
-    "width_pct": 11.928274900210296,
-    "position_pct": 48.60239936666459,
+    "width": 80.68000000000006,
+    "width_pct": 11.733395384011294,
+    "position_pct": 52.193852255825455,
     "state": "middle",
     "is_signal": false,
     "session_scope": "U.S. regular session, 9:30 AM\u20134:00 PM New York time",
@@ -14998,6 +14998,27 @@
         "high": 687.605,
         "low": 686.52,
         "close": 687.17
+      },
+      {
+        "time": 1794516900,
+        "open": 687.155,
+        "high": 687.86,
+        "low": 687.1,
+        "close": 687.75
+      },
+      {
+        "time": 1794517500,
+        "open": 687.76,
+        "high": 688.5,
+        "low": 686.96,
+        "close": 688.28
+      },
+      {
+        "time": 1794518700,
+        "open": 688.47,
+        "high": 688.47,
+        "low": 688.45,
+        "close": 688.45
       }
     ],
     "15": [
@@ -25262,6 +25283,20 @@
         "high": 688.24,
         "low": 686.11,
         "close": 686.54
+      },
+      {
+        "time": 1794516600,
+        "open": 686.63,
+        "high": 687.785,
+        "low": 686.52,
+        "close": 687.735
+      },
+      {
+        "time": 1794517500,
+        "open": 687.74,
+        "high": 688.5,
+        "low": 686.96,
+        "close": 688.28
       }
     ],
     "20": [
@@ -33076,6 +33111,20 @@
         "high": 687.955,
         "low": 686.11,
         "close": 687.17
+      },
+      {
+        "time": 1794517500,
+        "open": 687.155,
+        "high": 688.5,
+        "low": 686.96,
+        "close": 688.28
+      },
+      {
+        "time": 1794518700,
+        "open": 688.47,
+        "high": 688.47,
+        "low": 688.45,
+        "close": 688.45
       }
     ],
     "30": [
@@ -38405,6 +38454,13 @@
         "high": 688.24,
         "low": 686.11,
         "close": 686.54
+      },
+      {
+        "time": 1794517500,
+        "open": 686.63,
+        "high": 688.5,
+        "low": 686.52,
+        "close": 688.28
       }
     ]
   }
