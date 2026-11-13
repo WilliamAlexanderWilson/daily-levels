@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "asset": "spy",
-  "generated_at_utc": "2026-11-13T14:58:41.453615+00:00",
-  "coverage_start_utc": "2024-11-13T15:00:00+00:00",
-  "coverage_end_utc": "2026-11-13T14:55:00+00:00",
+  "generated_at_utc": "2026-11-13T17:34:05.943091+00:00",
+  "coverage_start_utc": "2024-11-13T17:35:00+00:00",
+  "coverage_end_utc": "2026-11-13T17:30:00+00:00",
   "candle_interval_minutes": 5,
   "source": {
     "name": "Alpaca historical SPY bars (IEX feed)",
@@ -45,16 +45,16 @@
           "up_rate_pct": 53.6
         },
         "60": {
-          "n": 498,
-          "median_return_pct": 0.0253,
-          "median_abs_move_pct": 0.2239,
-          "up_rate_pct": 52.2
+          "n": 499,
+          "median_return_pct": 0.0244,
+          "median_abs_move_pct": 0.2246,
+          "up_rate_pct": 52.1
         },
         "120": {
-          "n": 498,
-          "median_return_pct": 0.0457,
-          "median_abs_move_pct": 0.2857,
-          "up_rate_pct": 53.2
+          "n": 499,
+          "median_return_pct": 0.0456,
+          "median_abs_move_pct": 0.2859,
+          "up_rate_pct": 53.1
         }
       },
       "median_volume_ratio_60m": null,
