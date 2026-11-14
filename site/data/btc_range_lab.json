@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-11-14T00:00:00+00:00",
-  "current_range_data_through": "2026-11-14T00:00:00+00:00",
+  "generated_at": "2026-11-14T04:00:00+00:00",
+  "current_range_data_through": "2026-11-14T04:00:00+00:00",
   "research_metrics_through": "2026-11-06T04:00:00+00:00",
   "instrument": "Kraken PF_XBTUSD perpetual futures",
   "timeframe": "4h",
   "history": {
     "start": "2022-03-23T08:00:00+00:00",
-    "end": "2026-11-13T20:00:00+00:00",
-    "candles": 10180
+    "end": "2026-11-14T00:00:00+00:00",
+    "candles": 10181
   },
   "split": {
     "train_end": "2024-01-01T00:00:00+00:00",
@@ -88,7 +88,7 @@
   "forward_tracking": {
     "version": "range-rejection-v1",
     "frozen_at": "2026-11-06T04:00:00+00:00",
-    "data_through": "2026-11-14T00:00:00+00:00",
+    "data_through": "2026-11-14T04:00:00+00:00",
     "mode": "candidate-level observation only; no real orders and no combined portfolio",
     "candidate_count": 6,
     "validated_candidate_key": null
@@ -123,13 +123,13 @@
         "maximum": 4000
       },
       "latest_range": {
-        "low": 67422.0,
+        "low": 66434.0,
         "high": 81102.0,
-        "midpoint": 74262.0,
-        "width": 13680.0,
-        "width_pct": 18.42,
-        "width_atr": 10.84,
-        "low_touches": 6,
+        "midpoint": 73768.0,
+        "width": 14668.0,
+        "width_pct": 19.88,
+        "width_atr": 10.96,
+        "low_touches": 3,
         "high_touches": 7,
         "active_now": false,
         "status": "current width is outside this definition; price drift is too directional"
@@ -782,14 +782,14 @@
         "maximum": 10000
       },
       "latest_range": {
-        "low": 67422.0,
+        "low": 66434.0,
         "high": 81900.0,
-        "midpoint": 74661.0,
-        "width": 14478.0,
-        "width_pct": 19.39,
-        "width_atr": 11.47,
-        "low_touches": 6,
-        "high_touches": 27,
+        "midpoint": 74167.0,
+        "width": 15466.0,
+        "width_pct": 20.85,
+        "width_atr": 11.55,
+        "low_touches": 3,
+        "high_touches": 28,
         "active_now": false,
         "status": "current width is outside this definition; price drift is too directional"
       },
@@ -1458,13 +1458,13 @@
         "maximum": 0.1
       },
       "latest_range": {
-        "low": 67422.0,
+        "low": 66434.0,
         "high": 81102.0,
-        "midpoint": 74262.0,
-        "width": 13680.0,
-        "width_pct": 18.42,
-        "width_atr": 10.84,
-        "low_touches": 6,
+        "midpoint": 73768.0,
+        "width": 14668.0,
+        "width_pct": 19.88,
+        "width_atr": 10.96,
+        "low_touches": 3,
         "high_touches": 7,
         "active_now": false,
         "status": "current width is outside this definition; price drift is too directional"
@@ -2117,16 +2117,16 @@
         "maximum": 0.2
       },
       "latest_range": {
-        "low": 67422.0,
+        "low": 66434.0,
         "high": 81900.0,
-        "midpoint": 74661.0,
-        "width": 14478.0,
-        "width_pct": 19.39,
-        "width_atr": 11.47,
-        "low_touches": 6,
-        "high_touches": 27,
+        "midpoint": 74167.0,
+        "width": 15466.0,
+        "width_pct": 20.85,
+        "width_atr": 11.55,
+        "low_touches": 3,
+        "high_touches": 28,
         "active_now": false,
-        "status": "price drift is too directional"
+        "status": "current width is outside this definition; price drift is too directional"
       },
       "metrics": {
         "train": {
@@ -2793,13 +2793,13 @@
         "maximum": 8.0
       },
       "latest_range": {
-        "low": 67422.0,
+        "low": 66434.0,
         "high": 81102.0,
-        "midpoint": 74262.0,
-        "width": 13680.0,
-        "width_pct": 18.42,
-        "width_atr": 10.84,
-        "low_touches": 6,
+        "midpoint": 73768.0,
+        "width": 14668.0,
+        "width_pct": 19.88,
+        "width_atr": 10.96,
+        "low_touches": 3,
         "high_touches": 7,
         "active_now": false,
         "status": "current width is outside this definition; price drift is too directional"
@@ -3452,14 +3452,14 @@
         "maximum": null
       },
       "latest_range": {
-        "low": 67422.0,
+        "low": 66434.0,
         "high": 81900.0,
-        "midpoint": 74661.0,
-        "width": 14478.0,
-        "width_pct": 19.39,
-        "width_atr": 11.47,
-        "low_touches": 6,
-        "high_touches": 27,
+        "midpoint": 74167.0,
+        "width": 15466.0,
+        "width_pct": 20.85,
+        "width_atr": 11.55,
+        "low_touches": 3,
+        "high_touches": 28,
         "active_now": false,
         "status": "price drift is too directional"
       },
@@ -4123,10 +4123,10 @@
     "scope": "latest completed Kraken 4h BTC/USD spot bars available from the bounded recent-only endpoint",
     "futures_market": "PF_XBTUSD perpetual futures trade candles",
     "spot_market": "BTC/USD spot candles",
-    "comparison_start": "2026-07-17T00:00:00+00:00",
-    "comparison_end": "2026-11-13T20:00:00+00:00",
-    "aligned_start": "2026-07-17T00:00:00+00:00",
-    "aligned_end": "2026-11-13T20:00:00+00:00",
+    "comparison_start": "2026-07-17T04:00:00+00:00",
+    "comparison_end": "2026-11-14T00:00:00+00:00",
+    "aligned_start": "2026-07-17T04:00:00+00:00",
+    "aligned_end": "2026-11-14T00:00:00+00:00",
     "overlap_candles": 720,
     "futures_candles_in_window": 720,
     "spot_candles_in_window": 720,
@@ -4145,15 +4145,15 @@
       "high": {
         "mean_signed_pct": 0.0388,
         "median_signed_pct": 0.0215,
-        "median_abs_pct": 0.0219,
+        "median_abs_pct": 0.022,
         "p95_abs_pct": 0.0906,
         "max_abs_pct": 1.0072
       },
       "low": {
-        "mean_signed_pct": -0.0248,
+        "mean_signed_pct": -0.0251,
         "median_signed_pct": -0.0042,
         "median_abs_pct": 0.0112,
-        "p95_abs_pct": 0.1472,
+        "p95_abs_pct": 0.1518,
         "max_abs_pct": 0.687
       },
       "close": {
