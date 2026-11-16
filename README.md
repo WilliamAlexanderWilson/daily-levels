@@ -59,8 +59,9 @@ prospective evidence gates, alerts, and browser-local paper planning.
   treated as derived values rather than tradable prices.
 - **SPY-only completed Heikin Ashi dojis.** SPY's loaded 1-minute-or-higher
   views mark completed derived candles whose body is no more than 10% of the
-  full range. The forming candle is excluded, the markers are context—not
-  entries—and BTC, ETH, QQQ, NVDA, and XAU do not display this study.
+  full range. Each D matches the visible candle's green or red closing color
+  in the selected candle style. The forming candle is excluded. Markers are
+  context, not entries; BTC, ETH, QQQ, NVDA, and XAU do not show this study.
 
 | Market | Data path | Current product boundary |
 | --- | --- | --- |
