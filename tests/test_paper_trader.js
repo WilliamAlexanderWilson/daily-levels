@@ -183,8 +183,8 @@ test("SPY decision chart excludes retrospective Call and Put markers", () => {
   assert.match(app, /tradeChartMarkers = \[\]/);
   assert.match(app, /syncSeriesMarkers\(\)/);
   assert.match(app, /if \(isBatch\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
-  assert.match(app, /function renderSpyChart\(regularBars, rangeContext = null, prependedBars = 0\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
-  assert.match(html, /Batch chart — no live trade labels/);
+  assert.match(app, /function renderSpyChart\(regularBars, rangeContext = null, prependedBars = 0, preserveViewport = false\) \{[\s\S]*renderTradeRiskLines\("spy"\)/);
+  assert.match(html, /SPY chart context — no trade calls/);
   assert.match(html, /Historical setup records remain[\s\S]*for audit/);
 });
 
@@ -206,6 +206,6 @@ test("SPY range research fails closed when no preregistered rule validates", () 
   assert.match(app, /no live Call, Put, Buy, or Sell state is enabled/);
   assert.match(app, /locked holdout stayed unopened/);
   assert.match(app, /fetchJson\(spyRangeResearchUrl\(\)\)/);
-  assert.match(html, /no live trade labels/i);
+  assert.match(html, /no trade calls/i);
   assert.match(html, /all four[\s\S]*negative expectancy in untouched validation/i);
 });

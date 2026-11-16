@@ -133,6 +133,7 @@ main {
 main > .controls { order: 1; }
 main > .market-clock { order: 2; }
 main > .meta-row { order: 3; }
+main > .spy-live-controls { order: 3; }
 main > .chart-container { order: 4; }
 main > .doji-context { order: 4; }
 main > .decision-brief { order: 5; }
@@ -142,6 +143,16 @@ main > .range-lab { order: 8; }
 main > .nearby-context { order: 9; }
 main > .advanced-analysis { order: 10; }
 main > * { min-width: 0; }
+
+.spy-live-controls { border: 1px solid var(--border); background: var(--surface); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 0.75rem; font-size: 0.8rem; }
+.spy-live-controls[hidden], .spy-live-controls [hidden] { display: none !important; }
+.spy-live-controls p { color: var(--text-muted); line-height: 1.5; margin: 0.4rem 0; }
+.spy-live-heading { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+.spy-live-controls summary { cursor: pointer; padding: 0.5rem 0; }
+.spy-live-form { display: flex; gap: 0.75rem; align-items: end; flex-wrap: wrap; padding: 0.5rem 0; }
+.spy-live-form label { display: grid; gap: 0.3rem; flex: 1 1 200px; }
+.spy-live-form input { box-sizing: border-box; width: 100%; min-height: 44px; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem; }
+.spy-live-form button { min-height: 44px; }
 
 .doji-context {
   border: 1px solid var(--border);

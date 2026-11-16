@@ -27,7 +27,7 @@ test("prepending history preserves the same bars and zoom on screen", () => {
   restore({ from: 12.5, to: 45.5 }, 0);
   assert.deepEqual({ ...restored }, { from: 212.5, to: 245.5 });
   assert.match(app, /applyMergedCryptoHistory\(merged, range\);\s*restorePrependedHistoryViewport\(visibleRange, added\)/);
-  assert.match(app, /renderSpyChart\(merged, activeSpyChart\.range_context, merged\.length - current\.length\)/);
+  assert.match(app, /renderSpyChart\(merged, activeSpyChart\.range_context, merged\.length - latest\.length\)/);
   assert.match(app, /latestVisibleLogicalRange = logicalRange/);
   assert.match(app, /const visibleRange = latestVisibleLogicalRange \|\| chart\.timeScale\(\)\.getVisibleLogicalRange\(\)/);
 });

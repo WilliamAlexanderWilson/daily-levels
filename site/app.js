@@ -14,6 +14,8 @@
   const KRAKEN_DEPTH_URL = "https://api.kraken.com/0/public/Depth";
   const ASSET_PAIRS = { btc: "BTC/USD", eth: "ETH/USD" };
   const BATCH_ASSETS = new Set(["spy", "qqq", "nvda", "xau"]);
+  // SPY uses the archive UI and research path; its optional private stream
+  // updates candles independently and never enables crypto paper execution.
   const isBatchAsset = (asset) => BATCH_ASSETS.has(asset);
   // Kraken's public OHLC endpoint always returns just the most recent 720
   // candles no matter what `since` is set to (confirmed directly: since=1
@@ -317,6 +319,11 @@
   let dojiContextLoading = false;
   let dojiContextError = false;
   let dojiContextGeneration = 0;
+  let spyLiveClient = null;
+  let spyLiveSnapshot = null;
+  let spyLiveTrade = null;
+  let spyLiveStatus = { state: "disconnected", detail: "Showing the published batch chart" };
+  let spyLiveBarLatency = null;
   let activeCandles = []; // current timeframe's loaded candles, so trade markers can be bounds-checked
   let activeDisplayCandles = []; // regular or derived HA bars currently sent to the chart series
   let markingMode = false;
@@ -661,6 +668,7 @@
       message = state.asset === "xau"
         ? `XAU gold benchmark · ${style} · Dallas time · monthly history on scroll · delayed batch data`
         : `${state.asset.toUpperCase()} 20-session range · ${style} · Dallas time · monthly history on scroll`;
+      if (state.asset === "spy" && spyLiveSnapshot) message = `SPY IEX · ${style} · completed candles · Dallas time · batch range context`;
     } else if (fullAnalysisIsOpen()) {
       message = `Level radar · ${style} · Dallas time · all loaded history · reacts to the real-time price`;
     } else {
@@ -1309,9 +1317,10 @@
       const older = await fetchJson(`data/${next.path}`);
       if (generation !== olderHistoryGeneration || state.asset !== asset || state.spyTimeframe !== timeframe) return;
       loadedBatchArchivePaths.add(next.path);
-      const merged = CandleHistory.mergeOlder(older, current);
+      const latest = activeSpyChart.timeframes[timeframe] || current;
+      const merged = CandleHistory.mergeOlder(older, latest);
       activeSpyChart.timeframes[timeframe] = merged;
-      renderSpyChart(merged, activeSpyChart.range_context, merged.length - current.length);
+      renderSpyChart(merged, activeSpyChart.range_context, merged.length - latest.length);
       loaded = true;
       setHistoryStatus(`Loaded ${next.month} · scroll left for more`);
     } catch (error) {
@@ -1612,6 +1621,7 @@
   }
 
   function renderChartLiveTicker(status = liveStreamStatus) {
+    if (state.asset === "spy") { renderSpyLiveStatus(); return; }
     const ticker = document.getElementById("chart-live-ticker");
     if (!ticker) return;
     const markFresh = liveMarkIsFresh();
@@ -1894,6 +1904,92 @@
     setInterval(renderChartLiveTicker, 1000);
     setInterval(pollRangeLab, RANGE_LAB_POLL_MS);
     refreshOrderBookWalls();
+  }
+
+  function renderSpyLiveStatus() {
+    if (state.asset !== "spy") return;
+    const fresh = spyLiveClient && spyLiveStatus.state === "live" && spyLiveTrade
+      && Date.now() - spyLiveTrade.time <= 10000;
+    const age = spyLiveTrade ? Math.max(0, Math.floor((Date.now() - spyLiveTrade.time) / 1000)) : null;
+    const label = fresh ? "Live IEX" : spyLiveStatus.state === "live" ? "Last mark" : spyLiveStatus.state;
+    document.getElementById("spy-live-status").textContent = `${label} · ${spyLiveStatus.detail}${age !== null ? ` · last trade ${age}s ago` : ""}`;
+    document.getElementById("spy-live-disconnect").hidden = !spyLiveClient;
+    document.querySelector("#spy-live-connect summary").textContent = spyLiveClient ? "Connection settings" : "Connect live SPY";
+    const badge = document.getElementById("live-badge");
+    badge.hidden = !spyLiveSnapshot && !spyLiveClient;
+    badge.classList.toggle("is-stale", !fresh);
+    badge.querySelector(".live-label").textContent = fresh ? "Live IEX" : "SPY last mark";
+    const ticker = document.getElementById("chart-live-ticker");
+    ticker.hidden = !spyLiveTrade;
+    if (spyLiveTrade) {
+      ticker.classList.toggle("is-reconnecting", !fresh);
+      ticker.classList.remove("is-connecting", "is-up", "is-down");
+      document.getElementById("chart-live-asset").textContent = "SPY · IEX";
+      const price = spyLiveTrade.price.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      document.getElementById("chart-live-price").textContent = price;
+      document.getElementById("chart-live-age").textContent = `${age}s ago${fresh ? "" : " · last mark"}`;
+      document.getElementById("price-label").textContent = price;
+    }
+    const legend = document.getElementById("spy-legend");
+    if (legend) legend.textContent = fresh ? "Live IEX last trade · completed candles update each minute"
+      : spyLiveSnapshot ? "Last received IEX candles · connection is not currently live" : "Published batch chart · connect privately for live updates";
+    if (spyLiveSnapshot) {
+      const label = document.getElementById("generated-label");
+      label.textContent = label.textContent.replace(/^SPY batch published/, "SPY context published");
+    }
+    if (spyLiveBarLatency !== null) {
+      document.getElementById("spy-live-timing").textContent = `Last new minute drawn ${(spyLiveBarLatency / 1000).toFixed(2)}s after close${spyLiveBarLatency > 10000 ? " · exceeded the 10s target" : ""}. Provider corrections can change dojis. IEX covers one exchange; regular-session candles update each minute. Levels and historical studies remain batch context.`;
+    }
+  }
+
+  function applySpyLiveSnapshot(snapshot = spyLiveSnapshot, measureLatency = false) {
+    if (!snapshot || state.asset !== "spy" || !activeSpyChart) return;
+    activeSpyChart.timeframes = SpyLive.mergeTimeframes(activeSpyChart.timeframes || {},
+      snapshot.bars, snapshot.completedThrough, snapshot.coverageStart);
+    renderSpyChart(activeSpyChart.timeframes[state.spyTimeframe] || [], activeSpyChart.range_context, 0, true);
+    if (measureLatency && snapshot.source === "bar" && snapshot.barTime) spyLiveBarLatency = Math.max(0, Date.now() - snapshot.barTime * 1000);
+    renderSpyLiveStatus();
+  }
+
+  function connectPrivateSpy(event) {
+    event.preventDefault();
+    if (state.asset !== "spy" || !activeSpyChart?.timeframes?.["1"]?.length) {
+      spyLiveStatus = { state: "waiting", detail: "Wait for the SPY archive to load before connecting" };
+      renderSpyLiveStatus();
+      return;
+    }
+    const keyInput = document.getElementById("spy-live-key");
+    const secretInput = document.getElementById("spy-live-secret");
+    if (!keyInput.value.trim() || !secretInput.value.trim()) {
+      spyLiveStatus = { state: "error", detail: "Enter both Alpaca market-data credentials" };
+      renderSpyLiveStatus();
+      return;
+    }
+    spyLiveClient?.stop();
+    spyLiveClient = null;
+    const lastBar = activeSpyChart.timeframes["1"].at(-1);
+    const startTime = SpyLive.bucketForMinute(lastBar.time, 240)?.start;
+    if (!Number.isFinite(startTime)) {
+      spyLiveStatus = { state: "error", detail: "Cannot determine the SPY history recovery boundary" };
+      renderSpyLiveStatus();
+      return;
+    }
+    spyLiveClient = SpyStream.createClient({ key: keyInput.value.trim(), secret: secretInput.value.trim(), startTime,
+      onStatus: (status) => {
+        spyLiveStatus = status;
+        if (status.state === "error") {
+          spyLiveClient = null;
+          document.getElementById("spy-live-connect").open = true;
+        }
+        renderSpyLiveStatus();
+      },
+      onBars: (snapshot) => { spyLiveSnapshot = snapshot; applySpyLiveSnapshot(snapshot, true); },
+      onTrade: (trade) => { spyLiveTrade = trade; renderSpyLiveStatus(); },
+    });
+    keyInput.value = "";
+    secretInput.value = "";
+    document.getElementById("spy-live-connect").open = false;
+    spyLiveClient.start();
   }
 
   // --- table ---
@@ -4286,13 +4382,13 @@
     const paperLiveLabel = document.getElementById("paper-trader-live-label");
     const batchLegend = document.getElementById("spy-legend");
     const batchNote = document.getElementById("spy-chart-note");
-    const spyCandleNote = asset === "spy" ? " SPY candles also show regular-session IEX prints published in delayed batches." : "";
+    const spyCandleNote = asset === "spy" ? " Connect privately for streamed regular-session IEX candles; levels and research remain batch context." : "";
     if (batchLegend) batchLegend.innerHTML = '<span class="legend-item"><i class="swatch current"></i>Last batch price — not live</span>';
     if (batchNote) batchNote.innerHTML = asset === "xau"
       ? `<strong>XAU gold benchmark context.</strong> This is Kraken's PF_XAUTUSD spot-index archive, published in delayed batches. It is a gold-price proxy—not an interbank XAU/USD execution quote or a trade signal.`
       : `<strong>${asset.toUpperCase()} 20-session range context.</strong> High, midpoint, low, and edge zones use completed regular sessions only. Free Alpaca IEX batch data covers one exchange, not the consolidated market; these levels are context, not a trade signal.${spyCandleNote}`;
     document.getElementById("subtitle").textContent = isSpy
-      ? "SPY range research with a fail-closed validation gate."
+      ? "Private live IEX candles with published range and doji context."
       : asset === "xau"
         ? "Gold benchmark context from a delayed XAU archive — no live signal."
       : isBatch
@@ -4324,6 +4420,7 @@
     document.getElementById("chart-live-ticker").hidden = isBatch;
     document.getElementById("doji-study-status").hidden = asset !== "spy";
     document.getElementById("doji-context").hidden = asset !== "spy";
+    document.getElementById("spy-live-controls").hidden = asset !== "spy";
     if (asset !== "spy") {
       dojiChartMarkers = [];
       dojiMatches = [];
@@ -4334,7 +4431,9 @@
     document.getElementById("range-lab").hidden = asset !== "btc";
     syncAssetGuidance(asset);
     paperTrader.classList.toggle("is-unavailable", isBatch);
-    paperStatus.textContent = isBatch
+    paperStatus.textContent = asset === "spy"
+      ? "SPY paper execution is not enabled. Live chart observations do not define an entry, target, or stop."
+      : isBatch
       ? `${asset.toUpperCase()} is batch data on this site, so live paper P&L is disabled rather than presenting a stale mark as real-time.`
       : `${asset.toUpperCase()} P&L follows Kraken's real-time trade stream. No order is sent anywhere.`;
     paperLiveLabel.textContent = isBatch ? "Batch data" : "Live price";
@@ -4398,7 +4497,9 @@
       document.querySelector(".controls"),
       document.getElementById("market-clock"),
       document.querySelector(".meta-row"),
+      document.getElementById("spy-live-controls"),
       document.getElementById("chart-container"),
+      document.getElementById("doji-context"),
       document.getElementById("decision-brief"),
       document.getElementById("quick-guide"),
       document.getElementById("paper-trader"),
@@ -4522,11 +4623,12 @@
     });
   }
 
-  function renderSpyChart(regularBars, rangeContext = null, prependedBars = 0) {
+  function renderSpyChart(regularBars, rangeContext = null, prependedBars = 0, preserveViewport = false) {
     ensureChart();
-    const visibleRange = prependedBars > 0
+    let visibleRange = prependedBars > 0 || preserveViewport
       ? (latestVisibleLogicalRange || chart.timeScale().getVisibleLogicalRange())
       : null;
+    if (preserveViewport) visibleRange = SpyLive.liveViewport(visibleRange, activeCandles.length, regularBars.length);
     if (!visibleRange) clearPriceSnapState();
     updateChartFocusStatus();
     // SPY has no levels/heatmap of its own - strip any leftover crypto
@@ -4558,13 +4660,14 @@
     // known later, not live information available to the viewer.
     tradeChartMarkers = [];
     renderDojiMarkers(regularBars, Number(state.spyTimeframe), "batch", {
-      completedThroughUnix: activeSpyChart && Number.isFinite(Date.parse(activeSpyChart.generated_at_utc))
-        ? Date.parse(activeSpyChart.generated_at_utc) / 1000
-        : Date.now() / 1000,
+      completedThroughUnix: Math.max(state.asset === "spy" ? spyLiveSnapshot?.completedThrough || 0 : 0,
+        activeSpyChart && Number.isFinite(Date.parse(activeSpyChart.generated_at_utc))
+          ? Date.parse(activeSpyChart.generated_at_utc) / 1000 : Date.now() / 1000),
       timeIsClose: true,
     });
     candleSeries.priceScale().applyOptions({ mode: LightweightCharts.PriceScaleMode.Normal });
-    if (visibleRange) restorePrependedHistoryViewport(visibleRange, prependedBars);
+    if (preserveViewport && visibleRange) chart.timeScale().setVisibleLogicalRange(visibleRange);
+    else if (visibleRange) restorePrependedHistoryViewport(visibleRange, prependedBars);
     else fitAllLoadedHistory();
     lastLiveUnixTime = regularBars.length ? regularBars[regularBars.length - 1].time : null;
     renderBatchRangeLines(rangeContext);
@@ -4653,6 +4756,7 @@
       renderHeader(chartData); // same {generated_at_utc, price} shape renderHeader already expects
       const regularBars = (chartData.timeframes || {})[state.spyTimeframe] || [];
       renderSpyChart(regularBars, chartData.range_context);
+      if (asset === "spy") applySpyLiveSnapshot();
       loadBatchArchiveManifest(asset);
       if (asset === "spy") {
         const [signalsData, backtestData, rangeResearch] = await Promise.all([
@@ -4698,6 +4802,18 @@
   }
 
   function wireToggles() {
+    document.getElementById("spy-live-form").addEventListener("submit", connectPrivateSpy);
+    document.getElementById("spy-live-disconnect").addEventListener("click", () => {
+      spyLiveClient?.stop();
+      spyLiveClient = null;
+      spyLiveStatus = { state: "disconnected", detail: "Updates stopped; showing the last received candles" };
+      renderSpyLiveStatus();
+    });
+    window.addEventListener("pagehide", () => {
+      spyLiveClient?.stop();
+      spyLiveClient = null;
+      spyLiveStatus = { state: "disconnected", detail: "Reconnect to resume private SPY updates" };
+    });
     document.getElementById("doji-latest").addEventListener("click", () => selectDoji(dojiMatches.at(-1)?.time, true));
     for (const [id, offset] of [["doji-previous", -1], ["doji-next", 1]]) {
       document.getElementById(id).addEventListener("click", () => {

@@ -256,6 +256,64 @@ test("doji history retries, handles zero examples, and clears selection after an
   await expect(page.locator("#doji-context-detail")).toBeHidden();
 });
 
+test("private SPY stream draws completed dojis promptly, applies corrections, and never saves credentials", async ({ page }) => {
+  await installSpyChartStub(page);
+  await page.addInitScript(() => {
+    window.__spyNow = Date.parse("2026-11-16T20:31:01Z");
+    Date.now = () => window.__spyNow;
+    window.WebSocket = class {
+      constructor() { this.events = {}; window.__spySocket = this; queueMicrotask(() => this.events.open?.()); }
+      addEventListener(name, handler) { this.events[name] = handler; }
+      send(raw) {
+        const message = JSON.parse(raw);
+        if (message.action === "auth") queueMicrotask(() => this.emit({ T: "success", msg: "authenticated" }));
+        if (message.action === "subscribe") queueMicrotask(() => this.emit({ T: "subscription", bars: ["SPY"] }));
+      }
+      emit(row) { this.events.message?.({ data: JSON.stringify([row]) }); }
+      close() { this.events.close?.(); }
+    };
+  });
+  await page.route("https://data.alpaca.markets/**", (route) => route.fulfill({ json: { bars: [], next_page_token: null } }));
+  await page.goto("/#asset=spy&range=1m", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#doji-latest")).toBeEnabled();
+  await page.locator("#spy-live-connect summary").click();
+  await page.locator("#spy-live-key").fill("private-test-key");
+  await page.locator("#spy-live-secret").fill("private-test-secret");
+  await page.locator('#spy-live-form button[type="submit"]').click();
+  await expect(page.locator("#spy-live-status")).toContainText("waiting");
+  await page.evaluate(() => {
+    window.__spySocket.emit({ T: "b", S: "SPY", t: "2026-11-16T20:30:00Z", o: 10, h: 11, l: 9, c: 10.01, v: 10 });
+    window.__spySocket.emit({ T: "t", S: "SPY", t: "2026-11-16T20:31:00.800Z", p: 10.02 });
+  });
+  await expect(page.locator("#spy-live-status")).toContainText("Live IEX");
+  await expect(page.locator("#live-badge")).toContainText("Live IEX");
+  await expect(page.locator("#spy-live-timing")).toContainText("1.00s after close");
+  expect(await page.evaluate(() => window.__spyMarkers.some((marker) => marker.time === Date.parse("2026-11-16T20:31:00Z") / 1000 && marker.text === "D1"))).toBe(true);
+  await expect(page.locator("#spy-live-key")).toHaveValue("");
+  await expect(page.locator("#spy-live-secret")).toHaveValue("");
+  expect(await page.evaluate(() => JSON.stringify([localStorage, sessionStorage]).includes("private-test"))).toBe(false);
+  await page.evaluate(() => window.__spySocket.emit({ T: "u", S: "SPY", t: "2026-11-16T20:30:00Z", o: 10, h: 11, l: 9, c: 10.9, v: 20 }));
+  expect(await page.evaluate(() => window.__spyMarkers.some((marker) => marker.time === Date.parse("2026-11-16T20:31:00Z") / 1000))).toBe(false);
+  await page.locator("#spy-timeframe-select").selectOption("5");
+  await page.evaluate(() => {
+    window.__spyNow = Date.parse("2026-11-16T20:35:01Z");
+    window.__spySocket.emit({ T: "b", S: "SPY", t: "2026-11-16T20:34:00Z", o: 10.9, h: 11, l: 9, c: 10.01, v: 10 });
+  });
+  expect(await page.evaluate(() => window.__spyMarkers.some((marker) => marker.time === Date.parse("2026-11-16T20:35:00Z") / 1000 && marker.text === "D1"))).toBe(true);
+  await expect(page.locator("#spy-live-timing")).toContainText("1.00s after close");
+  await page.locator("#spy-live-disconnect").click();
+  await expect(page.locator("#spy-live-status")).toContainText("disconnected");
+  await expect(page.locator("#live-badge")).toContainText("last mark");
+  const order = await page.evaluate(() => {
+    const chart = document.querySelector("#chart-container").getBoundingClientRect();
+    const context = document.querySelector("#doji-context").getBoundingClientRect();
+    return context.top >= chart.bottom;
+  });
+  expect(order).toBe(true);
+  await page.locator('[data-asset="qqq"]').click();
+  await expect(page.locator("#spy-live-controls")).toBeHidden();
+});
+
 test("chart timestamps use Dallas 12-hour time and follow daylight saving", async ({ page }) => {
   await openDashboard(page);
   const labels = await page.evaluate(() => ({
