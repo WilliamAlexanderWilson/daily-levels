@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-11-16T16:32:31.137390+00:00",
+  "generated_at_utc": "2026-11-16T20:03:01.787147+00:00",
   "trades": [
     {
       "signal_time": 1731948600,
@@ -2670,12 +2670,12 @@
       "confirmed_timeframes": [
         30
       ],
-      "entry_underlying": 746.64,
+      "entry_underlying": 746.51,
       "strike": 747.0,
       "expiry_date": null,
       "entry_premium": null,
       "exit_time": 1794846600,
-      "exit_underlying": 746.64,
+      "exit_underlying": 746.51,
       "exit_premium": null,
       "exit_reason": "incomplete",
       "pct_return": null
