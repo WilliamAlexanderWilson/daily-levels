@@ -134,6 +134,7 @@ main > .controls { order: 1; }
 main > .market-clock { order: 2; }
 main > .meta-row { order: 3; }
 main > .chart-container { order: 4; }
+main > .doji-context { order: 4; }
 main > .decision-brief { order: 5; }
 main > .quick-guide { order: 6; }
 main > .paper-trader { order: 7; }
@@ -141,6 +142,33 @@ main > .range-lab { order: 8; }
 main > .nearby-context { order: 9; }
 main > .advanced-analysis { order: 10; }
 main > * { min-width: 0; }
+
+.doji-context {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 1rem;
+  margin: 0.75rem 0 1rem;
+  font-size: 0.85rem;
+}
+.doji-context[hidden], .doji-context [hidden] { display: none !important; }
+.doji-context-heading { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.doji-context-kicker, .doji-context-metrics span { color: var(--text-muted); font-size: 0.75rem; }
+.doji-context h2 { margin: 0.25rem 0; font-size: 1.1rem; }
+.doji-context p { margin: 0.55rem 0; line-height: 1.5; }
+.doji-context-controls { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.doji-context-controls button { min-height: 44px; }
+.doji-context button:disabled { opacity: 0.45; cursor: default; }
+.doji-context-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
+.doji-context-metrics > div { border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; }
+.doji-context-metrics strong { display: block; margin: 0.45rem 0; font-size: 1.15rem; }
+.doji-context-metrics small, .doji-context-footnote, .doji-context-method { color: var(--text-muted); line-height: 1.5; }
+.doji-context-method summary { cursor: pointer; padding: 0.4rem 0; }
+#doji-context-status { font-weight: 600; }
+@media (max-width: 640px) {
+  .doji-context-metrics { grid-template-columns: 1fr; }
+  .doji-context { padding: 0.8rem; }
+}
 
 .controls {
   display: flex;

@@ -310,6 +310,13 @@
   let tradeMarkersPlugin = null;
   let tradeChartMarkers = [];
   let dojiChartMarkers = [];
+  let dojiMatches = [];
+  let selectedDojiTime = null;
+  let dojiViewKey = "";
+  let dojiContextData = null;
+  let dojiContextLoading = false;
+  let dojiContextError = false;
+  let dojiContextGeneration = 0;
   let activeCandles = []; // current timeframe's loaded candles, so trade markers can be bounds-checked
   let activeDisplayCandles = []; // regular or derived HA bars currently sent to the chart series
   let markingMode = false;
@@ -1365,12 +1372,119 @@
     tradeMarkersPlugin.setMarkers(markers);
   }
 
+  function dojiDate(time, dateOnly = false) {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Chicago", month: "short", day: "numeric", year: "numeric",
+      ...(dateOnly ? {} : { hour: "numeric", minute: "2-digit", timeZoneName: "short" }),
+    }).format(new Date(time * 1000));
+  }
+
+  async function loadDojiContext() {
+    if (dojiContextLoading) return;
+    const generation = ++dojiContextGeneration;
+    dojiContextLoading = true;
+    dojiContextError = false;
+    renderDojiContext();
+    try {
+      const data = await fetchJson("data/spy_doji_context.json");
+      if (generation === dojiContextGeneration) dojiContextData = data;
+    } catch (error) {
+      if (generation === dojiContextGeneration) dojiContextError = true;
+    } finally {
+      if (generation === dojiContextGeneration) {
+        dojiContextLoading = false;
+        renderDojiContext();
+      }
+    }
+  }
+
+  function renderDojiContext() {
+    const panel = document.getElementById("doji-context");
+    panel.hidden = state.asset !== "spy";
+    if (panel.hidden) return;
+    const selectedIndex = dojiMatches.findIndex((bar) => bar.time === selectedDojiTime);
+    const selected = dojiMatches[selectedIndex];
+    const put = (id, text) => { document.getElementById(id).textContent = text; };
+    document.getElementById("doji-latest").disabled = dojiMatches.length === 0;
+    document.getElementById("doji-previous").disabled = selectedIndex <= 0;
+    document.getElementById("doji-next").disabled = selectedIndex < 0 || selectedIndex >= dojiMatches.length - 1;
+    document.getElementById("doji-context-detail").hidden = !selected;
+    if (!selected) {
+      put("doji-context-selection", dojiMatches.length
+        ? "Click or tap a D marker, or choose Latest doji."
+        : "No completed dojis in the loaded chart yet.");
+      return;
+    }
+    const color = selected.close >= selected.open ? "green" : "red";
+    const style = state.candleStyle === "regular" ? "Regular" : "Heikin Ashi";
+    put("doji-context-selection", `${color === "green" ? "Green" : "Red"} D${selected.streak} · ${state.spyTimeframe}m · ${style} · ${dojiDate(selected.time)}`);
+    put("doji-context-shape", `Body ${Math.abs(selected.close - selected.open).toFixed(4)} ÷ range ${(selected.high - selected.low).toFixed(4)} = ${(selected.bodyRatio * 100).toFixed(2)}%. Doji rule: body ≤ 10% of range. D${selected.streak} counts consecutive same-color doji candles.`);
+    const results = document.getElementById("doji-context-results");
+    const retry = document.getElementById("doji-context-retry");
+    results.hidden = true;
+    retry.hidden = true;
+    if (!dojiContextData) {
+      put("doji-context-status", dojiContextError
+        ? "Historical comparison unavailable. The selected candle’s shape is still shown."
+        : "Loading historical comparison…");
+      retry.hidden = !dojiContextError;
+      if (!dojiContextLoading && !dojiContextError) loadDojiContext();
+      return;
+    }
+    try {
+      const summary = DojiContext.summarize(dojiContextData, state.spyTimeframe, state.candleStyle, selected);
+      const { row, baseline, coverage } = summary;
+      put("doji-context-status", summary.sampleLabel);
+      put("doji-pattern-label", `After ${color} D${summary.streak}`);
+      put("doji-pattern-count", DojiContext.frequency(row.nextCloseFavorable, row.events));
+      put("doji-outcome-label", `Next real close ${color === "green" ? "higher" : "lower"} than the doji’s real close`);
+      put("doji-baseline-count", DojiContext.frequency(baseline.nextCloseFavorable, baseline.events));
+      put("doji-difference", summary.difference === null ? "Unavailable"
+        : `${summary.difference > 0 ? "+" : ""}${summary.difference.toFixed(1)} pp`);
+      put("doji-context-caution", row.events < DojiContext.SMALL_SAMPLE
+        ? "Fewer than 30 eligible examples. Small samples can produce extreme percentages. The 30-example flag does not establish reliability."
+        : "These are historical frequencies. A larger sample or positive difference does not establish a trading advantage.");
+      put("doji-context-other", `Next real candle also ${color}: ${DojiContext.frequency(row.nextBarSameColor, row.events)}. Next displayed candle extends the same-color doji streak: ${DojiContext.frequency(row.nextSameColorDoji, row.events)}.`);
+      const published = Date.parse(dojiContextData.sourceGeneratedAtUtc) / 1000;
+      const older = activeSpyChart && Date.parse(activeSpyChart.generated_at_utc) > published * 1000;
+      put("doji-context-coverage", `Whole archive · ${dojiDate(coverage.first, true)}–${dojiDate(coverage.last, true)} · Alpaca IEX batch history. Study as of ${dojiDate(published)}. Includes data after historical candles you select.${older ? " Study is older than the chart publication." : ""}`);
+      const interval = row.nextCloseFavorableWilson95;
+      put("doji-context-interval", row.events && Array.isArray(interval)
+        ? `Rough 95% reference interval: ${(interval[0] * 100).toFixed(1)}%–${(interval[1] * 100).toFixed(1)}%. Wilson intervals assume independent observations; market dependence and testing many patterns can make them too optimistic.`
+        : "No interval is available without eligible examples.");
+      results.hidden = false;
+    } catch (error) {
+      put("doji-context-status", "Historical comparison unavailable for this view. Retry to load the current study.");
+      retry.hidden = false;
+    }
+  }
+
+  function selectDoji(time, reveal = false) {
+    if (state.asset !== "spy" || !dojiMatches.some((bar) => bar.time === time)) return;
+    selectedDojiTime = time;
+    dojiChartMarkers.forEach((marker) => { marker.size = marker.time === time ? 1.3 : 0.8; });
+    syncSeriesMarkers();
+    renderDojiContext();
+    if (reveal && chart) {
+      const index = activeCandles.findIndex((bar) => bar.time === time);
+      const visible = chart.timeScale().getVisibleLogicalRange();
+      if (index >= 0 && visible && (index < visible.from || index > visible.to)) {
+        const width = visible.to - visible.from;
+        chart.timeScale().setVisibleLogicalRange({ from: index - width / 2, to: index + width / 2 });
+      }
+    }
+  }
+
   function renderDojiMarkers(candles, intervalMinutes, range, options = {}) {
     const status = document.getElementById("doji-study-status");
     const enabled = state.asset === "spy";
     if (status) status.hidden = !enabled;
     if (!enabled) {
       dojiChartMarkers = [];
+      dojiMatches = [];
+      selectedDojiTime = null;
+      dojiViewKey = "";
+      renderDojiContext();
       syncSeriesMarkers();
       return;
     }
@@ -1385,15 +1499,21 @@
         })
       : [];
 
+    const viewKey = `${intervalMinutes}|${state.candleStyle}`;
+    if (dojiViewKey !== viewKey || !matches.some((bar) => bar.time === selectedDojiTime)) selectedDojiTime = null;
+    dojiViewKey = viewKey;
+    dojiMatches = matches;
+
     dojiChartMarkers = matches.map((bar) => ({
       time: toTimePoint(bar, range),
       position: bar.streak % 2 === 0 ? "belowBar" : "aboveBar",
       color: cssVar(bar.close >= bar.open ? "--support" : "--resistance"),
       shape: "circle",
       text: `D${bar.streak}`,
-      size: 0.8,
+      size: bar.time === selectedDojiTime ? 1.3 : 0.8,
     }));
     syncSeriesMarkers();
+    renderDojiContext();
 
     if (!status) return;
     status.textContent = eligible
@@ -3111,6 +3231,10 @@
   }
 
   function handleChartClick(param) {
+    if (state.asset === "spy" && dojiMatches.some((bar) => bar.time === param.time)) {
+      selectDoji(param.time);
+      return;
+    }
     if (markingMode) {
       if (!param.point || param.time === undefined) return;
       const price = candleSeries.coordinateToPrice(param.point.y);
@@ -4199,8 +4323,12 @@
     document.getElementById("spy-explainer").hidden = !isSpy;
     document.getElementById("chart-live-ticker").hidden = isBatch;
     document.getElementById("doji-study-status").hidden = asset !== "spy";
+    document.getElementById("doji-context").hidden = asset !== "spy";
     if (asset !== "spy") {
       dojiChartMarkers = [];
+      dojiMatches = [];
+      selectedDojiTime = null;
+      dojiViewKey = "";
       syncSeriesMarkers();
     }
     document.getElementById("range-lab").hidden = asset !== "btc";
@@ -4570,6 +4698,17 @@
   }
 
   function wireToggles() {
+    document.getElementById("doji-latest").addEventListener("click", () => selectDoji(dojiMatches.at(-1)?.time, true));
+    for (const [id, offset] of [["doji-previous", -1], ["doji-next", 1]]) {
+      document.getElementById(id).addEventListener("click", () => {
+        const index = dojiMatches.findIndex((bar) => bar.time === selectedDojiTime);
+        if (index >= 0) selectDoji(dojiMatches[index + offset]?.time, true);
+      });
+    }
+    document.getElementById("doji-context-retry").addEventListener("click", () => {
+      dojiContextData = null;
+      loadDojiContext();
+    });
     document.querySelectorAll("#asset-toggle .toggle-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         state.asset = btn.dataset.asset;
@@ -4655,6 +4794,10 @@
       // computation - the site is static, there's no server to ask.
       refreshBtn.disabled = true;
       refreshBtn.textContent = "⟳ Refreshing…";
+      dojiContextGeneration += 1;
+      dojiContextLoading = false;
+      dojiContextError = false;
+      dojiContextData = null;
       try {
         await loadAndRender();
       } finally {

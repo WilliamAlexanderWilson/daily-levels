@@ -9,6 +9,25 @@ async function openDashboard(page) {
   await page.goto("/#asset=btc&range=4h", { waitUntil: "domcontentloaded" });
 }
 
+async function installSpyChartStub(page) {
+  await page.route("https://cdn.jsdelivr.net/**", (route) => route.fulfill({
+    contentType: "application/javascript",
+    body: `
+      const priceScale = { applyOptions() {}, setAutoScale() {}, getVisibleRange() { return null; }, width() { return 50; } };
+      const series = { setData(data) { if (data.length && 'open' in data[0]) window.__spyCandles = data; },
+        priceScale() { return priceScale; }, createPriceLine() { return { applyOptions() {} }; },
+        removePriceLine() {}, priceToCoordinate() { return null; } };
+      const timeScale = { subscribeVisibleLogicalRangeChange() {}, fitContent() {}, getVisibleLogicalRange() { return null; } };
+      window.LightweightCharts = {
+        createChart() { return { addSeries() { return series; }, subscribeClick(handler) { window.__spyClick = handler; }, subscribeCrosshairMove() {}, timeScale() { return timeScale; } }; },
+        createSeriesMarkers() { return { setMarkers(markers) { window.__spyMarkers = markers; } }; },
+        CandlestickSeries: {}, HistogramSeries: {}, CrosshairMode: { Normal: 0 },
+        LineStyle: { Dotted: 0, Dashed: 1, Solid: 2 }, PriceScaleMode: { Normal: 0 }
+      };
+    `,
+  }));
+}
+
 async function expectBrand(page, asset, label) {
   await expect(page.locator("#brand-mark-img")).toHaveAttribute("src", `brand-${asset}.svg`);
   await expect(page.locator("#site-favicon")).toHaveAttribute("href", `brand-${asset}.svg`);
@@ -112,22 +131,7 @@ test("a stale XAU batch identifies its age without overflowing the page", async 
 });
 
 test("SPY renders every published interval and keeps deep links on desktop and mobile", async ({ page }) => {
-  await page.route("https://cdn.jsdelivr.net/**", (route) => route.fulfill({
-    contentType: "application/javascript",
-    body: `
-      const priceScale = { applyOptions() {}, setAutoScale() {}, getVisibleRange() { return null; }, width() { return 50; } };
-      const series = { setData(data) { if (data.length && 'open' in data[0]) window.__spyCandles = data; },
-        priceScale() { return priceScale; }, createPriceLine() { return { applyOptions() {} }; },
-        removePriceLine() {}, priceToCoordinate() { return null; } };
-      const timeScale = { subscribeVisibleLogicalRangeChange() {}, fitContent() {}, getVisibleLogicalRange() { return null; } };
-      window.LightweightCharts = {
-        createChart() { return { addSeries() { return series; }, subscribeClick() {}, subscribeCrosshairMove() {}, timeScale() { return timeScale; } }; },
-        createSeriesMarkers() { return { setMarkers(markers) { window.__spyMarkers = markers; } }; },
-        CandlestickSeries: {}, HistogramSeries: {}, CrosshairMode: { Normal: 0 },
-        LineStyle: { Dotted: 0, Dashed: 1, Solid: 2 }, PriceScaleMode: { Normal: 0 }
-      };
-    `,
-  }));
+  await installSpyChartStub(page);
   await page.goto("/#asset=spy&range=15m", { waitUntil: "domcontentloaded" });
   const select = page.locator("#spy-timeframe-select");
   await expect(select).toBeVisible();
@@ -176,6 +180,80 @@ test("SPY renders every published interval and keeps deep links on desktop and m
   await expect(page.locator("#history-load-status")).toContainText("archive starts Sep 2025");
   expect(await page.evaluate(() => (window.__spyMarkers || []).some((marker) => /^D\d+$/.test(marker.text)))).toBe(false);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+});
+
+test("selected doji panel explains actual counts and clears across chart views", async ({ page }) => {
+  await installSpyChartStub(page);
+  let studyRequests = 0;
+  page.on("request", (request) => { if (request.url().includes("spy_doji_context.json")) studyRequests += 1; });
+  await page.goto("/#asset=spy&range=1m", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#doji-latest")).toBeEnabled();
+  expect(studyRequests).toBe(0);
+  const selected = await page.evaluate(() => {
+    const marker = window.__spyMarkers.find((item) => item.text === "D3");
+    window.__spyClick({ time: marker.time, point: { x: 100, y: 100 } });
+    return marker;
+  });
+  await expect(page.locator("#doji-context-results")).toBeVisible();
+  await expect(page.locator("#doji-context-selection")).toContainText("D3 · 1m · Regular");
+  await expect(page.locator("#doji-context-shape")).toContainText("body ≤ 10%");
+  const expected = await page.evaluate(async (marker) => {
+    const report = await (await fetch("data/spy_doji_context.json")).json();
+    const bar = window.__spyCandles.find((item) => item.time === marker.time);
+    const direction = bar.close >= bar.open ? "green" : "red";
+    const row = report.rows.find((item) => item.timeframeMinutes === 1 && item.style === "regular" && item.direction === direction && item.streak === 3);
+    const baseline = report.baselines.find((item) => item.timeframeMinutes === 1 && item.style === "regular" && item.direction === direction);
+    return { pattern: `${row.nextCloseFavorable} / ${row.events}`, baseline: `${baseline.nextCloseFavorable.toLocaleString()} / ${baseline.events.toLocaleString()}` };
+  }, selected);
+  await expect(page.locator("#doji-pattern-count")).toContainText(expected.pattern);
+  await expect(page.locator("#doji-baseline-count")).toContainText(expected.baseline);
+  await page.locator("#doji-latest").click();
+  await expect(page.locator("#doji-next")).toBeDisabled();
+  const latest = await page.locator("#doji-context-selection").textContent();
+  await page.locator("#doji-previous").click();
+  await expect(page.locator("#doji-context-selection")).not.toHaveText(latest);
+  await page.locator("#doji-next").click();
+  await expect(page.locator("#doji-context-selection")).toHaveText(latest);
+  await page.locator('[data-candle-style="heikin-ashi"]').click();
+  await expect(page.locator("#doji-context-detail")).toBeHidden();
+  await page.locator("#doji-latest").click();
+  await expect(page.locator("#doji-context-selection")).toContainText("Heikin Ashi");
+  await expect(page.locator("#doji-context-results")).toBeVisible();
+  await page.locator("#spy-timeframe-select").selectOption("5");
+  await expect(page.locator("#doji-context-detail")).toBeHidden();
+  await page.locator('[data-asset="qqq"]').click();
+  await expect(page.locator("#doji-context")).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+});
+
+test("doji history retries, handles zero examples, and clears selection after an asset switch", async ({ page }) => {
+  await installSpyChartStub(page);
+  let failed = false;
+  await page.route("**/data/spy_doji_context.json", async (route) => {
+    if (!failed) { failed = true; await route.fulfill({ status: 503, body: "Unavailable" }); }
+    else {
+      const response = await route.fetch();
+      const data = await response.json();
+      data.rows.forEach((row) => Object.assign(row, { events: 0, nextCloseFavorable: 0,
+        nextBarSameColor: 0, nextSameColorDoji: 0, nextCloseFavorableWilson95: null }));
+      await route.fulfill({ response, json: data });
+    }
+  });
+  await page.goto("/#asset=spy&range=1m", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#doji-latest")).toBeEnabled();
+  await page.locator("#doji-latest").click();
+  await expect(page.locator("#doji-context-status")).toContainText("unavailable");
+  await expect(page.locator("#doji-context-shape")).toContainText("Doji rule");
+  await expect(page.locator("#doji-context-results")).toBeHidden();
+  await page.locator("#doji-context-retry").click();
+  await expect(page.locator("#doji-context-results")).toBeVisible();
+  await expect(page.locator("#doji-pattern-count")).toHaveText("No eligible examples");
+  await expect(page.locator("#doji-difference")).toHaveText("Unavailable");
+  await page.locator('[data-asset="qqq"]').click();
+  await expect(page.locator("#doji-context")).toBeHidden();
+  await page.locator('[data-asset="spy"]').click();
+  await expect(page.locator("#doji-latest")).toBeEnabled();
+  await expect(page.locator("#doji-context-detail")).toBeHidden();
 });
 
 test("chart timestamps use Dallas 12-hour time and follow daylight saving", async ({ page }) => {
