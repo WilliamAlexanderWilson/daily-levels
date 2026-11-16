@@ -926,3 +926,9 @@ site/                         # static HTML/CSS/JS, hosted on GitHub Pages
 ## Disclaimer
 
 Informational only. Not financial advice.
+
+### SPY doji continuation research
+
+[November 16 continuation study](docs/SPY-DOJI-CONTINUATION-2026-11-16.md) compares
+consecutive dojis with ordinary-candle baselines and earlier/later periods.
+No validated 80% continuation rule or trade win rate was established.
