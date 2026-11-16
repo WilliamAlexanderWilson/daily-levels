@@ -24,7 +24,7 @@
   <link rel="canonical" href="https://williamalexanderwilson.github.io/daily-levels/" />
   <title>William Wilson's Range Desk — BTC, ETH, SPY, QQQ, NVDA &amp; XAU</title>
   <link id="site-favicon" rel="icon" type="image/svg+xml" href="brand-btc.svg" />
-  <link rel="stylesheet" href="styles.css?v=deep-history-xau-v1" />
+  <link rel="stylesheet" href="styles.css?v=selected-doji-v1" />
 </head>
 <body>
   <header class="site-header">
@@ -410,6 +410,45 @@
       <div id="chart-focus-status" class="chart-focus-status" aria-live="polite">Macro range · live focus</div>
       <div id="chart-loading-overlay" class="chart-loading-overlay" hidden>Loading…</div>
     </div>
+
+    <section id="doji-context" class="doji-context" aria-labelledby="doji-context-title" hidden>
+      <div class="doji-context-heading">
+        <div>
+          <span class="doji-context-kicker">SPY · candle context</span>
+          <h2 id="doji-context-title">Selected doji</h2>
+          <p id="doji-context-selection" aria-live="polite">Click or tap a D marker, or choose Latest doji.</p>
+        </div>
+        <div class="doji-context-controls" role="group" aria-label="Select a completed doji">
+          <button type="button" id="doji-previous" class="chart-control-btn" disabled aria-label="Previous doji">Previous</button>
+          <button type="button" id="doji-next" class="chart-control-btn" disabled aria-label="Next doji">Next</button>
+          <button type="button" id="doji-latest" class="chart-control-btn" disabled>Latest doji</button>
+        </div>
+      </div>
+      <div id="doji-context-detail" hidden>
+        <p id="doji-context-shape"></p>
+        <p id="doji-context-status" role="status"></p>
+        <button type="button" id="doji-context-retry" class="chart-control-btn" hidden>Retry history</button>
+        <div id="doji-context-results" hidden>
+          <p id="doji-context-coverage" class="doji-context-footnote"></p>
+          <div class="doji-context-metrics">
+            <div><span id="doji-pattern-label">After this streak</span><strong id="doji-pattern-count"></strong><small id="doji-outcome-label"></small></div>
+            <div><span>After ordinary candles</span><strong id="doji-baseline-count"></strong><small>Non-dojis of the same color, timeframe, and style</small></div>
+            <div><span>Observed difference</span><strong id="doji-difference"></strong><small>Percentage points; no validated advantage</small></div>
+          </div>
+          <p id="doji-context-caution"></p>
+          <details class="doji-context-method">
+            <summary>Outcomes, coverage, and method</summary>
+            <p id="doji-context-other"></p>
+            <p id="doji-context-interval"></p>
+            <p>The next real SPY close is compared with the selected candle’s real close. Ties count as not favorable. Overnight and missing-bar transitions are excluded. The comparison uses non-dojis with the same displayed color, timeframe, and style; it does not control for other market conditions.</p>
+            <p>Whole-archive summary: includes periods after historical candles you select. Heikin Ashi shapes are derived values; outcomes always use real SPY prices. Streaks of six or more are pooled.</p>
+            <p>Chart streak labels use loaded candles and can update as older history loads. Historical comparisons use the full published archive.</p>
+            <a href="https://github.com/WilliamAlexanderWilson/daily-levels/blob/main/docs/SPY-DOJI-STREAK-STUDY.md" target="_blank" rel="noopener noreferrer">Study method ↗</a>
+          </details>
+          <p class="doji-context-footnote">Observed next-bar movement, not a trade win rate. Entry, target, stop, holding time, and costs have not been defined.</p>
+        </div>
+      </div>
+    </section>
 
     <section id="paper-trader" class="paper-trader" aria-labelledby="paper-trader-title">
       <div class="paper-trader-heading">
@@ -837,7 +876,8 @@
   <script src="chart-time.js?v=spy-doji-v1"></script>
   <script src="candle-style.js?v=spy-doji-v1"></script>
   <script src="doji-study.js?v=spy-doji-streak-v1"></script>
+  <script src="doji-context.js?v=selected-doji-v1"></script>
   <script src="candle-history.js?v=history-viewport-v1"></script>
-  <script src="app.js?v=spy-doji-streak-v1"></script>
+  <script src="app.js?v=selected-doji-v1"></script>
 </body>
 </html>

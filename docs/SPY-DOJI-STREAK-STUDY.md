@@ -1,11 +1,37 @@
 # SPY doji streaks: descriptive snapshot
 
 Snapshot: SPY export published 2026-11-16 16:32 UTC. The reproducible counts
-come from `node scripts/analyze-spy-doji-streaks.js` and the frozen artifact
+come from the original v1 analysis and are preserved in the frozen artifact
 [`research/spy_doji_streaks_2026-11-16.json`](../research/spy_doji_streaks_2026-11-16.json).
 The published monthly archives cover July 2020 through November 2026. They
 contain Alpaca's regular-session IEX bars, a subset of US market activity
 ([Alpaca's feed explanation](https://docs.alpaca.markets/us/docs/market-data-faq)).
+
+## Selected doji panel
+
+The live SPY chart now opens a context panel when a D candle is clicked or
+selected with Latest doji / Previous / Next. It explains the body-to-range
+calculation in the selected style, matches the exact streak/color/timeframe,
+and compares next-close movement with **non-doji candles of the same displayed
+color, style, and timeframe**. Both groups exclude missing-bar and overnight
+transitions, unfinished next bars, and flat no-range signal candles. Ties are
+not favorable. The difference is percentage points, not demonstrated edge;
+the comparison does not control for other market conditions.
+
+`node scripts/analyze-spy-doji-streaks.js --compact` now emits v2 data with
+those baselines. The scheduled workflow writes it atomically to
+`site/data/spy_doji_context.json` after a successful SPY export. Failure keeps
+the prior dated study and fails the workflow's final batch report. The panel
+shows its study date and coverage, flags when it predates the chart, loads
+only on selection, and offers retry on request or data failure.
+
+The whole-archive summary includes periods after historical candles selected
+on the chart; it is not an as-of replay. Fewer than 30 eligible examples gets
+the label “Too few examples.” Thirty is a display caution threshold, not a
+validation threshold. Zero observations show no percentage. Streak positions
+six and above are pooled as D6+. Chart labels use loaded candles and can
+change near the oldest edge as more history arrives. Heikin Ashi initialization
+can also differ near that edge; the study initializes from the full archive.
 
 ## Question and measurement
 

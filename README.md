@@ -66,6 +66,13 @@ prospective evidence gates, alerts, and browser-local paper planning.
   context, not entries; BTC, ETH, QQQ, NVDA, and XAU do not show this study.
   The [SPY streak snapshot](docs/SPY-DOJI-STREAK-STUDY.md) records descriptive
   next-bar counts; it does not define a trading rule.
+- **Selected doji context.** Click a SPY D marker or use **Latest doji** below
+  the chart to inspect its body/range calculation, exact same-color streak,
+  next-bar counts, and an ordinary-candle comparison. Previous/Next provide
+  keyboard-accessible selection. The panel loads its compact whole-archive
+  study only when used, dates the results, flags fewer than 30 examples, and
+  resets selection when the timeframe, style, or asset changes. The scheduled
+  SPY update refreshes the study after publishing the chart archive.
 
 | Market | Data path | Current product boundary |
 | --- | --- | --- |
