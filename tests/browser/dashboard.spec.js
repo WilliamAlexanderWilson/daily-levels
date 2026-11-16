@@ -292,8 +292,12 @@ test("private SPY stream draws completed dojis promptly, applies corrections, an
   await expect(page.locator("#spy-live-key")).toHaveValue("");
   await expect(page.locator("#spy-live-secret")).toHaveValue("");
   expect(await page.evaluate(() => JSON.stringify([localStorage, sessionStorage]).includes("private-test"))).toBe(false);
+  await page.locator("#candle-latest").click();
+  await expect(page.locator("#candle-inspector-verdict")).toContainText("Doji shape:");
   await page.evaluate(() => window.__spySocket.emit({ T: "u", S: "SPY", t: "2026-11-16T20:30:00Z", o: 10, h: 11, l: 9, c: 10.9, v: 20 }));
   expect(await page.evaluate(() => window.__spyMarkers.some((marker) => marker.time === Date.parse("2026-11-16T20:31:00Z") / 1000))).toBe(false);
+  await expect(page.locator("#candle-inspector-verdict")).toContainText("Not marked:");
+  await expect(page.locator("#doji-context-results")).toBeHidden();
   await page.locator("#spy-timeframe-select").selectOption("5");
   await page.evaluate(() => {
     window.__spyNow = Date.parse("2026-11-16T20:35:01Z");
@@ -346,4 +350,42 @@ test("the professional shell remains usable at its target viewport", async ({ pa
     expect(mark.width).toBeGreaterThanOrEqual(38);
     expect(mark.height).toBeGreaterThanOrEqual(38);
   }
+});
+
+
+test("SPY inspector explains the borderline 15m candle and every selected shape", async ({ page }) => {
+  await installSpyChartStub(page);
+  await page.route("**/data/spy_chart.json", async (route) => {
+    const response = await route.fetch();
+    const data = await response.json();
+    data.generated_at_utc = "2026-11-16T18:00:00Z";
+    data.timeframes["15"] = [
+      { time: 1794849300, open: 743, high: 744, low: 742, close: 743 },
+      { time: 1794850200, open: 743, high: 743, low: 743, close: 743 },
+      { time: 1794851100, open: 743.39, high: 743.82, low: 742.93, close: 743.30 },
+      { time: 1794852000, open: 743, high: 744, low: 742, close: 742.5 },
+      { time: 1794852900, open: 743, high: 744, low: 742, close: 743 },
+    ];
+    await route.fulfill({ response, json: data });
+  });
+  await page.goto("/#asset=spy&range=15m", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#candle-latest")).toBeEnabled();
+  await page.evaluate(() => window.__spyClick({ time: Date.parse("2026-11-16T17:45:00Z") / 1000 }));
+  await expect(page.locator("#candle-inspector-prices")).toContainText("Open 743.3900");
+  await expect(page.locator("#candle-inspector-verdict")).toHaveText("Not marked: 10.1124% > 10%.");
+  await expect(page.locator("#doji-context-selection")).toContainText("15m · Regular · closes Nov 16, 2026, 11:45 AM CST · Completed");
+  await expect(page.locator("#doji-context-results")).toBeHidden();
+  await page.evaluate(() => window.__spyClick({ time: 1794850200 }));
+  await expect(page.locator("#candle-inspector-verdict")).toHaveText("Not marked: no price range to measure.");
+  await page.locator("#doji-latest").click();
+  await expect(page.locator("#doji-context-results")).toBeVisible();
+  await expect(page.locator("#candle-inspector-verdict")).toContainText("Doji shape:");
+  await page.locator("#candle-latest").click();
+  await expect(page.locator("#candle-inspector-verdict")).toContainText("awaiting candle completion");
+  await expect(page.locator("#doji-context-results")).toBeHidden();
+  await page.locator('[data-candle-style="heikin-ashi"]').click();
+  await expect(page.locator("#doji-context-detail")).toBeHidden();
+  await page.locator("#candle-latest").click();
+  await expect(page.locator("#candle-inspector-prices")).toContainText("Derived Heikin Ashi prices");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
 });

@@ -69,6 +69,11 @@ prospective evidence gates, alerts, and browser-local paper planning.
   context, not entries; BTC, ETH, QQQ, NVDA, and XAU do not show this study.
   The [SPY streak snapshot](docs/SPY-DOJI-STREAK-STUDY.md) records descriptive
   next-bar counts; it does not define a trading rule.
+- **SPY candle inspector.** Tap any candle or choose **Latest candle** to see
+  displayed OHLC, body-to-range percentage, Dallas closing time, candle style,
+  completion status, and the reason it qualifies or misses the unchanged 10%
+  doji rule. Heikin Ashi prices are identified as derived. Live corrections
+  refresh the selected candle; non-dojis never inherit doji study results.
 - **Selected doji context.** Click a SPY D marker or use **Latest doji** below
   the chart to inspect its body/range calculation, exact same-color streak,
   next-bar counts, and an ordinary-candle comparison. Previous/Next provide

@@ -314,6 +314,7 @@
   let dojiChartMarkers = [];
   let dojiMatches = [];
   let selectedDojiTime = null;
+  let spyInspectorCompletedThrough = 0;
   let dojiViewKey = "";
   let dojiContextData = null;
   let dojiContextLoading = false;
@@ -1412,26 +1413,41 @@
     panel.hidden = state.asset !== "spy";
     if (panel.hidden) return;
     const selectedIndex = dojiMatches.findIndex((bar) => bar.time === selectedDojiTime);
-    const selected = dojiMatches[selectedIndex];
+    const match = dojiMatches[selectedIndex];
+    const selected = activeDisplayCandles.find((bar) => bar.time === selectedDojiTime);
     const put = (id, text) => { document.getElementById(id).textContent = text; };
+    document.getElementById("candle-latest").disabled = activeDisplayCandles.length === 0;
     document.getElementById("doji-latest").disabled = dojiMatches.length === 0;
     document.getElementById("doji-previous").disabled = selectedIndex <= 0;
     document.getElementById("doji-next").disabled = selectedIndex < 0 || selectedIndex >= dojiMatches.length - 1;
     document.getElementById("doji-context-detail").hidden = !selected;
     if (!selected) {
       put("doji-context-selection", dojiMatches.length
-        ? "Click or tap a D marker, or choose Latest doji."
-        : "No completed dojis in the loaded chart yet.");
+        ? "Tap any candle to inspect its shape, or choose Latest candle."
+        : "Tap any candle to inspect it. No completed dojis in this view yet.");
       return;
     }
     const color = selected.close >= selected.open ? "green" : "red";
     const style = state.candleStyle === "regular" ? "Regular" : "Heikin Ashi";
-    put("doji-context-selection", `${color === "green" ? "Green" : "Red"} D${selected.streak} · ${state.spyTimeframe}m · ${style} · ${dojiDate(selected.time)}`);
-    put("doji-context-shape", `Body ${Math.abs(selected.close - selected.open).toFixed(4)} ÷ range ${(selected.high - selected.low).toFixed(4)} = ${(selected.bodyRatio * 100).toFixed(2)}%. Doji rule: body ≤ 10% of range. D${selected.streak} counts consecutive same-color doji candles.`);
+    const completed = selected.time <= spyInspectorCompletedThrough;
+    const reading = DojiStudy.measure(selected);
+    const qualifies = DojiStudy.isDoji(selected);
+    const percent = Number.isFinite(reading.bodyRatio) ? (reading.bodyRatio * 100).toFixed(4).replace(/0+$/, "").replace(/\.$/, "") : null;
+    put("doji-context-selection", `${color === "green" ? "Green" : "Red"}${match ? ` D${match.streak}` : ""} · ${state.spyTimeframe}m · ${style} · closes ${dojiDate(selected.time)} · ${completed ? "Completed" : "Awaiting completion"}`);
+    put("candle-inspector-prices", `Open ${selected.open.toFixed(4)} · High ${selected.high.toFixed(4)} · Low ${selected.low.toFixed(4)} · Close ${selected.close.toFixed(4)}${state.candleStyle === "heikin-ashi" ? " · Derived Heikin Ashi prices" : ""}`);
+    put("doji-context-shape", `Body ${reading.body.toFixed(4)} ÷ range ${reading.range.toFixed(4)}${percent === null ? " — no price range." : ` = ${percent}%.`} Doji rule: body ≤ 10% of range.${match ? ` D${match.streak} counts consecutive same-color doji candles.` : ""}`);
+    const verdict = reading.range <= 0 ? "Not marked: no price range to measure."
+      : qualifies ? `Doji shape: ${percent}% ≤ 10%.`
+      : `Not marked: ${percent}% > 10%.`;
+    put("candle-inspector-verdict", completed ? verdict : `Not marked: awaiting candle completion. ${verdict}`);
     const results = document.getElementById("doji-context-results");
     const retry = document.getElementById("doji-context-retry");
     results.hidden = true;
     retry.hidden = true;
+    if (!match) {
+      put("doji-context-status", "Historical doji comparisons apply only to completed, qualifying dojis.");
+      return;
+    }
     if (!dojiContextData) {
       put("doji-context-status", dojiContextError
         ? "Historical comparison unavailable. The selected candle’s shape is still shown."
@@ -1441,7 +1457,7 @@
       return;
     }
     try {
-      const summary = DojiContext.summarize(dojiContextData, state.spyTimeframe, state.candleStyle, selected);
+      const summary = DojiContext.summarize(dojiContextData, state.spyTimeframe, state.candleStyle, match);
       const { row, baseline, coverage } = summary;
       put("doji-context-status", summary.sampleLabel);
       put("doji-pattern-label", `After ${color} D${summary.streak}`);
@@ -1469,7 +1485,7 @@
   }
 
   function selectDoji(time, reveal = false) {
-    if (state.asset !== "spy" || !dojiMatches.some((bar) => bar.time === time)) return;
+    if (state.asset !== "spy" || !activeDisplayCandles.some((bar) => bar.time === time)) return;
     selectedDojiTime = time;
     dojiChartMarkers.forEach((marker) => { marker.size = marker.time === time ? 1.3 : 0.8; });
     syncSeriesMarkers();
@@ -1508,8 +1524,9 @@
         })
       : [];
 
+    spyInspectorCompletedThrough = options.completedThroughUnix ?? Date.now() / 1000;
     const viewKey = `${intervalMinutes}|${state.candleStyle}`;
-    if (dojiViewKey !== viewKey || !matches.some((bar) => bar.time === selectedDojiTime)) selectedDojiTime = null;
+    if (dojiViewKey !== viewKey || !activeDisplayCandles.some((bar) => bar.time === selectedDojiTime)) selectedDojiTime = null;
     dojiViewKey = viewKey;
     dojiMatches = matches;
 
@@ -3327,7 +3344,7 @@
   }
 
   function handleChartClick(param) {
-    if (state.asset === "spy" && dojiMatches.some((bar) => bar.time === param.time)) {
+    if (state.asset === "spy" && !markingMode && activeDisplayCandles.some((bar) => bar.time === param.time)) {
       selectDoji(param.time);
       return;
     }
@@ -4814,6 +4831,7 @@
       spyLiveClient = null;
       spyLiveStatus = { state: "disconnected", detail: "Reconnect to resume private SPY updates" };
     });
+    document.getElementById("candle-latest").addEventListener("click", () => selectDoji(activeDisplayCandles.at(-1)?.time, true));
     document.getElementById("doji-latest").addEventListener("click", () => selectDoji(dojiMatches.at(-1)?.time, true));
     for (const [id, offset] of [["doji-previous", -1], ["doji-next", 1]]) {
       document.getElementById(id).addEventListener("click", () => {
