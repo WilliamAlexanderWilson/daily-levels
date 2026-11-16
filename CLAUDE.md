@@ -15,6 +15,14 @@ the live price ticks.
 Live: https://williamalexanderwilson.github.io/daily-levels/
 Repo: https://github.com/WilliamAlexanderWilson/daily-levels (public)
 
+**Current SPY data path (2026-11-16):** SPY has an optional private Alpaca IEX
+connection in addition to its published archive. `site/spy-stream.js` reads
+market-data endpoints directly with credentials held only in tab memory;
+`site/spy-live.js` aggregates provider-completed minutes and applies corrections.
+Do not publish keys or route requests to trading endpoints. Old batch-only SPY
+descriptions below refer to the research/export path, which remains batch.
+See `docs/PRIVATE-LIVE-SPY.md` for setup, measured timing, and feed limitations.
+
 ---
 
 ## Product philosophy — read this before adding anything

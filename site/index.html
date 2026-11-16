@@ -24,7 +24,7 @@
   <link rel="canonical" href="https://williamalexanderwilson.github.io/daily-levels/" />
   <title>William Wilson's Range Desk — BTC, ETH, SPY, QQQ, NVDA &amp; XAU</title>
   <link id="site-favicon" rel="icon" type="image/svg+xml" href="brand-btc.svg" />
-  <link rel="stylesheet" href="styles.css?v=selected-doji-v1" />
+  <link rel="stylesheet" href="styles.css?v=private-spy-v1" />
 </head>
 <body>
   <header class="site-header">
@@ -399,6 +399,23 @@
       </div>
     </details>
 
+    <section id="spy-live-controls" class="spy-live-controls" aria-labelledby="spy-live-title" hidden>
+      <div class="spy-live-heading">
+        <div><strong id="spy-live-title">Private live SPY · Alpaca IEX</strong><p id="spy-live-status" role="status">Disconnected · showing the published batch chart</p></div>
+        <button type="button" id="spy-live-disconnect" class="chart-control-btn" hidden>Disconnect</button>
+      </div>
+      <details id="spy-live-connect">
+        <summary>Connect live SPY</summary>
+        <form id="spy-live-form" class="spy-live-form">
+          <label>Alpaca API key<input id="spy-live-key" type="password" autocomplete="off" spellcheck="false" required /></label>
+          <label>Alpaca secret key<input id="spy-live-secret" type="password" autocomplete="off" spellcheck="false" required /></label>
+          <button type="submit" class="chart-control-btn">Connect privately</button>
+        </form>
+        <p>Use your existing Alpaca market-data access. Keys stay in this tab’s memory and go directly to Alpaca; they are never saved by Range Desk. Reloading or closing the tab disconnects. Alpaca may limit your account to one active stream.</p>
+      </details>
+      <p id="spy-live-timing">IEX covers one exchange. Live trades update the price; completed candles update each minute. Dojis appear after a completed bar arrives and may change with provider corrections. Range levels and historical studies remain batch context.</p>
+    </section>
+
     <div id="chart-container" class="chart-container">
       <div id="chart-live-ticker" class="chart-live-ticker is-connecting">
         <span class="chart-live-dot" aria-hidden="true"></span>
@@ -625,11 +642,11 @@
       never use this background alone as an entry signal.
     </p>
     <p class="liquidation-note" id="spy-chart-note" hidden>
-      <strong>Batch chart — no live trade labels.</strong>
+      <strong>SPY chart context — no trade calls.</strong>
       Four preregistered opening-range reclaim rules were tested and all four
       had negative expectancy in untouched validation. No rule was promoted,
       so this chart deliberately shows no Call, Put, Buy, or Sell arrow. The
-      underlying Heikin-Ashi candles refresh on the scheduled batch, not live.
+      Connect privately for streamed IEX candles; historical research refreshes on the scheduled batch.
       Historical setup records remain below for audit inside Research &amp;
       details; they are not alerts.
     </p>
@@ -869,6 +886,8 @@
   <script src="liquidation-risk.js?v=spy-doji-v1"></script>
   <script src="live-stream.js?v=spy-doji-v1"></script>
   <script src="market-sessions.js?v=deep-history-xau-v1"></script>
+  <script src="spy-live.js?v=private-spy-v1"></script>
+  <script src="spy-stream.js?v=private-spy-v1"></script>
   <script src="paper-trader.js?v=spy-doji-v1"></script>
   <script src="journal-analytics.js?v=deep-history-xau-v1"></script>
   <script src="decision-lock.js?v=spy-doji-v1"></script>
@@ -878,6 +897,6 @@
   <script src="doji-study.js?v=spy-doji-streak-v1"></script>
   <script src="doji-context.js?v=selected-doji-v1"></script>
   <script src="candle-history.js?v=history-viewport-v1"></script>
-  <script src="app.js?v=selected-doji-v1"></script>
+  <script src="app.js?v=private-spy-v1"></script>
 </body>
 </html>

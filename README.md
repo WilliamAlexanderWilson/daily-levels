@@ -42,6 +42,8 @@ prospective evidence gates, alerts, and browser-local paper planning.
 
 - **Live where the data is genuinely live.** BTC and ETH use Kraken's
   per-trade WebSocket stream; REST supplies history and reconnect fallback.
+  SPY can connect privately to Alpaca IEX for streamed trades and completed
+  minute candles. Its range levels and studies remain dated batch context.
 - **History loads progressively.** Crypto intraday views page backward
   from Coinbase when the Kraken window ends; batch charts load monthly
   archives as you scroll left instead of shipping a huge first page. Each
@@ -52,8 +54,9 @@ prospective evidence gates, alerts, and browser-local paper planning.
   calculated context, and forward evidence are labeled independently.
 - **Risk comes before leverage.** The paper planner requires stop/target
   geometry and caps account risk before calculating margin up to 100×.
-- **Private by default.** Alerts and paper trades stay in the browser; no
-  brokerage connection, account, or order-routing backend is involved.
+- **Private by default.** Alerts and paper trades stay in the browser. The
+  optional SPY connection uses Alpaca's market-data endpoints only; credentials
+  stay in tab memory, and no order-routing backend is involved.
 - **Two honest candle views.** Regular candles show actual OHLC; optional
   Heikin Ashi candles smooth the same series for trend reading and are clearly
   treated as derived values rather than tradable prices.
@@ -78,7 +81,7 @@ prospective evidence gates, alerts, and browser-local paper planning.
 | --- | --- | --- |
 | **BTC** | Kraken REST + per-trade WebSocket | Live chart, macro range, checklist, local alerts, paper planning |
 | **ETH** | Kraken REST + per-trade WebSocket | Live chart, rolling levels, checklist, local alerts, paper planning |
-| **SPY** | Alpaca IEX batch research | 20-session range context; failed strategy test remains fail-closed |
+| **SPY** | Private Alpaca IEX stream + batch archives | Live trades and completed candles after connection; range/research remain batch; no paper execution |
 | **QQQ** | Alpaca IEX batch chart | 20-session range context; no live signal or paper P&L claim |
 | **NVDA** | Alpaca IEX batch chart | 20-session range context; no live signal or paper P&L claim |
 | **XAU** | Kraken PF_XAUTUSD spot-index archive | Delayed gold benchmark context; not an interbank execution quote or live signal |
@@ -96,6 +99,7 @@ flowchart LR
     B --> C[Versioned JSON evidence]
     C --> D[GitHub Pages]
     A -->|BTC + ETH live stream| D
+    A -->|Private SPY IEX connection| D
     D --> E[Range map + checklist]
     E --> F[Browser-local alerts]
     E --> G[Paper planner]
@@ -673,9 +677,9 @@ freezes the P&L at that exit price for good (it stops
 following the live price) and adds a second marker on the chart at the
 exit point, colored by whether it was a win or a loss.
 
-BTC and ETH use Kraken's real-time stream. SPY remains visibly disabled in
-the paper tracker because its chart is batch-generated; the site does not
-present a stale SPY mark as live P&L. On narrow screens the chart stays
+BTC and ETH use Kraken's real-time stream. SPY's optional private IEX stream
+updates its chart, while SPY paper execution remains disabled because no
+entry, target, stop, and holding-time rules have been defined. On narrow screens the chart stays
 near the top, controls become full-width touch targets, and the history
 table scrolls within its panel.
 
@@ -776,20 +780,22 @@ The SPY **chart** is separate from that frozen 5-minute-input research. It
 publishes genuine Alpaca IEX 1-minute regular-session bars and completed
 1m, 5m, 10m, 15m, 30m, 1H, and 4H views, plus the existing 20m view. The
 initial 1m view covers a small recent window; older bars load from monthly
-archives as the chart is scrolled left. These are delayed batch candles, not
-a live SPY quote or a signal.
+archives as the chart is scrolled left. Without a private connection these
+remain batch candles. **Connect live SPY** adds streamed trades and completed
+regular-session candles directly from Alpaca IEX, with corrections and
+history recovery. See [private live SPY](docs/PRIVATE-LIVE-SPY.md) for setup,
+timing evidence, feed scope, and limitations.
 
 **Data source: Alpaca for SPY, Yahoo for VIX — not Kraken.** SPY is a
 stock, so `src/spy/fetch.py` pulls 5-minute SPY bars from Alpaca's market
 data API (`data.alpaca.markets`, free IEX feed, needs a free API key - see
 below) and daily VIX closes from Yahoo's public chart endpoint (no key,
 daily-only history has no rolling-window cap the way Yahoo's intraday data
-does). Neither is safely available live from this static browser app — Alpaca needs an auth
-header, and Yahoo's intraday endpoint sends no CORS header (confirmed
-live) — so the chart, historical setup records, and backtest table are baked once
-per cron run into `site/data/spy_*.json`, same staleness as everything
-else on this site. There's no live SPY ticking the way there is for crypto,
-and the SPY setup records are historical backtest observations, not live
+does). The published archive, historical setup records, and backtest table are
+baked per cron run into `site/data/spy_*.json`. The optional private browser
+connection authenticates directly to Alpaca's IEX WebSocket and CORS-enabled
+market-data REST endpoint. It does not publish a user's keys or stream to
+other visitors. SPY setup records remain historical backtest observations, not live
 alerts. Their retrospective modeled outcomes were not known when each setup
 occurred, so they are kept in the Research audit table and no longer drawn as
 Call/Put arrows on the main decision chart.
