@@ -932,3 +932,7 @@ Informational only. Not financial advice.
 [November 16 continuation study](docs/SPY-DOJI-CONTINUATION-2026-11-16.md) compares
 consecutive dojis with ordinary-candle baselines and earlier/later periods.
 No validated 80% continuation rule or trade win rate was established.
+
+[Successive-marker study](docs/SPY-MARKER-SEQUENCES-2026-11-16.md) tests the clarified
+question: ordinary candles may appear between same-color doji markers. It
+separates next-marker color from real-price movement and tests flat-doji coloring.
