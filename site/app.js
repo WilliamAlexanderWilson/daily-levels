@@ -1383,14 +1383,24 @@
         })
       : [];
 
-    dojiChartMarkers = matches.map((bar) => ({
-      time: toTimePoint(bar, range),
-      position: "aboveBar",
-      color: cssVar("--doji"),
-      shape: "circle",
-      text: "D",
-      size: 0.8,
-    }));
+    let displayIndex = 0;
+    dojiChartMarkers = matches.map((bar) => {
+      // Detection always uses completed HA bars, while marker colors follow
+      // the candle the viewer actually sees in Regular or Heikin Ashi mode.
+      // Both lists are time ordered, so one pass avoids a second large copy
+      // of the progressively loaded one-minute history on mobile.
+      while (activeDisplayCandles[displayIndex]?.time < bar.time) displayIndex += 1;
+      const displayed = activeDisplayCandles[displayIndex]?.time === bar.time
+        ? activeDisplayCandles[displayIndex] : bar;
+      return {
+        time: toTimePoint(bar, range),
+        position: "aboveBar",
+        color: cssVar(displayed.close >= displayed.open ? "--support" : "--resistance"),
+        shape: "circle",
+        text: "D",
+        size: 0.8,
+      };
+    });
     syncSeriesMarkers();
 
     if (!status) return;
@@ -1398,7 +1408,7 @@
       ? `D · ${matches.length} completed HA doji${matches.length === 1 ? "" : "s"}`
       : "D · HA dojis require at least 1m";
     status.title = eligible
-      ? `This ${intervalMinutes}-minute view marks completed Heikin Ashi candles whose body is no more than 10% of the full high-low range. D means doji; the forming candle is excluded.`
+      ? `This ${intervalMinutes}-minute view marks completed Heikin Ashi candles whose body is no more than 10% of the full high-low range. Each D matches the displayed candle's closing color; the forming candle is excluded.`
       : "Heikin Ashi doji markers require a timeframe of at least one minute. The forming candle is never marked.";
   }
 

@@ -16,6 +16,24 @@ async function expectBrand(page, asset, label) {
   await expect(page).toHaveTitle(`${label} — William Wilson's Range Desk`);
 }
 
+async function dojiColorSummary(page) {
+  return page.evaluate(() => {
+    const candles = new Map((window.__spyCandles || []).map((bar) => [bar.time, bar]));
+    const style = getComputedStyle(document.documentElement);
+    const up = style.getPropertyValue("--support").trim();
+    const down = style.getPropertyValue("--resistance").trim();
+    const markers = (window.__spyMarkers || []).filter((marker) => marker.text === "D");
+    return {
+      count: markers.length,
+      colors: [...new Set(markers.map((marker) => marker.color))],
+      mismatches: markers.filter((marker) => {
+        const candle = candles.get(marker.time);
+        return !candle || marker.color !== (candle.close >= candle.open ? up : down);
+      }),
+    };
+  });
+}
+
 test("the active market controls the visible brand and browser identity", async ({ page }) => {
   await openDashboard(page);
   await expectBrand(page, "btc", "Bitcoin");
@@ -103,9 +121,20 @@ test("SPY renders every published interval and keeps deep links on desktop and m
       const markers = await page.evaluate(() => window.__spyMarkers || []);
       expect(markers.filter((marker) => marker.text === "D").length,
         `${minutes}m chart has completed SPY doji markers`).toBeGreaterThan(0);
+      const colors = await dojiColorSummary(page);
+      expect(colors.mismatches,
+        `${minutes}m doji D colors match the displayed Regular candles`).toEqual([]);
+      if (minutes === "1") expect(colors.colors).toHaveLength(2);
       await expect(page.locator("#doji-study-status")).toContainText(/completed HA dojis/);
     }
   }
+  await select.selectOption("1");
+  await page.locator('[data-candle-style="heikin-ashi"]').click();
+  const heikinAshiDojis = await dojiColorSummary(page);
+  expect(heikinAshiDojis.count).toBeGreaterThan(0);
+  expect(heikinAshiDojis.mismatches, "doji D colors match the displayed Heikin Ashi candles").toEqual([]);
+  expect(heikinAshiDojis.colors).toHaveLength(2);
+  await select.selectOption("240");
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(select).toHaveValue("240");
   await page.locator('[data-asset="qqq"]').click();
