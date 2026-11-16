@@ -432,16 +432,19 @@
       <div class="doji-context-heading">
         <div>
           <span class="doji-context-kicker">SPY · candle context</span>
-          <h2 id="doji-context-title">Selected doji</h2>
-          <p id="doji-context-selection" aria-live="polite">Click or tap a D marker, or choose Latest doji.</p>
+          <h2 id="doji-context-title">Candle inspector</h2>
+          <p id="doji-context-selection" aria-live="polite">Tap any candle to inspect its shape, or choose Latest candle.</p>
         </div>
-        <div class="doji-context-controls" role="group" aria-label="Select a completed doji">
+        <div class="doji-context-controls" role="group" aria-label="Inspect a candle or select a completed doji">
+          <button type="button" id="candle-latest" class="chart-control-btn">Latest candle</button>
           <button type="button" id="doji-previous" class="chart-control-btn" disabled aria-label="Previous doji">Previous</button>
           <button type="button" id="doji-next" class="chart-control-btn" disabled aria-label="Next doji">Next</button>
           <button type="button" id="doji-latest" class="chart-control-btn" disabled>Latest doji</button>
         </div>
       </div>
       <div id="doji-context-detail" hidden>
+        <p id="candle-inspector-prices"></p>
+        <p id="candle-inspector-verdict" role="status"></p>
         <p id="doji-context-shape"></p>
         <p id="doji-context-status" role="status"></p>
         <button type="button" id="doji-context-retry" class="chart-control-btn" hidden>Retry history</button>
@@ -897,6 +900,6 @@
   <script src="doji-study.js?v=spy-doji-streak-v1"></script>
   <script src="doji-context.js?v=selected-doji-v1"></script>
   <script src="candle-history.js?v=history-viewport-v1"></script>
-  <script src="app.js?v=private-spy-v1"></script>
+  <script src="app.js?v=candle-inspector-v1"></script>
 </body>
 </html>
