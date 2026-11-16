@@ -18,6 +18,17 @@ test("marks only completed Heikin Ashi dojis", () => {
   assert.equal(beforeSecondClose[0].bodyRatio, 0);
 });
 
+test("Regular and Heikin Ashi modes mark only dojis visible in that mode", () => {
+  const regularOnly = [{ time: 0, open: 10, high: 20, low: 10, close: 10 }];
+  const heikinAshiOnly = [{ time: 0, open: 10, high: 25, low: 5, close: 20 }];
+  const options = { intervalMinutes: 1, completedThroughUnix: 60 };
+
+  assert.equal(DojiStudy.findCompleted(regularOnly, { ...options, style: "regular" }).length, 1);
+  assert.equal(DojiStudy.findCompleted(regularOnly, { ...options, style: "heikin-ashi" }).length, 0);
+  assert.equal(DojiStudy.findCompleted(heikinAshiOnly, { ...options, style: "regular" }).length, 0);
+  assert.equal(DojiStudy.findCompleted(heikinAshiOnly, { ...options, style: "heikin-ashi" }).length, 1);
+});
+
 test("does not mark a live forming candle until its interval ends", () => {
   const forming = [{ time: 900, open: 10, high: 12, low: 8, close: 10 }];
   assert.equal(DojiStudy.findCompleted(forming, {

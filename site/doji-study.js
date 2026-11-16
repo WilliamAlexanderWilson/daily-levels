@@ -34,12 +34,13 @@
       ? options.completedThroughUnix
       : Date.now() / 1000;
     const completionOffset = options.timeIsClose ? 0 : intervalMinutes * 60;
-    const heikinAshi = CandleStyle.toHeikinAshi(candles || []);
+    const style = options.style === "regular" ? "regular" : "heikin-ashi";
+    const displayed = CandleStyle.forStyle(candles || [], style);
     const matches = [];
 
-    for (let index = 0; index < heikinAshi.length; index += 1) {
+    for (let index = 0; index < displayed.length; index += 1) {
       const source = candles[index];
-      const bar = heikinAshi[index];
+      const bar = displayed[index];
       if (!source || !Number.isFinite(source.time)) continue;
       if (source.time + completionOffset > completedThroughUnix) continue;
       const reading = measure(bar);
