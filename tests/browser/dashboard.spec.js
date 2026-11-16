@@ -26,6 +26,11 @@ async function dojiColorSummary(page) {
     return {
       count: markers.length,
       colors: [...new Set(markers.map((marker) => marker.color))],
+      notDojis: markers.filter((marker) => {
+        const candle = candles.get(marker.time);
+        return !candle || candle.high <= candle.low
+          || Math.abs(candle.close - candle.open) / (candle.high - candle.low) > 0.1;
+      }),
       mismatches: markers.filter((marker) => {
         const candle = candles.get(marker.time);
         return !candle || marker.color !== (candle.close >= candle.open ? up : down);
@@ -124,8 +129,10 @@ test("SPY renders every published interval and keeps deep links on desktop and m
       const colors = await dojiColorSummary(page);
       expect(colors.mismatches,
         `${minutes}m doji D colors match the displayed Regular candles`).toEqual([]);
+      expect(colors.notDojis,
+        `${minutes}m D markers must be dojis on the displayed Regular candles`).toEqual([]);
       if (minutes === "1") expect(colors.colors).toHaveLength(2);
-      await expect(page.locator("#doji-study-status")).toContainText(/completed HA dojis/);
+      await expect(page.locator("#doji-study-status")).toContainText(/completed Regular dojis/);
     }
   }
   await select.selectOption("1");
@@ -133,6 +140,7 @@ test("SPY renders every published interval and keeps deep links on desktop and m
   const heikinAshiDojis = await dojiColorSummary(page);
   expect(heikinAshiDojis.count).toBeGreaterThan(0);
   expect(heikinAshiDojis.mismatches, "doji D colors match the displayed Heikin Ashi candles").toEqual([]);
+  expect(heikinAshiDojis.notDojis, "D markers must be dojis on the displayed Heikin Ashi candles").toEqual([]);
   expect(heikinAshiDojis.colors).toHaveLength(2);
   await select.selectOption("240");
   await page.reload({ waitUntil: "domcontentloaded" });

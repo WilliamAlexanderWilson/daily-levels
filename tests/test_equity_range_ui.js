@@ -24,9 +24,9 @@ test("equity range copy remains context-only and never a direct signal", () => {
 test("versioned assets prevent an old BTC app bundle from rendering new tabs", () => {
   assert.match(index, /styles\.css\?v=deep-history-xau-v1/);
   assert.match(index, /candle-style\.js\?v=spy-doji-v1/);
-  assert.match(index, /doji-study\.js\?v=spy-small-doji-v1/);
+  assert.match(index, /doji-study\.js\?v=spy-style-doji-v1/);
   assert.match(index, /candle-history\.js\?v=history-viewport-v1/);
-  assert.match(index, /app\.js\?v=spy-doji-candle-colors-v1/);
+  assert.match(index, /app\.js\?v=spy-style-doji-v1/);
 });
 
 test("crypto charts can page backward beyond Kraken's 720-candle window", () => {
@@ -55,12 +55,13 @@ test("regular and Heikin Ashi styles are explicit reversible controls", () => {
   assert.match(app, /params\.set\("style", "ha"\)/);
 });
 
-test("completed Heikin Ashi dojis are a SPY-only study", () => {
+test("completed dojis follow SPY's selected candle style only", () => {
   assert.match(index, /id="doji-study-status"/);
   assert.match(index, /id="doji-study-status"[^>]*hidden/);
   assert.match(app, /const enabled = state\.asset === "spy"/);
   assert.match(app, /document\.getElementById\("doji-study-status"\)\.hidden = asset !== "spy"/);
   assert.match(app, /DojiStudy\.findCompleted\(candles/);
+  assert.match(app, /style: state\.candleStyle/);
   assert.match(app, /Number\(intervalMinutes\) >= DojiStudy\.MIN_TIMEFRAME_MINUTES/);
   assert.match(app, /text: "D"/);
   assert.match(app, /timeIsClose: true/);

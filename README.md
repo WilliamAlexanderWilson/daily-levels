@@ -57,10 +57,10 @@ prospective evidence gates, alerts, and browser-local paper planning.
 - **Two honest candle views.** Regular candles show actual OHLC; optional
   Heikin Ashi candles smooth the same series for trend reading and are clearly
   treated as derived values rather than tradable prices.
-- **SPY-only completed Heikin Ashi dojis.** SPY's loaded 1-minute-or-higher
-  views mark completed derived candles whose body is no more than 10% of the
-  full range. Each D matches the visible candle's green or red closing color
-  in the selected candle style. The forming candle is excluded. Markers are
+- **SPY-only completed dojis.** SPY's loaded 1-minute-or-higher views mark
+  completed candles in the selected Regular or Heikin Ashi style whose body is
+  no more than 10% of the full range. Each D matches the visible candle's
+  green or red closing color. The forming candle is excluded. Markers are
   context, not entries; BTC, ETH, QQQ, NVDA, and XAU do not show this study.
 
 | Market | Data path | Current product boundary |
@@ -894,7 +894,7 @@ site/                         # static HTML/CSS/JS, hosted on GitHub Pages
   live-stream.js             # Kraken WebSocket v2 subscription and message normalization
   app.js                     # real-time chart + renders the daily levels/scorecard
   candle-style.js            # reversible regular/Heikin Ashi presentation transform
-  doji-study.js              # completed 1m+ Heikin Ashi doji detection
+  doji-study.js              # completed 1m+ dojis in the selected candle style
   data/                      # JSON written by the Action; the page reads levels/scorecard from here
 .github/workflows/
   update-levels.yml          # the daily cron: level engine + backtest + commit + Pages deploy
