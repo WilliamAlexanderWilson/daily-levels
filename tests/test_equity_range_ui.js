@@ -24,9 +24,9 @@ test("equity range copy remains context-only and never a direct signal", () => {
 test("versioned assets prevent an old BTC app bundle from rendering new tabs", () => {
   assert.match(index, /styles\.css\?v=deep-history-xau-v1/);
   assert.match(index, /candle-style\.js\?v=spy-doji-v1/);
-  assert.match(index, /doji-study\.js\?v=spy-style-doji-v1/);
+  assert.match(index, /doji-study\.js\?v=spy-doji-streak-v1/);
   assert.match(index, /candle-history\.js\?v=history-viewport-v1/);
-  assert.match(index, /app\.js\?v=spy-style-doji-v1/);
+  assert.match(index, /app\.js\?v=spy-doji-streak-v1/);
 });
 
 test("crypto charts can page backward beyond Kraken's 720-candle window", () => {
@@ -63,7 +63,7 @@ test("completed dojis follow SPY's selected candle style only", () => {
   assert.match(app, /DojiStudy\.findCompleted\(candles/);
   assert.match(app, /style: state\.candleStyle/);
   assert.match(app, /Number\(intervalMinutes\) >= DojiStudy\.MIN_TIMEFRAME_MINUTES/);
-  assert.match(app, /text: "D"/);
+  assert.match(app, /text: `D\$\{bar\.streak\}`/);
   assert.match(app, /timeIsClose: true/);
   assert.match(app, /timeIsClose: false/);
 });

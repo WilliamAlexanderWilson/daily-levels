@@ -29,6 +29,19 @@ test("Regular and Heikin Ashi modes mark only dojis visible in that mode", () =>
   assert.equal(DojiStudy.findCompleted(heikinAshiOnly, { ...options, style: "heikin-ashi" }).length, 1);
 });
 
+test("same-color dojis count D1 onward and reset on color, non-doji, or a missing bar", () => {
+  const green = (time) => ({ time, open: 10, high: 11, low: 9, close: 10.01 });
+  const red = (time) => ({ time, open: 10, high: 11, low: 9, close: 9.99 });
+  const fullBody = (time) => ({ time, open: 10, high: 11, low: 10, close: 11 });
+  const bars = [green(60), green(120), green(180), green(240), red(300), red(360),
+    fullBody(420), green(480), green(600)];
+  const found = DojiStudy.findCompleted(bars, {
+    intervalMinutes: 1, completedThroughUnix: 600, timeIsClose: true, style: "regular",
+  });
+  assert.deepEqual(found.map(({ time, streak }) => [time, streak]),
+    [[60, 1], [120, 2], [180, 3], [240, 4], [300, 1], [360, 2], [480, 1], [600, 1]]);
+});
+
 test("does not mark a live forming candle until its interval ends", () => {
   const forming = [{ time: 900, open: 10, high: 12, low: 8, close: 10 }];
   assert.equal(DojiStudy.findCompleted(forming, {

@@ -37,14 +37,31 @@
     const style = options.style === "regular" ? "regular" : "heikin-ashi";
     const displayed = CandleStyle.forStyle(candles || [], style);
     const matches = [];
+    let streak = 0;
+    let previousDojiTime = null;
+    let previousDojiUp = null;
 
     for (let index = 0; index < displayed.length; index += 1) {
       const source = candles[index];
       const bar = displayed[index];
-      if (!source || !Number.isFinite(source.time)) continue;
+      if (!source || !Number.isFinite(source.time)) {
+        streak = 0;
+        previousDojiTime = null;
+        continue;
+      }
       if (source.time + completionOffset > completedThroughUnix) continue;
       const reading = measure(bar);
-      if (reading.range <= 0 || reading.bodyRatio > MAX_BODY_RATIO) continue;
+      if (reading.range <= 0 || reading.bodyRatio > MAX_BODY_RATIO) {
+        streak = 0;
+        previousDojiTime = null;
+        continue;
+      }
+      const up = bar.close >= bar.open;
+      const gap = source.time - previousDojiTime;
+      streak = previousDojiTime !== null && gap > 0 && gap <= intervalMinutes * 60
+        && previousDojiUp === up ? streak + 1 : 1;
+      previousDojiTime = source.time;
+      previousDojiUp = up;
       matches.push({
         time: source.time,
         open: bar.open,
@@ -52,6 +69,7 @@
         low: bar.low,
         close: bar.close,
         bodyRatio: reading.bodyRatio,
+        streak,
       });
     }
     return matches;

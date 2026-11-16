@@ -60,8 +60,12 @@ prospective evidence gates, alerts, and browser-local paper planning.
 - **SPY-only completed dojis.** SPY's loaded 1-minute-or-higher views mark
   completed candles in the selected Regular or Heikin Ashi style whose body is
   no more than 10% of the full range. Each D matches the visible candle's
-  green or red closing color. The forming candle is excluded. Markers are
+  green or red closing color. D1, D2, and later labels count consecutive
+  same-color dojis; a non-doji, opposite color, missing interval, or session
+  break resets the count. The forming candle is excluded. Markers are
   context, not entries; BTC, ETH, QQQ, NVDA, and XAU do not show this study.
+  The [SPY streak snapshot](docs/SPY-DOJI-STREAK-STUDY.md) records descriptive
+  next-bar counts; it does not define a trading rule.
 
 | Market | Data path | Current product boundary |
 | --- | --- | --- |

@@ -1387,20 +1387,20 @@
 
     dojiChartMarkers = matches.map((bar) => ({
       time: toTimePoint(bar, range),
-      position: "aboveBar",
+      position: bar.streak % 2 === 0 ? "belowBar" : "aboveBar",
       color: cssVar(bar.close >= bar.open ? "--support" : "--resistance"),
       shape: "circle",
-      text: "D",
+      text: `D${bar.streak}`,
       size: 0.8,
     }));
     syncSeriesMarkers();
 
     if (!status) return;
     status.textContent = eligible
-      ? `D · ${matches.length} completed ${styleLabel} doji${matches.length === 1 ? "" : "s"}`
-      : `D · ${styleLabel} dojis require at least 1m`;
+      ? `D1+ · ${matches.length} completed ${styleLabel} doji${matches.length === 1 ? "" : "s"}`
+      : `D1+ · ${styleLabel} dojis require at least 1m`;
     status.title = eligible
-      ? `This ${intervalMinutes}-minute ${styleLabel} view marks completed candles whose body is no more than 10% of the full high-low range. Each D matches the displayed candle's closing color; the forming candle is excluded.`
+      ? `This ${intervalMinutes}-minute ${styleLabel} view marks completed candles whose body is no more than 10% of the full high-low range. D1, D2, and later labels count consecutive same-color dojis; a different candle or missing bar resets the count. The forming candle is excluded.`
       : `${styleLabel} doji markers require a timeframe of at least one minute. The forming candle is never marked.`;
   }
 

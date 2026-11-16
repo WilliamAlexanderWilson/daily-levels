@@ -22,10 +22,28 @@ async function dojiColorSummary(page) {
     const style = getComputedStyle(document.documentElement);
     const up = style.getPropertyValue("--support").trim();
     const down = style.getPropertyValue("--resistance").trim();
-    const markers = (window.__spyMarkers || []).filter((marker) => marker.text === "D");
+    const minutes = Number(document.querySelector("#spy-timeframe-select").value);
+    const expectedStreaks = new Map();
+    let previousTime = null;
+    let previousUp = null;
+    let streak = 0;
+    for (const candle of candles.values()) {
+      const isDoji = candle.high > candle.low
+        && Math.abs(candle.close - candle.open) / (candle.high - candle.low) <= 0.1;
+      if (!isDoji) { previousTime = null; streak = 0; continue; }
+      const isUp = candle.close >= candle.open;
+      streak = previousTime !== null && candle.time - previousTime > 0
+        && candle.time - previousTime <= minutes * 60 && previousUp === isUp
+        ? streak + 1 : 1;
+      expectedStreaks.set(candle.time, streak);
+      previousTime = candle.time;
+      previousUp = isUp;
+    }
+    const markers = (window.__spyMarkers || []).filter((marker) => /^D\d+$/.test(marker.text));
     return {
       count: markers.length,
       colors: [...new Set(markers.map((marker) => marker.color))],
+      wrongStreaks: markers.filter((marker) => marker.text !== `D${expectedStreaks.get(marker.time)}`),
       notDojis: markers.filter((marker) => {
         const candle = candles.get(marker.time);
         return !candle || candle.high <= candle.low
@@ -124,9 +142,10 @@ test("SPY renders every published interval and keeps deep links on desktop and m
     expect(bars.every((bar, index) => index === 0 || bar.time > bars[index - 1].time)).toBe(true);
     if (["1", "5", "10"].includes(minutes)) {
       const markers = await page.evaluate(() => window.__spyMarkers || []);
-      expect(markers.filter((marker) => marker.text === "D").length,
+      expect(markers.filter((marker) => /^D\d+$/.test(marker.text)).length,
         `${minutes}m chart has completed SPY doji markers`).toBeGreaterThan(0);
       const colors = await dojiColorSummary(page);
+      expect(colors.wrongStreaks, `${minutes}m D labels match same-color streaks`).toEqual([]);
       expect(colors.mismatches,
         `${minutes}m doji D colors match the displayed Regular candles`).toEqual([]);
       expect(colors.notDojis,
@@ -139,6 +158,7 @@ test("SPY renders every published interval and keeps deep links on desktop and m
   await page.locator('[data-candle-style="heikin-ashi"]').click();
   const heikinAshiDojis = await dojiColorSummary(page);
   expect(heikinAshiDojis.count).toBeGreaterThan(0);
+  expect(heikinAshiDojis.wrongStreaks, "HA D labels match same-color streaks").toEqual([]);
   expect(heikinAshiDojis.mismatches, "doji D colors match the displayed Heikin Ashi candles").toEqual([]);
   expect(heikinAshiDojis.notDojis, "D markers must be dojis on the displayed Heikin Ashi candles").toEqual([]);
   expect(heikinAshiDojis.colors).toHaveLength(2);
@@ -148,13 +168,13 @@ test("SPY renders every published interval and keeps deep links on desktop and m
   await page.locator('[data-asset="qqq"]').click();
   await expect(select.locator("option")).toHaveText(["10m", "15m", "20m", "30m"]);
   await expect(page.locator("#history-load-status")).toContainText("archive starts Jul 2020");
-  expect(await page.evaluate(() => (window.__spyMarkers || []).some((marker) => marker.text === "D"))).toBe(false);
+  expect(await page.evaluate(() => (window.__spyMarkers || []).some((marker) => /^D\d+$/.test(marker.text)))).toBe(false);
   await page.locator('[data-asset="nvda"]').click();
   await expect(page.locator("#history-load-status")).toContainText("archive starts Jul 2020");
   await page.locator('[data-asset="xau"]').click();
   await expect(select.locator("option")).toHaveText(["15m", "30m", "1H", "4H"]);
   await expect(page.locator("#history-load-status")).toContainText("archive starts Sep 2025");
-  expect(await page.evaluate(() => (window.__spyMarkers || []).some((marker) => marker.text === "D"))).toBe(false);
+  expect(await page.evaluate(() => (window.__spyMarkers || []).some((marker) => /^D\d+$/.test(marker.text)))).toBe(false);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
 });
 
