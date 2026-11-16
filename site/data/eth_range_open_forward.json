@@ -2,7 +2,7 @@
   "schema_version": 1,
   "study_version": "range-open-forward-v1",
   "asset": "eth",
-  "generated_at_utc": "2026-11-15T11:37:33.246773+00:00",
+  "generated_at_utc": "2026-11-16T07:39:43.106916+00:00",
   "forward_start_utc": "2026-11-08T00:00:00+00:00",
   "source": {
     "name": "Coinbase Exchange BTC-USD/ETH-USD candles",
@@ -28,12 +28,12 @@
     ]
   },
   "summary": {
-    "total_events": 35,
+    "total_events": 39,
     "wait_events": 0,
     "pending_events": 0,
-    "resolved_edge_session_rows": 35,
-    "resolved_edge_events": 25,
-    "resolved_lower_edge_events": 25,
+    "resolved_edge_session_rows": 39,
+    "resolved_edge_events": 28,
+    "resolved_lower_edge_events": 28,
     "resolved_upper_edge_events": 0,
     "evidence_gate_passed": false,
     "positive_directional_60m_rate_pct": null
@@ -1263,6 +1263,146 @@
       "max_adverse_excursion_pct": 2.5329,
       "sweep_reclaim": false,
       "resolved_at_utc": "2026-11-13T16:30:00+00:00"
+    },
+    {
+      "id": "eth|cme-equity|2026-11-15T23:00:00+00:00",
+      "session_key": "cme-equity",
+      "session_name": "Chicago",
+      "opened_at_utc": "2026-11-15T23:00:00+00:00",
+      "range_start_utc": "2026-09-16T23:00:00+00:00",
+      "range_low": 1709.48,
+      "range_high": 2807.1,
+      "opening_price": 1826.47,
+      "range_position_pct": 10.66,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": -0.0405,
+          "direction_aligned_return_pct": -0.0405
+        },
+        "30": {
+          "raw_return_pct": 0.1122,
+          "direction_aligned_return_pct": 0.1122
+        },
+        "60": {
+          "raw_return_pct": 0.4418,
+          "direction_aligned_return_pct": 0.4418
+        },
+        "120": {
+          "raw_return_pct": -0.7139,
+          "direction_aligned_return_pct": -0.7139
+        }
+      },
+      "max_favorable_excursion_pct": 0.8651,
+      "max_adverse_excursion_pct": 1.1432,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-16T01:00:00+00:00"
+    },
+    {
+      "id": "eth|sydney|2026-11-15T23:00:00+00:00",
+      "session_key": "sydney",
+      "session_name": "Sydney",
+      "opened_at_utc": "2026-11-15T23:00:00+00:00",
+      "range_start_utc": "2026-09-16T23:00:00+00:00",
+      "range_low": 1709.48,
+      "range_high": 2807.1,
+      "opening_price": 1826.47,
+      "range_position_pct": 10.66,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": -0.0405,
+          "direction_aligned_return_pct": -0.0405
+        },
+        "30": {
+          "raw_return_pct": 0.1122,
+          "direction_aligned_return_pct": 0.1122
+        },
+        "60": {
+          "raw_return_pct": 0.4418,
+          "direction_aligned_return_pct": 0.4418
+        },
+        "120": {
+          "raw_return_pct": -0.7139,
+          "direction_aligned_return_pct": -0.7139
+        }
+      },
+      "max_favorable_excursion_pct": 0.8651,
+      "max_adverse_excursion_pct": 1.1432,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-16T01:00:00+00:00"
+    },
+    {
+      "id": "eth|tokyo|2026-11-16T00:00:00+00:00",
+      "session_key": "tokyo",
+      "session_name": "Tokyo",
+      "opened_at_utc": "2026-11-16T00:00:00+00:00",
+      "range_start_utc": "2026-09-17T00:00:00+00:00",
+      "range_low": 1709.48,
+      "range_high": 2807.1,
+      "opening_price": 1834.59,
+      "range_position_pct": 11.4,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": -0.4252,
+          "direction_aligned_return_pct": -0.4252
+        },
+        "30": {
+          "raw_return_pct": -0.6481,
+          "direction_aligned_return_pct": -0.6481
+        },
+        "60": {
+          "raw_return_pct": -1.1534,
+          "direction_aligned_return_pct": -1.1534
+        },
+        "120": {
+          "raw_return_pct": -1.638,
+          "direction_aligned_return_pct": -1.638
+        }
+      },
+      "max_favorable_excursion_pct": 0.1575,
+      "max_adverse_excursion_pct": 1.7644,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-16T02:00:00+00:00"
+    },
+    {
+      "id": "eth|hong-kong|2026-11-16T01:30:00+00:00",
+      "session_key": "hong-kong",
+      "session_name": "Hong Kong",
+      "opened_at_utc": "2026-11-16T01:30:00+00:00",
+      "range_start_utc": "2026-09-17T01:30:00+00:00",
+      "range_low": 1709.48,
+      "range_high": 2807.1,
+      "opening_price": 1811.69,
+      "range_position_pct": 9.31,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": -0.2418,
+          "direction_aligned_return_pct": -0.2418
+        },
+        "30": {
+          "raw_return_pct": -0.3947,
+          "direction_aligned_return_pct": -0.3947
+        },
+        "60": {
+          "raw_return_pct": 0.9334,
+          "direction_aligned_return_pct": 0.9334
+        },
+        "120": {
+          "raw_return_pct": 0.4846,
+          "direction_aligned_return_pct": 0.4846
+        }
+      },
+      "max_favorable_excursion_pct": 1.1696,
+      "max_adverse_excursion_pct": 0.5227,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-16T03:30:00+00:00"
     }
   ]
 }
