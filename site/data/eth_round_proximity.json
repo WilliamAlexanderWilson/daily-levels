@@ -37,20 +37,20 @@
   },
   {
     "tolerance_fraction": 0.05,
-    "touches": 528,
-    "resolved": 516,
-    "holds": 227,
+    "touches": 527,
+    "resolved": 515,
+    "holds": 226,
     "breaks": 289,
-    "hold_rate_pct": 43.992248062015506,
+    "hold_rate_pct": 43.883495145631066,
     "low_confidence": false
   },
   {
     "tolerance_fraction": 0.02,
-    "touches": 523,
-    "resolved": 507,
-    "holds": 211,
+    "touches": 522,
+    "resolved": 506,
+    "holds": 210,
     "breaks": 296,
-    "hold_rate_pct": 41.61735700197239,
+    "hold_rate_pct": 41.50197628458498,
     "low_confidence": false
   }
 ]
