@@ -113,6 +113,18 @@ jobs:
             echo "::warning::SPY doji context failed; retaining the dated prior study"
           fi
 
+      - name: Refresh SPY marker runs and frozen forward test
+        id: marker_export
+        if: steps.spy_export.outputs.ok == 'true'
+        run: |
+          if node scripts/export-spy-marker-context.js > "$RUNNER_TEMP/spy_marker_context.json"; then
+            mv "$RUNNER_TEMP/spy_marker_context.json" site/data/spy_marker_context.json
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::SPY marker export failed; retaining the dated prior report"
+          fi
+
       - name: Refresh QQQ and NVDA context charts
         id: equity_export
         env:
@@ -184,14 +196,16 @@ jobs:
       # Let unaffected data commit and deploy first, then make a failed batch
       # refresh visible as a failed workflow rather than a green run.
       - name: Report batch export failures
-        if: ${{ always() && (steps.spy_export.outputs.ok == 'false' || steps.doji_export.outputs.ok == 'false' || steps.equity_export.outputs.ok == 'false' || steps.xau_export.outputs.ok == 'false') }}
+        if: ${{ always() && (steps.spy_export.outputs.ok == 'false' || steps.doji_export.outputs.ok == 'false' || steps.marker_export.outputs.ok == 'false' || steps.equity_export.outputs.ok == 'false' || steps.xau_export.outputs.ok == 'false') }}
         env:
           SPY_OK: ${{ steps.spy_export.outputs.ok }}
+          MARKER_OK: ${{ steps.marker_export.outputs.ok }}
           DOJI_OK: ${{ steps.doji_export.outputs.ok }}
           EQUITY_OK: ${{ steps.equity_export.outputs.ok }}
           XAU_OK: ${{ steps.xau_export.outputs.ok }}
         run: |
           echo "### Batch data refresh failed" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$MARKER_OK" = false ]; then echo "- SPY marker context kept its prior published data." >> "$GITHUB_STEP_SUMMARY"; fi
           if [ "$SPY_OK" = false ]; then echo "- SPY kept its prior published data." >> "$GITHUB_STEP_SUMMARY"; fi
           if [ "$DOJI_OK" = false ]; then echo "- SPY doji context kept its prior dated study." >> "$GITHUB_STEP_SUMMARY"; fi
           if [ "$EQUITY_OK" = false ]; then echo "- QQQ and NVDA kept their prior published data." >> "$GITHUB_STEP_SUMMARY"; fi

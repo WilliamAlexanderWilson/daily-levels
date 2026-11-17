@@ -22,11 +22,11 @@ test("equity range copy remains context-only and never a direct signal", () => {
 });
 
 test("versioned assets prevent an old BTC app bundle from rendering new tabs", () => {
-  assert.match(index, /styles\.css\?v=private-spy-v1/);
+  assert.match(index, /styles\.css\?v=marker-run-v1/);
   assert.match(index, /candle-style\.js\?v=spy-doji-v1/);
   assert.match(index, /doji-study\.js\?v=spy-doji-streak-v1/);
   assert.match(index, /candle-history\.js\?v=history-viewport-v1/);
-  assert.match(index, /app\.js\?v=candle-inspector-v1/);
+  assert.match(index, /app\.js\?v=marker-run-v1/);
 });
 
 test("crypto charts can page backward beyond Kraken's 720-candle window", () => {
