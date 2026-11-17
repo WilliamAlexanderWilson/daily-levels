@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "asset": "spy",
-  "generated_at_utc": "2026-11-17T16:33:55.895071+00:00",
+  "generated_at_utc": "2026-11-17T18:59:29.104402+00:00",
   "coverage_start_utc": "2024-11-18T14:30:00+00:00",
-  "coverage_end_utc": "2026-11-17T16:30:00+00:00",
+  "coverage_end_utc": "2026-11-17T18:55:00+00:00",
   "candle_interval_minutes": 5,
   "source": {
     "name": "Alpaca historical SPY bars (IEX feed)",
