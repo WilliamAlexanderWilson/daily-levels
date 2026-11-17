@@ -313,6 +313,10 @@
   let tradeChartMarkers = [];
   let dojiChartMarkers = [];
   let dojiMatches = [];
+  let markerRuns = [];
+  let markerContext = null;
+  let markerContextLoading = false;
+  let markerContextError = false;
   let selectedDojiTime = null;
   let spyInspectorCompletedThrough = 0;
   let dojiViewKey = "";
@@ -1408,10 +1412,71 @@
     }
   }
 
+  async function loadMarkerContext() {
+    if (markerContextLoading) return;
+    markerContextLoading = true;
+    markerContextError = false;
+    renderMarkerRun();
+    try {
+      const report = await fetchJson("data/spy_marker_context.json");
+      if (report?.schemaVersion !== 1 || !Array.isArray(report.rows) || !Number.isFinite(Date.parse(report.sourceGeneratedAtUtc))) throw new Error("Invalid marker report");
+      markerContext = report;
+    } catch (_) { markerContextError = true; }
+    finally { markerContextLoading = false; renderMarkerRun(); }
+  }
+
+  function renderMarkerRun() {
+    if (state.asset !== "spy") return;
+    const put = (id, value) => { document.getElementById(id).textContent = value; };
+    const run = MarkerRuns.selected(markerRuns, selectedDojiTime ?? Infinity);
+    const retry = document.getElementById("marker-run-retry");
+    retry.hidden = !markerContextError;
+    put("marker-run-frequency", "");
+    put("marker-run-baseline", "");
+    put("marker-run-price", "");
+    put("marker-run-source", "");
+    if (!run) {
+      put("marker-run-heading", "No completed doji marker at or before this candle");
+      put("marker-run-detail", "Select a later candle or load more history. Ordinary candles do not reset a marker run.");
+    } else {
+      put("marker-run-heading", `${run.direction === "green" ? "Green" : "Red"} marker run: ${run.knownStart ? "" : "at least "}${run.count}`);
+      put("marker-run-detail", `${state.spyTimeframe}m · ${state.candleStyle === "regular" ? "Regular" : "Heikin Ashi"} · through ${dojiDate(run.time)}${selectedDojiTime === null ? " · latest loaded doji" : " · at or before selected candle"}. First-to-last span: ${run.ageMinutes.toLocaleString()} min · ${run.crossings} observed session crossing${run.crossings === 1 ? "" : "s"} · ${run.flat}/${run.count} flat dojis. Flat means open equals close; the chart colors these green.`);
+      if (!run.knownStart) put("marker-run-frequency", "Run may begin before loaded history. Load older candles to establish its exact length; no exact-run comparison shown.");
+    }
+    if (!markerContext) {
+      if (run?.knownStart) put("marker-run-frequency", markerContextError ? "Historical marker comparison unavailable. Run counting remains available." : "Loading historical marker comparison…");
+      put("marker-forward-status", markerContextError ? "Forward-test report unavailable." : "Loading the separate forward-test report…");
+      if (!markerContextLoading && !markerContextError) loadMarkerContext();
+      return;
+    }
+    if (run?.knownStart) {
+      try {
+        const { row, baseline } = MarkerRuns.comparison(markerContext, state.spyTimeframe, state.candleStyle, run);
+        put("marker-run-frequency", `After ${run.count >= 6 ? "6+" : run.count} ${run.direction} marker${run.count === 1 ? "" : "s"}: next doji ${run.direction} ${DojiContext.frequency(row.same, row.n)}.${row.n < 30 ? " Too few examples." : ""}`);
+        put("marker-run-baseline", `Baseline after any ${run.direction} marker: ${DojiContext.frequency(baseline.same, baseline.n)}. Baseline includes this pattern.`);
+        put("marker-run-price", `Real close ${run.direction === "green" ? "higher" : "lower"} 3 candles later: ${DojiContext.frequency(row.price[3].same, row.price[3].n)}. Same-session, contiguous candles only; separate denominator.`);
+        const coverage = markerContext.coverage.find(item => item.minutes === Number(state.spyTimeframe));
+        put("marker-run-source", `Historical IEX context · ${dojiDate(coverage.first, true)}–${dojiDate(coverage.last, true)} · study published ${dojiDate(Date.parse(markerContext.sourceGeneratedAtUtc) / 1000)}. Full archive, including data after historical candles you select. Runs may cross sessions; 6+ pools all later positions. This is not a trade win rate.`);
+      } catch (_) {
+        put("marker-run-frequency", "Historical comparison unavailable for this view. Run counting remains available.");
+        retry.hidden = false;
+      }
+    }
+    const forward = markerContext.forward;
+    if (!forward?.definition || !Number.isSafeInteger(forward.n) || !Number.isSafeInteger(forward.same) || forward.same < 0 || forward.same > forward.n) {
+      put("marker-forward-status", "Forward-test report unavailable.");
+      retry.hidden = false;
+      return;
+    }
+    const start = dojiDate(Date.parse(forward.definition.startUtc) / 1000);
+    put("marker-forward-status", `Frozen test: Regular 5m · exactly five green markers · starts ${start}. ${forward.status === "not-started" ? "No post-start observations published yet." : `Next doji green: ${DojiContext.frequency(forward.same, forward.n)} · ${forward.pending} pending outcome(s).`} Baseline: ${DojiContext.frequency(forward.baseline.same, forward.baseline.n)}. Scheduled batch report as of ${dojiDate(Date.parse(forward.asOfUtc) / 1000)}; not the live feed. ${forward.reviewReady ? "Review threshold reached; no validation is implied." : `Review waits until at least ${dojiDate(Date.parse(forward.definition.reviewNotBeforeUtc) / 1000, true)} and ${forward.definition.minimumResolvedEventsForReview} resolved events; interim results are not validation.`}`);
+  }
+
   function renderDojiContext() {
     const panel = document.getElementById("doji-context");
     panel.hidden = state.asset !== "spy";
     if (panel.hidden) return;
+    renderMarkerRun();
     const selectedIndex = dojiMatches.findIndex((bar) => bar.time === selectedDojiTime);
     const match = dojiMatches[selectedIndex];
     const selected = activeDisplayCandles.find((bar) => bar.time === selectedDojiTime);
@@ -1507,6 +1572,7 @@
     if (!enabled) {
       dojiChartMarkers = [];
       dojiMatches = [];
+      markerRuns = [];
       selectedDojiTime = null;
       dojiViewKey = "";
       renderDojiContext();
@@ -1529,6 +1595,7 @@
     if (dojiViewKey !== viewKey || !activeDisplayCandles.some((bar) => bar.time === selectedDojiTime)) selectedDojiTime = null;
     dojiViewKey = viewKey;
     dojiMatches = matches;
+    markerRuns = MarkerRuns.annotate(matches);
 
     dojiChartMarkers = matches.map((bar) => ({
       time: toTimePoint(bar, range),
@@ -4831,6 +4898,7 @@
       spyLiveClient = null;
       spyLiveStatus = { state: "disconnected", detail: "Reconnect to resume private SPY updates" };
     });
+    document.getElementById("marker-run-retry").addEventListener("click", () => { markerContext = null; loadMarkerContext(); });
     document.getElementById("candle-latest").addEventListener("click", () => selectDoji(activeDisplayCandles.at(-1)?.time, true));
     document.getElementById("doji-latest").addEventListener("click", () => selectDoji(dojiMatches.at(-1)?.time, true));
     for (const [id, offset] of [["doji-previous", -1], ["doji-next", 1]]) {

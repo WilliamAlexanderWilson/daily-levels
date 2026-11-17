@@ -24,7 +24,7 @@
   <link rel="canonical" href="https://williamalexanderwilson.github.io/daily-levels/" />
   <title>William Wilson's Range Desk — BTC, ETH, SPY, QQQ, NVDA &amp; XAU</title>
   <link id="site-favicon" rel="icon" type="image/svg+xml" href="brand-btc.svg" />
-  <link rel="stylesheet" href="styles.css?v=private-spy-v1" />
+  <link rel="stylesheet" href="styles.css?v=marker-run-v1" />
 </head>
 <body>
   <header class="site-header">
@@ -442,6 +442,17 @@
           <button type="button" id="doji-latest" class="chart-control-btn" disabled>Latest doji</button>
         </div>
       </div>
+      <section class="marker-run-panel" aria-label="Successive doji marker run">
+        <h3 id="marker-run-heading" aria-live="polite">Marker run</h3>
+        <p id="marker-run-detail"></p>
+        <p class="doji-context-footnote">Ordinary candles do not reset this run; an opposite-color doji does. D1/D2 chart labels separately count adjacent doji candles.</p>
+        <p id="marker-run-frequency" role="status"></p>
+        <p id="marker-run-baseline"></p>
+        <p id="marker-run-price"></p>
+        <p id="marker-run-source" class="doji-context-footnote"></p>
+        <button type="button" id="marker-run-retry" class="chart-control-btn" hidden>Retry marker history</button>
+        <details><summary>Separate forward test · Regular 5m</summary><p id="marker-forward-status"></p></details>
+      </section>
       <div id="doji-context-detail" hidden>
         <p id="candle-inspector-prices"></p>
         <p id="candle-inspector-verdict" role="status"></p>
@@ -898,8 +909,9 @@
   <script src="chart-time.js?v=spy-doji-v1"></script>
   <script src="candle-style.js?v=spy-doji-v1"></script>
   <script src="doji-study.js?v=spy-doji-streak-v1"></script>
+  <script src="marker-runs.js?v=marker-run-v1"></script>
   <script src="doji-context.js?v=selected-doji-v1"></script>
   <script src="candle-history.js?v=history-viewport-v1"></script>
-  <script src="app.js?v=candle-inspector-v1"></script>
+  <script src="app.js?v=marker-run-v1"></script>
 </body>
 </html>

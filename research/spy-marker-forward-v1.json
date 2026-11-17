@@ -1,0 +1,19 @@
+{
+  "id": "spy-marker-forward-v1",
+  "frozenAtUtc": "2026-11-17T01:50:43Z",
+  "startUtc": "2026-11-17T14:30:00Z",
+  "minutes": 5,
+  "style": "regular",
+  "direction": "green",
+  "depth": 5,
+  "bodyRatioMax": 0.1,
+  "flatPolicy": "close >= open is green, including ties",
+  "sessionPolicy": "continuous across sessions; ordinary candles do not reset",
+  "outcome": "next completed doji is green; unknown until that doji closes",
+  "baseline": "next doji green after any green marker whose signal closes in the evaluation window",
+  "secondary": "real close higher three contiguous same-session candles later",
+  "reviewNotBeforeUtc": "2027-02-17T14:30:00Z",
+  "minimumResolvedEventsForReview": 100,
+  "historical": {"n": 252, "same": 160, "baselineN": 5823, "baselineSame": 3350},
+  "limits": "Review requires both date and count, not proof of reliability. No trade win rate, target, stop, costs, or profitability is tested. No tuning this definition against interim outcomes."
+}

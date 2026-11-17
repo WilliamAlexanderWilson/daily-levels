@@ -936,3 +936,10 @@ No validated 80% continuation rule or trade win rate was established.
 [Successive-marker study](docs/SPY-MARKER-SEQUENCES-2026-11-16.md) tests the clarified
 question: ordinary candles may appear between same-color doji markers. It
 separates next-marker color from real-price movement and tests flat-doji coloring.
+
+### SPY marker-run indicator
+
+The chart now shows successive same-color marker runs separately from D1/D2
+adjacent-candle labels, including flat markers, historical baseline, and real-price
+context. [Setup and frozen forward-test protocol](docs/SPY-MARKER-INDICATOR.md)
+describe the separate Regular 5m test starting November 17, 2026.

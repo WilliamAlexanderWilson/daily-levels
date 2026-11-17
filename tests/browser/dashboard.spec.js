@@ -258,6 +258,13 @@ test("doji history retries, handles zero examples, and clears selection after an
 
 test("private SPY stream draws completed dojis promptly, applies corrections, and never saves credentials", async ({ page }) => {
   await installSpyChartStub(page);
+  await page.route("**/data/spy_chart.json", async (route) => {
+    const response = await route.fetch();
+    const data = await response.json();
+    data.generated_at_utc = "2026-11-16T20:30:00Z";
+    for (const key of Object.keys(data.timeframes)) data.timeframes[key] = data.timeframes[key].filter(bar => bar.time <= Date.parse(data.generated_at_utc) / 1000);
+    await route.fulfill({ response, json: data });
+  });
   await page.addInitScript(() => {
     window.__spyNow = Date.parse("2026-11-16T20:31:01Z");
     Date.now = () => window.__spyNow;
@@ -388,4 +395,40 @@ test("SPY inspector explains the borderline 15m candle and every selected shape"
   await page.locator("#candle-latest").click();
   await expect(page.locator("#candle-inspector-prices")).toContainText("Derived Heikin Ashi prices");
   expect(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+});
+
+
+test("successive marker panel counts intervening candles, explains boundaries, and retries history", async ({ page }) => {
+  await installSpyChartStub(page);
+  await page.route("**/data/spy_chart.json", async (route) => {
+    const response = await route.fetch(), data = await response.json();
+    const start = Date.parse("2026-11-16T15:00Z") / 1000;
+    data.generated_at_utc = "2026-11-16T16:00Z";
+    data.timeframes["5"] = [99.5,100,95,100.5,95,100.5,95,100.5,95,100.5].map((close,i)=>({time:start+i*300,open:100,high:110,low:90,close}));
+    await route.fulfill({ response, json:data });
+  });
+  let fail = true;
+  await page.route("**/data/spy_marker_context.json", async route => {
+    if (fail) {fail=false;await route.fulfill({status:503,body:"Unavailable"});}
+    else await route.continue();
+  });
+  await page.goto("/#asset=spy&range=5m", {waitUntil:"domcontentloaded"});
+  await expect(page.locator("#marker-run-heading")).toHaveText("Green marker run: 5");
+  await expect(page.locator("#marker-run-detail")).toContainText("1/5 flat dojis");
+  await expect(page.locator("#marker-run-frequency")).toContainText("unavailable");
+  await page.locator("#marker-run-retry").click();
+  await expect(page.locator("#marker-run-frequency")).toContainText("After 5 green markers");
+  await expect(page.locator("#marker-run-baseline")).toContainText("Baseline after any green marker");
+  await expect(page.locator("#marker-run-price")).toContainText("Real close higher 3 candles later");
+  await page.locator(".marker-run-panel details summary").click();
+  await expect(page.locator("#marker-forward-status")).toContainText("Nov 17, 2026, 8:30 AM CST");
+  await page.evaluate(()=>window.__spyClick({time:Date.parse("2026-11-16T15:00Z")/1000}));
+  await expect(page.locator("#marker-run-heading")).toHaveText("Red marker run: at least 1");
+  await expect(page.locator("#marker-run-frequency")).toContainText("no exact-run comparison");
+  await expect(page.locator("#marker-run-baseline")).toBeEmpty();
+  await page.locator("#candle-latest").click();
+  await expect(page.locator("#marker-run-heading")).toHaveText("Green marker run: 5");
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
+  await page.locator('[data-asset="qqq"]').click();
+  await expect(page.locator(".marker-run-panel")).toBeHidden();
 });
