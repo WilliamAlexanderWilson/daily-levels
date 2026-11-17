@@ -1,7 +1,7 @@
 {
   "symbol": "NVDA",
-  "generated_at_utc": "2026-11-17T21:37:45.554196+00:00",
-  "price": 159.72,
+  "generated_at_utc": "2026-11-17T23:26:33.638420+00:00",
+  "price": 158.3,
   "source": "Alpaca historical bars (free IEX feed)",
   "is_live": false,
   "range_context": {
@@ -18,7 +18,7 @@
     "low": 148.8,
     "width": 73.38,
     "width_pct": 39.56008410156882,
-    "position_pct": 14.881439084219117,
+    "position_pct": 12.946306895611883,
     "state": "lower_edge",
     "is_signal": false,
     "session_scope": "U.S. regular session, 9:30 AM\u20134:00 PM New York time",
@@ -13052,6 +13052,20 @@
         "high": 161.4,
         "low": 155.0,
         "close": 160.77
+      },
+      {
+        "time": 1794951600,
+        "open": 161.42,
+        "high": 161.65,
+        "low": 158.92,
+        "close": 159.05
+      },
+      {
+        "time": 1794952200,
+        "open": 159.03,
+        "high": 159.03,
+        "low": 157.56,
+        "close": 158.91
       }
     ],
     "15": [
@@ -22000,6 +22014,13 @@
         "high": 161.4,
         "low": 155.0,
         "close": 160.77
+      },
+      {
+        "time": 1794951900,
+        "open": 161.42,
+        "high": 161.65,
+        "low": 157.56,
+        "close": 157.91
       }
     ],
     "20": [
@@ -28813,6 +28834,13 @@
         "high": 155.0,
         "low": 155.0,
         "close": 155.0
+      },
+      {
+        "time": 1794951600,
+        "open": 155.0,
+        "high": 161.65,
+        "low": 155.0,
+        "close": 159.05
       }
     ],
     "30": [
