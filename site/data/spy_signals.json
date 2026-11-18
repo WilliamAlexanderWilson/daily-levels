@@ -1,23 +1,6 @@
 {
-  "generated_at_utc": "2026-11-18T12:24:28.135421+00:00",
+  "generated_at_utc": "2026-11-18T16:01:29.718060+00:00",
   "trades": [
-    {
-      "signal_time": 1731948600,
-      "direction": "put",
-      "n_confirmed": 1,
-      "confirmed_timeframes": [
-        10
-      ],
-      "entry_underlying": 588.42,
-      "strike": 588.0,
-      "expiry_date": "2024-11-20",
-      "entry_premium": 2.554550119668022,
-      "exit_time": 1731957600,
-      "exit_underlying": 587.25,
-      "exit_premium": 3.0743184474582677,
-      "exit_reason": "target",
-      "pct_return": 0.20346765709877418
-    },
     {
       "signal_time": 1732029000,
       "direction": "call",
@@ -2672,13 +2655,13 @@
       ],
       "entry_underlying": 746.51,
       "strike": 747.0,
-      "expiry_date": null,
-      "entry_premium": null,
-      "exit_time": 1794846600,
-      "exit_underlying": 746.51,
-      "exit_premium": null,
-      "exit_reason": "incomplete",
-      "pct_return": null
+      "expiry_date": "2026-11-18",
+      "entry_premium": 5.122076917173615,
+      "exit_time": 1794847500,
+      "exit_underlying": 745.12,
+      "exit_premium": 4.452049035918662,
+      "exit_reason": "stop",
+      "pct_return": -0.13081175704496784
     }
   ]
 }
