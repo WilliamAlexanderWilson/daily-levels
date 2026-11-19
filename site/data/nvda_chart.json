@@ -1,7 +1,7 @@
 {
   "symbol": "NVDA",
-  "generated_at_utc": "2026-11-19T21:17:07.320095+00:00",
-  "price": 145.91,
+  "generated_at_utc": "2026-11-19T22:59:46.317107+00:00",
+  "price": 145.29,
   "source": "Alpaca historical bars (free IEX feed)",
   "is_live": false,
   "range_context": {
@@ -18,8 +18,8 @@
     "low": 145.71,
     "width": 74.20499999999998,
     "width_pct": 40.590769230769226,
-    "position_pct": 0.26952361700692495,
-    "state": "lower_edge",
+    "position_pct": -0.565999595714596,
+    "state": "below_range",
     "is_signal": false,
     "session_scope": "U.S. regular session, 9:30 AM\u20134:00 PM New York time",
     "source_limit": "Alpaca free IEX feed; one exchange, not consolidated SIP"
@@ -13773,6 +13773,34 @@
         "high": 145.84,
         "low": 145.58,
         "close": 145.84
+      },
+      {
+        "time": 1795123200,
+        "open": 145.91,
+        "high": 145.91,
+        "low": 145.91,
+        "close": 145.91
+      },
+      {
+        "time": 1795123800,
+        "open": 145.49,
+        "high": 145.55,
+        "low": 145.49,
+        "close": 145.55
+      },
+      {
+        "time": 1795124400,
+        "open": 145.07,
+        "high": 145.07,
+        "low": 144.11,
+        "close": 144.73
+      },
+      {
+        "time": 1795125000,
+        "open": 145.11,
+        "high": 145.11,
+        "low": 145.11,
+        "close": 145.11
       }
     ],
     "15": [
@@ -23204,6 +23232,27 @@
         "high": 147.59,
         "low": 145.71,
         "close": 145.985
+      },
+      {
+        "time": 1795122900,
+        "open": 145.84,
+        "high": 145.91,
+        "low": 145.58,
+        "close": 145.91
+      },
+      {
+        "time": 1795123800,
+        "open": 145.49,
+        "high": 145.55,
+        "low": 145.49,
+        "close": 145.55
+      },
+      {
+        "time": 1795124700,
+        "open": 145.07,
+        "high": 145.07,
+        "low": 144.11,
+        "close": 144.73
       }
     ],
     "20": [
@@ -30388,6 +30437,20 @@
         "high": 147.59,
         "low": 145.71,
         "close": 145.985
+      },
+      {
+        "time": 1795123200,
+        "open": 145.84,
+        "high": 145.91,
+        "low": 145.58,
+        "close": 145.91
+      },
+      {
+        "time": 1795124400,
+        "open": 145.49,
+        "high": 145.55,
+        "low": 144.11,
+        "close": 144.73
       }
     ],
     "30": [
@@ -35283,6 +35346,13 @@
         "high": 147.61,
         "low": 145.71,
         "close": 145.985
+      },
+      {
+        "time": 1795123800,
+        "open": 145.84,
+        "high": 145.91,
+        "low": 145.49,
+        "close": 145.55
       }
     ]
   }
