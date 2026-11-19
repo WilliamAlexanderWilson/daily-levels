@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-11-19T12:18:40.926904+00:00",
+  "generated_at_utc": "2026-11-19T16:08:37.996374+00:00",
   "data_window_days": 730,
   "by_min_confirmed": {
     "1": {
-      "trades": 153,
+      "trades": 154,
       "resolved": 153,
-      "incomplete": 0,
+      "incomplete": 1,
       "calls": 88,
       "puts": 65,
       "target_hits": 54,
