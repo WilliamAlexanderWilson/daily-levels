@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "asset": "btc",
-  "generated_at_utc": "2026-11-18T22:54:34.161256+00:00",
-  "coverage_start_utc": "2026-09-19T22:30:00+00:00",
-  "coverage_end_utc": "2026-11-18T22:30:00+00:00",
+  "generated_at_utc": "2026-11-19T18:54:46.454982+00:00",
+  "coverage_start_utc": "2026-09-20T18:30:00+00:00",
+  "coverage_end_utc": "2026-11-19T18:30:00+00:00",
   "candle_interval_minutes": 15,
   "source": {
     "name": "Coinbase Exchange BTC-USD/ETH-USD candles",
@@ -33,34 +33,34 @@
       "evidence_status": "measured",
       "horizons": {
         "15": {
-          "n": 43,
-          "median_return_pct": 0.1323,
-          "median_abs_move_pct": 0.2807,
-          "up_rate_pct": 58.1
+          "n": 44,
+          "median_return_pct": 0.1083,
+          "median_abs_move_pct": 0.2607,
+          "up_rate_pct": 59.1
         },
         "30": {
-          "n": 43,
-          "median_return_pct": 0.0449,
-          "median_abs_move_pct": 0.3052,
-          "up_rate_pct": 53.5
+          "n": 44,
+          "median_return_pct": 0.0415,
+          "median_abs_move_pct": 0.3063,
+          "up_rate_pct": 52.3
         },
         "60": {
-          "n": 43,
-          "median_return_pct": 0.1389,
-          "median_abs_move_pct": 0.4463,
-          "up_rate_pct": 55.8
+          "n": 44,
+          "median_return_pct": 0.075,
+          "median_abs_move_pct": 0.4466,
+          "up_rate_pct": 54.5
         },
         "120": {
-          "n": 43,
-          "median_return_pct": 0.093,
-          "median_abs_move_pct": 0.6427,
-          "up_rate_pct": 51.2
+          "n": 44,
+          "median_return_pct": 0.0066,
+          "median_abs_move_pct": 0.6473,
+          "up_rate_pct": 50.0
         }
       },
-      "median_volume_ratio_60m": 2.7656,
-      "volume_ratio_n": 43,
-      "median_range_expansion_60m": 1.89,
-      "range_expansion_n": 43,
+      "median_volume_ratio_60m": 2.687,
+      "volume_ratio_n": 44,
+      "median_range_expansion_60m": 1.9018,
+      "range_expansion_n": 44,
       "observed_rank": 1
     },
     {
@@ -70,34 +70,34 @@
       "evidence_status": "measured",
       "horizons": {
         "15": {
-          "n": 43,
-          "median_return_pct": 0.0003,
-          "median_abs_move_pct": 0.147,
-          "up_rate_pct": 51.2
+          "n": 44,
+          "median_return_pct": 0.0055,
+          "median_abs_move_pct": 0.1518,
+          "up_rate_pct": 52.3
         },
         "30": {
-          "n": 43,
-          "median_return_pct": 0.0326,
-          "median_abs_move_pct": 0.1465,
-          "up_rate_pct": 58.1
+          "n": 44,
+          "median_return_pct": 0.033,
+          "median_abs_move_pct": 0.1544,
+          "up_rate_pct": 59.1
         },
         "60": {
-          "n": 43,
-          "median_return_pct": 0.0308,
-          "median_abs_move_pct": 0.162,
-          "up_rate_pct": 55.8
+          "n": 44,
+          "median_return_pct": 0.0463,
+          "median_abs_move_pct": 0.1626,
+          "up_rate_pct": 56.8
         },
         "120": {
-          "n": 43,
-          "median_return_pct": -0.0212,
-          "median_abs_move_pct": 0.2238,
-          "up_rate_pct": 48.8
+          "n": 44,
+          "median_return_pct": -0.0042,
+          "median_abs_move_pct": 0.2371,
+          "up_rate_pct": 50.0
         }
       },
-      "median_volume_ratio_60m": 0.9333,
-      "volume_ratio_n": 43,
-      "median_range_expansion_60m": 1.0663,
-      "range_expansion_n": 43,
+      "median_volume_ratio_60m": 0.9135,
+      "volume_ratio_n": 44,
+      "median_range_expansion_60m": 1.0824,
+      "range_expansion_n": 44,
       "observed_rank": 7
     },
     {
@@ -107,35 +107,35 @@
       "evidence_status": "measured",
       "horizons": {
         "15": {
-          "n": 43,
-          "median_return_pct": -0.0143,
-          "median_abs_move_pct": 0.0824,
-          "up_rate_pct": 48.8
+          "n": 44,
+          "median_return_pct": -0.0058,
+          "median_abs_move_pct": 0.0831,
+          "up_rate_pct": 50.0
         },
         "30": {
-          "n": 43,
-          "median_return_pct": -0.0048,
-          "median_abs_move_pct": 0.196,
-          "up_rate_pct": 48.8
+          "n": 44,
+          "median_return_pct": -0.0132,
+          "median_abs_move_pct": 0.1947,
+          "up_rate_pct": 47.7
         },
         "60": {
-          "n": 43,
-          "median_return_pct": 0.08,
-          "median_abs_move_pct": 0.2363,
-          "up_rate_pct": 55.8
+          "n": 44,
+          "median_return_pct": 0.047,
+          "median_abs_move_pct": 0.2107,
+          "up_rate_pct": 54.5
         },
         "120": {
-          "n": 43,
-          "median_return_pct": -0.0271,
-          "median_abs_move_pct": 0.4008,
-          "up_rate_pct": 44.2
+          "n": 44,
+          "median_return_pct": -0.0145,
+          "median_abs_move_pct": 0.391,
+          "up_rate_pct": 45.5
         }
       },
-      "median_volume_ratio_60m": 1.2744,
-      "volume_ratio_n": 43,
-      "median_range_expansion_60m": 1.0252,
-      "range_expansion_n": 43,
-      "observed_rank": 3
+      "median_volume_ratio_60m": 1.2503,
+      "volume_ratio_n": 44,
+      "median_range_expansion_60m": 1.0208,
+      "range_expansion_n": 44,
+      "observed_rank": 5
     },
     {
       "key": "tokyo",
@@ -144,35 +144,35 @@
       "evidence_status": "measured",
       "horizons": {
         "15": {
-          "n": 43,
-          "median_return_pct": -0.043,
-          "median_abs_move_pct": 0.1443,
-          "up_rate_pct": 46.5
+          "n": 44,
+          "median_return_pct": -0.0469,
+          "median_abs_move_pct": 0.1476,
+          "up_rate_pct": 45.5
         },
         "30": {
-          "n": 43,
-          "median_return_pct": -0.0547,
-          "median_abs_move_pct": 0.2037,
-          "up_rate_pct": 46.5
+          "n": 44,
+          "median_return_pct": -0.0668,
+          "median_abs_move_pct": 0.2063,
+          "up_rate_pct": 45.5
         },
         "60": {
-          "n": 43,
-          "median_return_pct": -0.0079,
-          "median_abs_move_pct": 0.2353,
-          "up_rate_pct": 48.8
+          "n": 44,
+          "median_return_pct": -0.0,
+          "median_abs_move_pct": 0.2335,
+          "up_rate_pct": 50.0
         },
         "120": {
-          "n": 43,
-          "median_return_pct": -0.1746,
-          "median_abs_move_pct": 0.2732,
-          "up_rate_pct": 32.6
+          "n": 44,
+          "median_return_pct": -0.1827,
+          "median_abs_move_pct": 0.2757,
+          "up_rate_pct": 31.8
         }
       },
-      "median_volume_ratio_60m": 1.1587,
-      "volume_ratio_n": 43,
-      "median_range_expansion_60m": 1.1833,
-      "range_expansion_n": 43,
-      "observed_rank": 5
+      "median_volume_ratio_60m": 1.1603,
+      "volume_ratio_n": 44,
+      "median_range_expansion_60m": 1.1435,
+      "range_expansion_n": 44,
+      "observed_rank": 3
     },
     {
       "key": "hong-kong",
@@ -181,34 +181,34 @@
       "evidence_status": "measured",
       "horizons": {
         "15": {
-          "n": 43,
-          "median_return_pct": -0.0134,
-          "median_abs_move_pct": 0.1613,
-          "up_rate_pct": 46.5
+          "n": 44,
+          "median_return_pct": -0.0078,
+          "median_abs_move_pct": 0.1629,
+          "up_rate_pct": 47.7
         },
         "30": {
-          "n": 43,
-          "median_return_pct": -0.1292,
-          "median_abs_move_pct": 0.2122,
-          "up_rate_pct": 39.5
+          "n": 44,
+          "median_return_pct": -0.1253,
+          "median_abs_move_pct": 0.2177,
+          "up_rate_pct": 40.9
         },
         "60": {
-          "n": 43,
-          "median_return_pct": -0.075,
-          "median_abs_move_pct": 0.2764,
-          "up_rate_pct": 39.5
+          "n": 44,
+          "median_return_pct": -0.0706,
+          "median_abs_move_pct": 0.2572,
+          "up_rate_pct": 40.9
         },
         "120": {
-          "n": 43,
-          "median_return_pct": -0.1661,
-          "median_abs_move_pct": 0.4449,
-          "up_rate_pct": 39.5
+          "n": 44,
+          "median_return_pct": -0.1523,
+          "median_abs_move_pct": 0.4448,
+          "up_rate_pct": 40.9
         }
       },
-      "median_volume_ratio_60m": 0.9637,
-      "volume_ratio_n": 43,
-      "median_range_expansion_60m": 1.1873,
-      "range_expansion_n": 43,
+      "median_volume_ratio_60m": 0.9513,
+      "volume_ratio_n": 44,
+      "median_range_expansion_60m": 1.1863,
+      "range_expansion_n": 44,
       "observed_rank": 2
     },
     {
@@ -218,35 +218,35 @@
       "evidence_status": "measured",
       "horizons": {
         "15": {
-          "n": 43,
-          "median_return_pct": -0.0143,
-          "median_abs_move_pct": 0.0824,
-          "up_rate_pct": 48.8
+          "n": 44,
+          "median_return_pct": -0.0058,
+          "median_abs_move_pct": 0.0831,
+          "up_rate_pct": 50.0
         },
         "30": {
-          "n": 43,
-          "median_return_pct": -0.0048,
-          "median_abs_move_pct": 0.196,
-          "up_rate_pct": 48.8
+          "n": 44,
+          "median_return_pct": -0.0132,
+          "median_abs_move_pct": 0.1947,
+          "up_rate_pct": 47.7
         },
         "60": {
-          "n": 43,
-          "median_return_pct": 0.08,
-          "median_abs_move_pct": 0.2363,
-          "up_rate_pct": 55.8
+          "n": 44,
+          "median_return_pct": 0.047,
+          "median_abs_move_pct": 0.2107,
+          "up_rate_pct": 54.5
         },
         "120": {
-          "n": 43,
-          "median_return_pct": -0.0271,
-          "median_abs_move_pct": 0.4008,
-          "up_rate_pct": 44.2
+          "n": 44,
+          "median_return_pct": -0.0145,
+          "median_abs_move_pct": 0.391,
+          "up_rate_pct": 45.5
         }
       },
-      "median_volume_ratio_60m": 1.2744,
-      "volume_ratio_n": 43,
-      "median_range_expansion_60m": 1.0252,
-      "range_expansion_n": 43,
-      "observed_rank": 3
+      "median_volume_ratio_60m": 1.2503,
+      "volume_ratio_n": 44,
+      "median_range_expansion_60m": 1.0208,
+      "range_expansion_n": 44,
+      "observed_rank": 5
     },
     {
       "key": "sydney",
@@ -255,35 +255,35 @@
       "evidence_status": "measured",
       "horizons": {
         "15": {
-          "n": 43,
-          "median_return_pct": -0.038,
-          "median_abs_move_pct": 0.1277,
-          "up_rate_pct": 37.2
+          "n": 44,
+          "median_return_pct": -0.0369,
+          "median_abs_move_pct": 0.1305,
+          "up_rate_pct": 38.6
         },
         "30": {
-          "n": 43,
-          "median_return_pct": -0.0395,
-          "median_abs_move_pct": 0.1675,
-          "up_rate_pct": 44.2
+          "n": 44,
+          "median_return_pct": -0.038,
+          "median_abs_move_pct": 0.1706,
+          "up_rate_pct": 45.5
         },
         "60": {
-          "n": 43,
-          "median_return_pct": 0.0088,
-          "median_abs_move_pct": 0.21,
-          "up_rate_pct": 51.2
+          "n": 44,
+          "median_return_pct": 0.0118,
+          "median_abs_move_pct": 0.2189,
+          "up_rate_pct": 52.3
         },
         "120": {
-          "n": 43,
-          "median_return_pct": -0.1385,
-          "median_abs_move_pct": 0.2703,
-          "up_rate_pct": 39.5
+          "n": 44,
+          "median_return_pct": -0.137,
+          "median_abs_move_pct": 0.2711,
+          "up_rate_pct": 40.9
         }
       },
-      "median_volume_ratio_60m": 1.1296,
-      "volume_ratio_n": 43,
-      "median_range_expansion_60m": 1.2031,
-      "range_expansion_n": 43,
-      "observed_rank": 6
+      "median_volume_ratio_60m": 1.1293,
+      "volume_ratio_n": 44,
+      "median_range_expansion_60m": 1.2579,
+      "range_expansion_n": 44,
+      "observed_rank": 4
     }
   ]
 }
