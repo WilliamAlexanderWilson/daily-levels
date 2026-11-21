@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "asset": "spy",
-  "generated_at_utc": "2026-11-21T03:04:04.100191+00:00",
+  "generated_at_utc": "2026-11-21T08:00:02.014455+00:00",
   "coverage_start_utc": "2024-11-21T14:30:00+00:00",
   "coverage_end_utc": "2026-11-20T21:45:00+00:00",
   "candle_interval_minutes": 5,
