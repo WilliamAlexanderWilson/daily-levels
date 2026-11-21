@@ -1,57 +1,46 @@
 {
-  "Current week open": {
-    "touches": 231,
-    "resolved": 218,
-    "holds": 89,
-    "breaks": 129,
-    "inconclusive": 13,
-    "hold_rate_pct": 40.825688073394495,
-    "avg_move_after_hold_pct": -0.9997788959878386,
-    "avg_move_after_break_pct": 0.5659165345459468,
-    "low_confidence": false
-  },
-  "Flip support": {
-    "touches": 192,
-    "resolved": 184,
-    "holds": 85,
-    "breaks": 99,
-    "inconclusive": 8,
-    "hold_rate_pct": 46.19565217391305,
-    "avg_move_after_hold_pct": 3.0724041268832307,
-    "avg_move_after_break_pct": -2.0146145866398992,
-    "low_confidence": false
-  },
   "Round number": {
     "touches": 663,
-    "resolved": 646,
-    "holds": 290,
+    "resolved": 648,
+    "holds": 292,
     "breaks": 356,
-    "inconclusive": 17,
-    "hold_rate_pct": 44.89164086687307,
-    "avg_move_after_hold_pct": 0.28469548069594763,
-    "avg_move_after_break_pct": 0.011526676110309346,
-    "low_confidence": false
-  },
-  "VAL (60d)": {
-    "touches": 71,
-    "resolved": 66,
-    "holds": 31,
-    "breaks": 35,
-    "inconclusive": 5,
-    "hold_rate_pct": 46.96969696969697,
-    "avg_move_after_hold_pct": 0.9710644149827605,
-    "avg_move_after_break_pct": -1.1031140740126806,
+    "inconclusive": 15,
+    "hold_rate_pct": 45.06172839506173,
+    "avg_move_after_hold_pct": 0.2423078551469181,
+    "avg_move_after_break_pct": -0.008993195365092495,
     "low_confidence": false
   },
   "Flip resistance": {
     "touches": 218,
     "resolved": 200,
-    "holds": 93,
-    "breaks": 107,
+    "holds": 94,
+    "breaks": 106,
     "inconclusive": 18,
-    "hold_rate_pct": 46.5,
-    "avg_move_after_hold_pct": -3.1780843446224707,
-    "avg_move_after_break_pct": 2.3356980993649157,
+    "hold_rate_pct": 47.0,
+    "avg_move_after_hold_pct": -3.199074181724977,
+    "avg_move_after_break_pct": 2.3322519586892168,
+    "low_confidence": false
+  },
+  "VAL (60d)": {
+    "touches": 70,
+    "resolved": 65,
+    "holds": 31,
+    "breaks": 34,
+    "inconclusive": 5,
+    "hold_rate_pct": 47.69230769230769,
+    "avg_move_after_hold_pct": 0.9710644149827605,
+    "avg_move_after_break_pct": -1.0136976260071502,
+    "low_confidence": false
+  },
+  "Current week open": {
+    "touches": 230,
+    "resolved": 217,
+    "holds": 88,
+    "breaks": 129,
+    "inconclusive": 13,
+    "hold_rate_pct": 40.55299539170507,
+    "avg_move_after_hold_pct": -1.0705395813805465,
+    "avg_move_after_break_pct": 0.5659165345459468,
     "low_confidence": false
   },
   "Current month open": {
@@ -76,15 +65,26 @@
     "avg_move_after_break_pct": 1.930563236257392,
     "low_confidence": false
   },
+  "Flip support": {
+    "touches": 191,
+    "resolved": 183,
+    "holds": 85,
+    "breaks": 98,
+    "inconclusive": 8,
+    "hold_rate_pct": 46.44808743169399,
+    "avg_move_after_hold_pct": 3.0724041268832307,
+    "avg_move_after_break_pct": -2.0037411886892995,
+    "low_confidence": false
+  },
   "Prior week low": {
-    "touches": 166,
-    "resolved": 147,
-    "holds": 62,
-    "breaks": 85,
-    "inconclusive": 19,
-    "hold_rate_pct": 42.17687074829932,
-    "avg_move_after_hold_pct": 1.124553224077628,
-    "avg_move_after_break_pct": -0.7241897646415006,
+    "touches": 167,
+    "resolved": 151,
+    "holds": 63,
+    "breaks": 88,
+    "inconclusive": 16,
+    "hold_rate_pct": 41.72185430463576,
+    "avg_move_after_hold_pct": 1.0249392200088074,
+    "avg_move_after_break_pct": -0.8740750250280473,
     "low_confidence": false
   },
   "Golden pocket": {
@@ -143,14 +143,14 @@
     "low_confidence": true
   },
   "Range low (60d)": {
-    "touches": 68,
-    "resolved": 60,
+    "touches": 69,
+    "resolved": 65,
     "holds": 22,
-    "breaks": 38,
-    "inconclusive": 8,
-    "hold_rate_pct": 36.666666666666664,
+    "breaks": 43,
+    "inconclusive": 4,
+    "hold_rate_pct": 33.84615384615385,
     "avg_move_after_hold_pct": 3.862187820286518,
-    "avg_move_after_break_pct": -3.7243922165941457,
+    "avg_move_after_break_pct": -3.8638664591444654,
     "low_confidence": false
   },
   "Range high (60d)": {
