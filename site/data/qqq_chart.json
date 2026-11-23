@@ -1,7 +1,7 @@
 {
   "symbol": "QQQ",
-  "generated_at_utc": "2026-11-23T08:37:00.941280+00:00",
-  "price": 614.8,
+  "generated_at_utc": "2026-11-23T13:48:21.463880+00:00",
+  "price": 629.38,
   "source": "Alpaca historical bars (free IEX feed)",
   "is_live": false,
   "range_context": {
@@ -18,8 +18,8 @@
     "low": 606.28,
     "width": 119.81000000000006,
     "width_pct": 17.984493796768174,
-    "position_pct": 7.111259494199131,
-    "state": "lower_edge",
+    "position_pct": 19.280527501877984,
+    "state": "middle",
     "is_signal": false,
     "session_scope": "U.S. regular session, 9:30 AM\u20134:00 PM New York time",
     "source_limit": "Alpaca free IEX feed; one exchange, not consolidated SIP"
@@ -14928,6 +14928,13 @@
         "high": 614.63,
         "low": 614.18,
         "close": 614.63
+      },
+      {
+        "time": 1795211700,
+        "open": 614.35,
+        "high": 614.81,
+        "low": 614.35,
+        "close": 614.8
       }
     ],
     "15": [
@@ -25157,6 +25164,13 @@
         "high": 614.63,
         "low": 613.69,
         "close": 614.63
+      },
+      {
+        "time": 1795212000,
+        "open": 614.35,
+        "high": 614.81,
+        "low": 614.35,
+        "close": 614.8
       }
     ],
     "20": [
@@ -32950,6 +32964,13 @@
         "high": 613.69,
         "low": 613.69,
         "close": 613.69
+      },
+      {
+        "time": 1795211700,
+        "open": 614.18,
+        "high": 614.81,
+        "low": 614.18,
+        "close": 614.8
       }
     ],
     "30": [
@@ -38265,6 +38286,13 @@
         "high": 614.63,
         "low": 613.69,
         "close": 614.63
+      },
+      {
+        "time": 1795212900,
+        "open": 614.35,
+        "high": 614.81,
+        "low": 614.35,
+        "close": 614.8
       }
     ]
   }
