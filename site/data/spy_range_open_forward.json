@@ -2,7 +2,7 @@
   "schema_version": 1,
   "study_version": "range-open-forward-v1",
   "asset": "spy",
-  "generated_at_utc": "2026-11-23T13:48:15.626357+00:00",
+  "generated_at_utc": "2026-11-23T18:50:20.616678+00:00",
   "forward_start_utc": "2026-11-08T00:00:00+00:00",
   "source": {
     "name": "Alpaca historical SPY bars (IEX feed)",
@@ -28,8 +28,8 @@
     ]
   },
   "summary": {
-    "total_events": 10,
-    "wait_events": 4,
+    "total_events": 11,
+    "wait_events": 5,
     "pending_events": 0,
     "resolved_edge_session_rows": 6,
     "resolved_edge_events": 6,
@@ -388,6 +388,41 @@
       "max_adverse_excursion_pct": 1.2571,
       "sweep_reclaim": false,
       "resolved_at_utc": "2026-11-20T16:30:00+00:00"
+    },
+    {
+      "id": "spy|new-york|2026-11-23T14:30:00+00:00",
+      "session_key": "new-york",
+      "session_name": "New York",
+      "opened_at_utc": "2026-11-23T14:30:00+00:00",
+      "range_start_utc": "2026-09-24T14:30:00+00:00",
+      "range_low": 686.75,
+      "range_high": 781.59,
+      "opening_price": 724.295,
+      "range_position_pct": 39.59,
+      "location": "wait",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": -0.9768,
+          "direction_aligned_return_pct": null
+        },
+        "30": {
+          "raw_return_pct": -0.4335,
+          "direction_aligned_return_pct": null
+        },
+        "60": {
+          "raw_return_pct": 0.2409,
+          "direction_aligned_return_pct": null
+        },
+        "120": {
+          "raw_return_pct": -0.0242,
+          "direction_aligned_return_pct": null
+        }
+      },
+      "max_favorable_excursion_pct": null,
+      "max_adverse_excursion_pct": null,
+      "sweep_reclaim": null,
+      "resolved_at_utc": "2026-11-23T16:30:00+00:00"
     }
   ]
 }
