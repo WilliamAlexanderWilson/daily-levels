@@ -2,7 +2,7 @@
   "schema_version": 1,
   "study_version": "range-open-forward-v1",
   "asset": "spy",
-  "generated_at_utc": "2026-11-25T13:42:07.003899+00:00",
+  "generated_at_utc": "2026-11-25T17:41:50.370553+00:00",
   "forward_start_utc": "2026-11-08T00:00:00+00:00",
   "source": {
     "name": "Alpaca historical SPY bars (IEX feed)",
@@ -28,12 +28,12 @@
     ]
   },
   "summary": {
-    "total_events": 12,
+    "total_events": 13,
     "wait_events": 5,
     "pending_events": 0,
-    "resolved_edge_session_rows": 7,
-    "resolved_edge_events": 7,
-    "resolved_lower_edge_events": 7,
+    "resolved_edge_session_rows": 8,
+    "resolved_edge_events": 8,
+    "resolved_lower_edge_events": 8,
     "resolved_upper_edge_events": 0,
     "evidence_gate_passed": false,
     "positive_directional_60m_rate_pct": null
@@ -458,6 +458,41 @@
       "max_adverse_excursion_pct": 0.4383,
       "sweep_reclaim": false,
       "resolved_at_utc": "2026-11-24T16:30:00+00:00"
+    },
+    {
+      "id": "spy|new-york|2026-11-25T14:30:00+00:00",
+      "session_key": "new-york",
+      "session_name": "New York",
+      "opened_at_utc": "2026-11-25T14:30:00+00:00",
+      "range_start_utc": "2026-09-26T14:30:00+00:00",
+      "range_low": 686.75,
+      "range_high": 781.59,
+      "opening_price": 703.155,
+      "range_position_pct": 17.3,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": -0.9834,
+          "direction_aligned_return_pct": -0.9834
+        },
+        "30": {
+          "raw_return_pct": 0.059,
+          "direction_aligned_return_pct": 0.059
+        },
+        "60": {
+          "raw_return_pct": -0.6357,
+          "direction_aligned_return_pct": -0.6357
+        },
+        "120": {
+          "raw_return_pct": -0.4828,
+          "direction_aligned_return_pct": -0.4828
+        }
+      },
+      "max_favorable_excursion_pct": 0.2382,
+      "max_adverse_excursion_pct": 1.083,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-25T16:30:00+00:00"
     }
   ]
 }
