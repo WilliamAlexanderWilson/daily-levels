@@ -12,8 +12,8 @@
   const REST_URL = "https://data.alpaca.markets/v2/stocks/SPY/bars";
   const NY = Sessions.SESSIONS.find((session) => session.key === "new-york");
 
-  function normalizeBar(row) {
-    if (!row || (row.S && row.S !== "SPY")) return null;
+  function normalizeBar(row, symbol = "SPY") {
+    if (!row || (row.S && row.S !== symbol)) return null;
     const start = Date.parse(row.t) / 1000;
     if (!Number.isInteger(start) || start % 60 !== 0
         || ![row.o, row.h, row.l, row.c, row.v].every(Number.isFinite)
@@ -23,7 +23,7 @@
     return { time: start + 60, open: row.o, high: row.h, low: row.l, close: row.c, volume: row.v };
   }
 
-  function bucketForMinute(closeTime, minutes) {
+  function bucketForMinute(closeTime, minutes, extendedHours = true) {
     if (!INTERVALS.includes(minutes) || !Number.isFinite(closeTime)) return null;
     const start = new Date((closeTime - 60) * 1000);
     const parts = Sessions.zonedParts(start, "America/New_York");
@@ -31,10 +31,13 @@
     const schedule = Sessions.verifiedSchedule(NY, date);
     if (date.weekday === 0 || date.weekday === 6 || schedule.closed) return null;
     const minute = parts.hour * 60 + parts.minute;
-    const openMinute = 570;
-    const closeMinute = schedule.closeHour * 60 + schedule.closeMinute;
+    const regularClose = schedule.closeHour * 60 + schedule.closeMinute;
+    const openMinute = extendedHours && minute < 570 ? 240
+      : extendedHours && minute >= regularClose ? regularClose : 570;
+    const closeMinute = extendedHours && minute < 570 ? 570
+      : extendedHours && minute >= regularClose ? 1200 : regularClose;
     if (minute < openMinute || minute >= closeMinute) return null;
-    const sessionStart = Sessions.zonedDateTimeToUtc({ ...date, hour: 9, minute: 30, second: 0 }, "America/New_York").getTime() / 1000;
+    const sessionStart = Sessions.zonedDateTimeToUtc({ ...date, hour: Math.floor(openMinute / 60), minute: openMinute % 60, second: 0 }, "America/New_York").getTime() / 1000;
     const offset = Math.floor((minute - openMinute) / minutes) * minutes;
     return {
       start: sessionStart + offset * 60,
@@ -43,11 +46,11 @@
     };
   }
 
-  function aggregate(minutes, source, completedThrough, coverageStart = -Infinity) {
+  function aggregate(minutes, source, completedThrough, coverageStart = -Infinity, extendedHours = true) {
     const buckets = new Map();
     for (const bar of [...source].sort((a, b) => a.time - b.time)) {
       if (bar.time > completedThrough) continue;
-      const bucket = bucketForMinute(bar.time, minutes);
+      const bucket = bucketForMinute(bar.time, minutes, extendedHours);
       if (!bucket || bucket.start < coverageStart || bucket.time > completedThrough) continue;
       const existing = buckets.get(bucket.time);
       if (!existing) buckets.set(bucket.time, { ...bar, time: bucket.time });
@@ -67,9 +70,9 @@
     return [...byTime.values()].sort((a, b) => a.time - b.time);
   }
 
-  function mergeTimeframes(existing, minuteBars, completedThrough, coverageStart) {
+  function mergeTimeframes(existing, minuteBars, completedThrough, coverageStart, extendedHours = true) {
     return Object.fromEntries(INTERVALS.map((minutes) => [String(minutes),
-      mergeBars(existing[String(minutes)] || [], aggregate(minutes, minuteBars, completedThrough, coverageStart)),
+      mergeBars((existing[String(minutes)] || []).filter((bar) => bar.time <= coverageStart || bar.time > completedThrough), aggregate(minutes, minuteBars, completedThrough, coverageStart, extendedHours)),
     ]));
   }
 

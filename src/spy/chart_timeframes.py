@@ -1,8 +1,8 @@
 """SPY chart candles from genuine Alpaca 1-minute IEX bars.
 
-These regular-session display bars are independent of the frozen 5-minute
-research inputs. Every interval starts at 9:30 AM New York time; a final
-short bin closes at 4 PM instead of carrying a future 4-hour timestamp.
+Display bars are independent of frozen research inputs. The default preserves
+the existing regular-hours research archive. Extended charts use separate
+premarket, regular, and after-hours segments anchored in New York time.
 """
 
 import pandas as pd
@@ -12,13 +12,38 @@ SESSION_OPEN_MINUTE = 9 * 60 + 30
 SESSION_CLOSE_MINUTE = 16 * 60
 
 
-def build_chart_timeframes(real_1m: pd.DataFrame, generated_at: pd.Timestamp) -> dict[int, pd.DataFrame]:
-    """Return completed regular-session OHLCV bars for every chart interval."""
+def build_chart_timeframes(real_1m: pd.DataFrame, generated_at: pd.Timestamp, *, extended_hours: bool = False) -> dict[int, pd.DataFrame]:
+    """Return completed OHLCV bars without synthesizing missing prints."""
     if real_1m.empty or real_1m.index.tz is None:
         raise ValueError("SPY 1-minute chart source must have timezone-aware bars")
     cutoff = pd.Timestamp(generated_at)
     if cutoff.tzinfo is None:
         raise ValueError("SPY chart generation time must be timezone-aware")
+
+    if extended_hours:
+        # Separate session segments preserve the 9:30 regular-session anchor.
+        # The input contains actual exchange prints only; empty bins stay empty.
+        local = real_1m.index.tz_convert("America/New_York")
+        early = {"2024-07-03", "2024-11-29", "2024-12-24", "2025-07-03", "2025-11-28", "2025-12-24",
+                 "2026-11-27", "2026-12-24", "2027-11-26"}
+        pieces = {minutes: [] for minutes in CHART_TIMEFRAMES_MINUTES}
+        for date, day in real_1m.groupby(local.date):
+            close = 780 if str(date) in early else SESSION_CLOSE_MINUTE
+            midnight = pd.Timestamp(date).tz_localize("America/New_York")
+            for start, end in ((240, 570), (570, close), (close, 1200)):
+                begin = midnight + pd.Timedelta(minutes=start)
+                finish = midnight + pd.Timedelta(minutes=end)
+                segment = day[(day.index >= begin) & (day.index < finish)]
+                if segment.empty:
+                    continue
+                for minutes in CHART_TIMEFRAMES_MINUTES:
+                    bars = segment.resample(f"{minutes}min", origin=begin, closed="left", label="right").agg(
+                        {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
+                    ).dropna()
+                    bars.index = pd.to_datetime([min(time, finish) for time in bars.index], utc=True)
+                    pieces[minutes].append(bars[bars.index <= cutoff])
+        return {minutes: pd.concat(parts).sort_index() if parts else real_1m.iloc[:0].copy()
+                for minutes, parts in pieces.items()}
 
     local_index = real_1m.index.tz_convert("America/New_York")
     minute_of_day = local_index.hour * 60 + local_index.minute

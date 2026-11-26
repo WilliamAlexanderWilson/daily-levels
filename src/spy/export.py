@@ -71,9 +71,9 @@ def _signal_to_json(result, signal_direction_lookup) -> dict:
 
 
 def build_spy_chart_payload(
-    real_1m: pd.DataFrame, real_5m: pd.DataFrame, generated_at_utc: pd.Timestamp
+    real_1m: pd.DataFrame, real_5m: pd.DataFrame, generated_at_utc: pd.Timestamp, *, extended_hours: bool = False
 ) -> tuple[dict, dict[str, list[dict]]]:
-    chart_timeframes = build_chart_timeframes(real_1m, generated_at_utc)
+    chart_timeframes = build_chart_timeframes(real_1m, generated_at_utc, extended_hours=extended_hours)
     price = float(chart_timeframes[1]["close"].iloc[-1])
     complete_timeframes = {
         str(minutes): _frame_to_json(chart_timeframes[minutes], None) for minutes in CHART_TIMEFRAMES_MINUTES
@@ -82,7 +82,7 @@ def build_spy_chart_payload(
         "generated_at_utc": generated_at_utc.isoformat(),
         "price": price,
         "symbol": SYMBOL,
-        "source": "Alpaca 1-minute historical bars (free IEX feed, regular session)",
+        "source": "Alpaca 1-minute historical bars (free IEX feed, available extended hours)" if extended_hours else "Alpaca 1-minute historical bars (free IEX feed, regular session)",
         "is_live": False,
         "range_context": build_range_context(real_5m, price, generated_at_utc),
         "timeframes": {
@@ -108,6 +108,10 @@ def main() -> int:
     chart_payload, complete_timeframes = build_spy_chart_payload(real_1m, real_5m, generated_at_utc)
     atomic_write_json(f"{config.DATA_DIR}/spy_chart.json", chart_payload, compact=True)
     write_monthly_archive("spy", complete_timeframes, chart_payload["source"])
+
+    extended, extended_complete = build_spy_chart_payload(real_1m, real_5m, generated_at_utc, extended_hours=True)
+    atomic_write_json(f"{config.DATA_DIR}/spy_extended_chart.json", extended, compact=True)
+    write_monthly_archive("spy-extended", extended_complete, extended["source"])
 
     all_trades = run_backtest(signals, real_5m, vix_daily, min_confirmed=1)
     signals_payload = {

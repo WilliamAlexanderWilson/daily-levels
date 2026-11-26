@@ -132,7 +132,7 @@ test("a stale XAU batch identifies its age without overflowing the page", async 
 
 test("SPY renders every published interval and keeps deep links on desktop and mobile", async ({ page }) => {
   await installSpyChartStub(page);
-  await page.goto("/#asset=spy&range=15m", { waitUntil: "domcontentloaded" });
+  await page.goto("/#asset=spy&range=15m&session=regular", { waitUntil: "domcontentloaded" });
   const select = page.locator("#spy-timeframe-select");
   await expect(select).toBeVisible();
   await expect(select.locator("option")).toHaveText(["1m", "5m", "10m", "15m", "20m", "30m", "1H", "4H"]);
@@ -140,7 +140,7 @@ test("SPY renders every published interval and keeps deep links on desktop and m
   await expect(page.locator("#history-load-status")).toContainText("archive starts Jul 2020");
   for (const minutes of ["1", "5", "10", "15", "20", "30", "60", "240"]) {
     await select.selectOption(minutes);
-    await expect(page).toHaveURL(new RegExp(`#asset=spy&range=${minutes}m$`));
+    await expect(page).toHaveURL(new RegExp(`#asset=spy&range=${minutes}m&session=regular$`));
     const bars = await page.evaluate(() => window.__spyCandles || []);
     expect(bars.length, `${minutes}m chart has published bars`).toBeGreaterThan(0);
     expect(bars.every((bar, index) => index === 0 || bar.time > bars[index - 1].time)).toBe(true);
@@ -184,9 +184,16 @@ test("SPY renders every published interval and keeps deep links on desktop and m
 
 test("selected doji panel explains actual counts and clears across chart views", async ({ page }) => {
   await installSpyChartStub(page);
+  await page.route("**/data/spy_chart.json", async route => {
+    const response = await route.fetch(), data = await response.json();
+    const end = Math.floor(Date.now() / 60000) * 60 - 60;
+    data.timeframes["1"] = [0, 1, 2].map(i => ({time:end - (2-i)*60,open:10,high:11,low:9,close:10.01}));
+    data.generated_at_utc = new Date(end * 1000).toISOString();
+    await route.fulfill({response,json:data});
+  });
   let studyRequests = 0;
   page.on("request", (request) => { if (request.url().includes("spy_doji_context.json")) studyRequests += 1; });
-  await page.goto("/#asset=spy&range=1m", { waitUntil: "domcontentloaded" });
+  await page.goto("/#asset=spy&range=1m&session=regular", { waitUntil: "domcontentloaded" });
   await expect(page.locator("#doji-latest")).toBeEnabled();
   expect(studyRequests).toBe(0);
   const selected = await page.evaluate(() => {
@@ -239,7 +246,7 @@ test("doji history retries, handles zero examples, and clears selection after an
       await route.fulfill({ response, json: data });
     }
   });
-  await page.goto("/#asset=spy&range=1m", { waitUntil: "domcontentloaded" });
+  await page.goto("/#asset=spy&range=1m&session=regular", { waitUntil: "domcontentloaded" });
   await expect(page.locator("#doji-latest")).toBeEnabled();
   await page.locator("#doji-latest").click();
   await expect(page.locator("#doji-context-status")).toContainText("unavailable");
@@ -262,7 +269,10 @@ test("private SPY stream draws completed dojis promptly, applies corrections, an
     const response = await route.fetch();
     const data = await response.json();
     data.generated_at_utc = "2026-11-16T20:30:00Z";
-    for (const key of Object.keys(data.timeframes)) data.timeframes[key] = data.timeframes[key].filter(bar => bar.time <= Date.parse(data.generated_at_utc) / 1000);
+    for (const key of Object.keys(data.timeframes)) data.timeframes[key] = [
+      {time: Date.parse("2026-11-16T19:01:00Z") / 1000, open:10, high:11, low:9, close:10.01},
+      {time: Date.parse(data.generated_at_utc) / 1000, open:10, high:11, low:9, close:10.8},
+    ];
     await route.fulfill({ response, json: data });
   });
   await page.addInitScript(() => {
@@ -281,7 +291,7 @@ test("private SPY stream draws completed dojis promptly, applies corrections, an
     };
   });
   await page.route("https://data.alpaca.markets/**", (route) => route.fulfill({ json: { bars: [], next_page_token: null } }));
-  await page.goto("/#asset=spy&range=1m", { waitUntil: "domcontentloaded" });
+  await page.goto("/#asset=spy&range=1m&session=regular", { waitUntil: "domcontentloaded" });
   await expect(page.locator("#doji-latest")).toBeEnabled();
   await page.locator("#spy-live-connect summary").click();
   await page.locator("#spy-live-key").fill("private-test-key");
@@ -322,7 +332,8 @@ test("private SPY stream draws completed dojis promptly, applies corrections, an
   });
   expect(order).toBe(true);
   await page.locator('[data-asset="qqq"]').click();
-  await expect(page.locator("#spy-live-controls")).toBeHidden();
+  await expect(page.locator("#spy-live-controls")).toBeVisible();
+  await expect(page.locator("#spy-live-title")).toContainText("QQQ");
 });
 
 test("chart timestamps use Dallas 12-hour time and follow daylight saving", async ({ page }) => {
@@ -375,7 +386,7 @@ test("SPY inspector explains the borderline 15m candle and every selected shape"
     ];
     await route.fulfill({ response, json: data });
   });
-  await page.goto("/#asset=spy&range=15m", { waitUntil: "domcontentloaded" });
+  await page.goto("/#asset=spy&range=15m&session=regular", { waitUntil: "domcontentloaded" });
   await expect(page.locator("#candle-latest")).toBeEnabled();
   await page.evaluate(() => window.__spyClick({ time: Date.parse("2026-11-16T17:45:00Z") / 1000 }));
   await expect(page.locator("#candle-inspector-prices")).toContainText("Open 743.3900");
@@ -412,7 +423,7 @@ test("successive marker panel counts intervening candles, explains boundaries, a
     if (fail) {fail=false;await route.fulfill({status:503,body:"Unavailable"});}
     else await route.continue();
   });
-  await page.goto("/#asset=spy&range=5m", {waitUntil:"domcontentloaded"});
+  await page.goto("/#asset=spy&range=5m&session=regular", {waitUntil:"domcontentloaded"});
   await expect(page.locator("#marker-run-heading")).toHaveText("Green marker run: 5");
   await expect(page.locator("#marker-run-detail")).toContainText("1/5 flat dojis");
   await expect(page.locator("#marker-run-frequency")).toContainText("unavailable");
@@ -432,3 +443,66 @@ test("successive marker panel counts intervening candles, explains boundaries, a
   await page.locator('[data-asset="qqq"]').click();
   await expect(page.locator(".marker-run-panel")).toBeHidden();
 });
+
+test('SPY defaults to real extended-hours history and can return to regular research', async ({page}) => {
+  await installSpyChartStub(page);
+  await page.goto('/#asset=spy&range=1m', {waitUntil:'domcontentloaded'});
+  await expect(page.locator('#spy-session-select')).toHaveValue('extended');
+  await expect(page.locator('#doji-latest')).toBeEnabled();
+  expect(await page.evaluate(()=>window.__spyCandles.some(bar=>{
+    const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'numeric',hourCycle:'h23'}).formatToParts(new Date((bar.time-60)*1000)).map(p=>[p.type,p.value]));
+    const minute=Number(parts.hour)*60+Number(parts.minute);
+    return minute<570||minute>=960;
+  }))).toBe(true);
+  await page.locator('#doji-latest').click();
+  await expect(page.locator('#doji-context-results')).toBeHidden();
+  await page.locator('#spy-session-select').selectOption('regular');
+  await expect(page.locator('#doji-context-detail')).toBeHidden();
+  await expect(page.locator('#doji-latest')).toBeEnabled();
+  await page.locator('#doji-latest').click();
+  await expect(page.locator('#doji-context-results')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
+});
+
+for (const asset of ['spy','qqq','nvda']) {
+  test(`${asset} private feed draws after-hours prices and completed candles`, async ({page})=>{
+    await installSpyChartStub(page);
+    await page.route(`**/data/${asset === 'spy' ? 'spy_extended' : asset}_chart.json`, async route=>{
+      const response=await route.fetch(), data=await response.json();
+      data.generated_at_utc='2026-11-16T21:00:00Z';
+      for(const key of Object.keys(data.timeframes)) data.timeframes[key]=[{time:Date.parse(data.generated_at_utc)/1000,open:100,high:101,low:99,close:100}];
+      await route.fulfill({response,json:data});
+    });
+    await page.addInitScript(()=>{
+      Date.now=()=>Date.parse('2026-11-16T21:10:01Z');
+      window.WebSocket=class {
+        constructor(){this.handlers={};window.__equitySocket=this;queueMicrotask(()=>this.handlers.open?.());}
+        addEventListener(name,fn){this.handlers[name]=fn;}
+        send(raw){const message=JSON.parse(raw);if(message.action==='auth')queueMicrotask(()=>this.emit({T:'success',msg:'authenticated'}));if(message.action==='subscribe'){this.symbol=message.bars[0];queueMicrotask(()=>this.emit({T:'subscription',bars:message.bars}));}}
+        emit(row){this.handlers.message?.({data:JSON.stringify([row])});}
+        close(){this.closed=true;this.handlers.close?.();}
+      };
+    });
+    await page.route('https://data.alpaca.markets/**', route=>route.fulfill({json:{bars:[{t:'2026-11-16T21:00:00Z',o:100,h:102,l:99,c:101,v:10}]}}));
+    await page.goto(`/#asset=${asset}&range=10m`,{waitUntil:'domcontentloaded'});
+    await expect(page.locator('#spy-live-title')).toContainText(asset.toUpperCase());
+    await expect.poll(()=>page.evaluate(()=>window.__spyCandles?.length||0)).toBeGreaterThan(0);
+    await page.locator('#spy-live-connect summary').click();
+    await page.locator('#spy-live-key').fill('test-key');
+    await page.locator('#spy-live-secret').fill('test-secret');
+    await page.locator('#spy-live-form button[type="submit"]').click();
+    await expect(page.locator('#spy-live-status')).toContainText('waiting');
+    await page.evaluate(()=>{
+      const socket=window.__equitySocket;
+      socket.emit({T:'b',S:socket.symbol,t:'2026-11-16T21:09:00Z',o:101,h:104,l:100,c:103,v:10});
+      socket.emit({T:'t',S:socket.symbol,t:'2026-11-16T21:10:00.800Z',p:103.5});
+    });
+    await expect(page.locator('#price-label')).toHaveText('103.5');
+    await expect(page.locator('#live-badge')).toContainText('Live IEX');
+    expect(await page.evaluate(()=>window.__spyCandles.at(-1))).toMatchObject({time:Date.parse('2026-11-16T21:10:00Z')/1000,open:100,high:104,low:99,close:103});
+    await page.locator('[data-asset="xau"]').click();
+    expect(await page.evaluate(()=>window.__equitySocket.closed)).toBe(true);
+    await expect(page.locator('#live-badge')).toBeHidden();
+    expect(await page.evaluate(()=>JSON.stringify([localStorage,sessionStorage]).includes('test-secret'))).toBe(false);
+  });
+}

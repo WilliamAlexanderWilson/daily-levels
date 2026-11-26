@@ -23,6 +23,11 @@ Do not publish keys or route requests to trading endpoints. Old batch-only SPY
 descriptions below refer to the research/export path, which remains batch.
 See `docs/PRIVATE-LIVE-SPY.md` for setup, measured timing, and feed limitations.
 
+**Extended-hours update (2026-11-26):** SPY defaults to its separate extended-hours
+archive; regular-hours research remains available via `session=regular`. The
+private IEX client also supports QQQ/NVDA and disconnects on asset changes.
+See `docs/PRIVATE-LIVE-SPY.md` for coverage and unresolved /ES/XAU feed needs.
+
 ---
 
 ## Product philosophy — read this before adding anything

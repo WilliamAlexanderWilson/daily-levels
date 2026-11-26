@@ -148,3 +148,31 @@ test("a reconnect repairs missed corrections before resuming chart updates", asy
   await nextTurn();
   assert.equal(updates.at(-1).bars[0].close, 10.9);
 });
+
+for (const symbol of ['SPY', 'QQQ', 'NVDA']) {
+  test(`${symbol} receives after-hours candles and prices only for the subscribed symbol`, async () => {
+    const updates = [], trades = [];
+    const afterHours = Date.parse('2026-11-16T21:02:01Z');
+    const client = createClient({key:'test',secret:'test',symbol,startTime:afterHours/1000-3600,
+      WebSocket:FakeSocket, now:()=>afterHours, onBars:s=>updates.push(s), onTrade:t=>trades.push(t),
+      fetch:async url=>{
+        assert.equal(new URL(url).pathname, `/v2/stocks/${symbol}/bars`);
+        return {ok:true,json:async()=>({bars:[{...raw,S:symbol,t:'2026-11-16T21:00:00Z'}]})};
+      },
+    });
+    client.start();
+    const socket=FakeSocket.latest;
+    socket.emit({T:'success',msg:'authenticated'});
+    assert.deepEqual(socket.sent.at(-1).bars,[symbol]);
+    socket.emit({T:'subscription',bars:[symbol]});
+    await nextTurn();
+    socket.emit({...raw,T:'b',S:symbol,t:'2026-11-16T21:01:00Z'});
+    socket.emit({T:'t',S:symbol,t:'2026-11-16T21:02:00Z',p:123.45});
+    socket.emit({...raw,T:'b',S:'UNRELATED',t:'2026-11-16T21:01:00Z'});
+    socket.emit({T:'t',S:'UNRELATED',t:'2026-11-16T21:02:00Z',p:999});
+    assert.equal(updates.at(-1).bars.length,2);
+    assert.equal(trades.length,1);
+    assert.equal(trades[0].price,123.45);
+    client.stop();
+  });
+}
