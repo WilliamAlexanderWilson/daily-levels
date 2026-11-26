@@ -97,8 +97,8 @@ jobs:
           else
             echo "ok=false" >> "$GITHUB_OUTPUT"
             echo "::warning::SPY export failed; retaining the prior SPY data"
-            git restore -- site/data/spy_chart.json site/data/spy_signals.json site/data/spy_backtest.json site/data/spy_session_reactions.json site/data/spy_range_open_forward.json site/data/archive/spy
-            git clean -fd -- site/data/archive/spy
+            git restore -- site/data/spy_chart.json site/data/spy_extended_chart.json site/data/spy_signals.json site/data/spy_backtest.json site/data/spy_session_reactions.json site/data/spy_range_open_forward.json site/data/archive/spy site/data/archive/spy-extended
+            git clean -fd -- site/data/archive/spy site/data/archive/spy-extended
           fi
 
       - name: Refresh SPY doji context

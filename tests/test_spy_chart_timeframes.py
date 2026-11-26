@@ -129,3 +129,35 @@ def test_published_spy_chart_and_monthly_archive_cover_every_interval():
                        <= max(bar["open"], bar["close"]) <= bar["high"] for bar in rows)
             previous_last = entry["last"]
         assert recent[-1]["time"] == previous_last
+
+
+def test_extended_chart_includes_real_prints_and_preserves_regular_research():
+    source = _minutes("2026-11-10 13:00", 600)
+    cutoff = pd.Timestamp("2026-11-10T23:00:00Z")
+    regular = build_chart_timeframes(source, cutoff)
+    extended = build_chart_timeframes(source, cutoff, extended_hours=True)
+    assert len(regular[1]) == 390
+    assert len(extended[1]) == 600
+    assert extended[1].index[0] == pd.Timestamp("2026-11-10T13:01:00Z")
+    assert extended[1].index[-1] == pd.Timestamp("2026-11-10T23:00:00Z")
+    # Every regular-hours bucket keeps its existing anchor and OHLC.
+    for minutes in CHART_TIMEFRAMES_MINUTES:
+        pd.testing.assert_frame_equal(extended[minutes].loc[regular[minutes].index], regular[minutes])
+
+
+def test_extended_bins_wait_for_close_and_do_not_fill_missing_minutes():
+    source = _minutes("2026-11-16 21:00", 2)
+    frames = build_chart_timeframes(source, pd.Timestamp("2026-11-16T21:02:00Z"), extended_hours=True)
+    assert len(frames[1]) == 2
+    assert frames[5].empty
+    later = build_chart_timeframes(source, pd.Timestamp("2026-11-16T21:05:00Z"), extended_hours=True)
+    assert len(later[1]) == 2
+    assert len(later[5]) == 1
+
+
+def test_extended_early_close_and_dst():
+    for start, expected in [("2026-11-27 18:00", "2026-11-27T19:00:00Z"),
+                            ("2026-07-08 20:00", "2026-07-08T21:00:00Z")]:
+        source = _minutes(start, 1)
+        frames = build_chart_timeframes(source, pd.Timestamp(expected), extended_hours=True)
+        assert frames[60].index[-1] == pd.Timestamp(expected)

@@ -10,6 +10,8 @@
   // memory and are never returned, logged, placed in URLs, or persisted.
   function createClient({ key, secret, ...options }) {
     if (!key || !secret || !Number.isFinite(options.startTime)) throw new Error("Market-data credentials and a history start are required");
+    const symbol = options.symbol || "SPY";
+    if (!["SPY", "QQQ", "NVDA"].includes(symbol)) throw new Error("Unsupported equity symbol");
     const Fetch = options.fetch || globalThis.fetch;
     const Socket = options.WebSocket || globalThis.WebSocket;
     const now = options.now || Date.now;
@@ -42,7 +44,7 @@
       if (controller) return;
       synced = false;
       buffered = [];
-      status("syncing", "Loading missed SPY minutes");
+      status("syncing", `Loading missed ${symbol} minutes`);
       const endTime = now();
       const completedEnd = Math.floor(endTime / 60000) * 60;
       const collected = [];
@@ -53,7 +55,7 @@
       const timeout = setTimeout(() => aborter.abort(), 15000);
       try {
         do {
-          const url = new URL(Live.REST_URL);
+          const url = new URL(Live.REST_URL.replace("/SPY/", `/${symbol}/`));
           url.search = new URLSearchParams({ timeframe: "1Min", feed: "iex", adjustment: "raw",
             start: new Date(options.startTime * 1000).toISOString(),
             end: new Date(endTime).toISOString(), limit: "10000",
@@ -71,7 +73,7 @@
           const payload = await response.json();
           if (!Array.isArray(payload.bars)) throw new Error("Invalid minute history");
           for (const row of payload.bars) {
-            const bar = Live.normalizeBar(row);
+            const bar = Live.normalizeBar(row, symbol);
             if (!bar) throw new Error("Invalid minute history");
             if (bar.time <= completedEnd) collected.push(bar);
           }
@@ -90,7 +92,7 @@
         publish();
       } catch (_) {
         if (token === generation && !stopped) {
-          status("syncing", "SPY history recovery failed; retrying before showing live candles");
+          status("syncing", `${symbol} history recovery failed; retrying before showing live candles`);
           socket?.close();
         }
       } finally {
@@ -129,13 +131,13 @@
             return;
           }
           if (row.T === "success" && row.msg === "authenticated") {
-            connection.send(JSON.stringify({ action: "subscribe", bars: ["SPY"], updatedBars: ["SPY"], trades: ["SPY"] }));
+            connection.send(JSON.stringify({ action: "subscribe", bars: [symbol], updatedBars: [symbol], trades: [symbol] }));
           }
-          if (row.T === "subscription" && row.bars?.includes("SPY") && !subscribed) {
+          if (row.T === "subscription" && row.bars?.includes(symbol) && !subscribed) {
             subscribed = true;
             backfill(token);
           }
-          if (row.S !== "SPY") continue;
+          if (row.S !== symbol) continue;
           if (row.T === "t" && Number.isFinite(row.p) && row.p > 0 && Number.isFinite(Date.parse(row.t))) {
             const time = Date.parse(row.t);
             if (time <= now() + 1000 && (lastDataAt === null || time >= lastDataAt)) {
@@ -147,8 +149,8 @@
             }
           }
           if (row.T === "b" || row.T === "u") {
-            const bar = Live.normalizeBar(row);
-            if (!bar) { status("syncing", "Invalid SPY minute received; recovering history"); connection.close(); return; }
+            const bar = Live.normalizeBar(row, symbol);
+            if (!bar) { status("syncing", `Invalid ${symbol} minute received; recovering history`); connection.close(); return; }
             if (bar.time > now() / 1000) continue;
             if (!synced) buffered = Live.mergeBars(buffered, [bar]);
             else {
@@ -165,7 +167,7 @@
         synced = false;
         subscribed = false;
         controller?.abort();
-        status("reconnecting", "SPY disconnected; candles will recover before resuming");
+        status("reconnecting", `${symbol} disconnected; candles will recover before resuming`);
         retry = setTimeout(connect, Math.min(1000 * 2 ** attempts++, 30000));
       });
     }
@@ -181,7 +183,7 @@
         if (synced && (lastDataAt === null || now() - lastDataAt > 10000)) {
           status(marketOpen ? "stale" : "closed", marketOpen
             ? "No recent IEX trade; the displayed price is the last received mark"
-            : "Regular session closed; waiting for new market data");
+            : "Outside extended trading hours; waiting for new market data");
         }
         // No-trade IEX minutes have no bar event. A REST recovery after three
         // seconds confirms the boundary so longer intervals can still close.

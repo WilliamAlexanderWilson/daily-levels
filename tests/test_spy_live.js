@@ -19,7 +19,7 @@ test("SPY buckets anchor to New York cash open across DST and end at the session
   assert.equal(Live.bucketForMinute(unix("2026-11-27T17:59:00Z"), 240).time, unix("2026-11-27T18:00:00Z"));
   assert.equal(Live.bucketForMinute(unix("2026-11-26T15:00:00Z"), 1), null);
   assert.equal(Live.bucketForMinute(unix("2026-11-15T15:00:00Z"), 1), null);
-  assert.equal(Live.bucketForMinute(unix("2026-11-16T14:30:00Z"), 1), null);
+  assert.equal(Live.bucketForMinute(unix("2026-11-16T14:30:00Z"), 1, false), null);
 });
 
 test("SPY aggregation excludes unfinished and partial-start buckets without fabricating missing minutes", () => {
@@ -47,4 +47,19 @@ test("live SPY follows the newest candle without moving a historical viewport or
   assert.deepEqual(Live.liveViewport({ from: 10, to: 45 }, 100, 101), { from: 10, to: 45 });
   assert.deepEqual(Live.liveViewport({ from: 100, to: 135 }, 100, 101), { from: 100, to: 135 });
   assert.equal(Live.liveViewport(null, 100, 101), null);
+});
+
+
+test("extended SPY bars count premarket and after-hours without moving regular-session anchors", () => {
+  for (const [close, expected] of [
+    ["2026-11-16T13:01:00Z", "2026-11-16T14:00:00Z"],
+    ["2026-11-16T14:29:00Z", "2026-11-16T14:30:00Z"],
+    ["2026-11-16T21:01:00Z", "2026-11-16T22:00:00Z"],
+    ["2026-11-27T18:01:00Z", "2026-11-27T19:00:00Z"],
+  ]) assert.equal(Live.bucketForMinute(unix(close), 60).time, unix(expected));
+  assert.equal(Live.bucketForMinute(unix("2026-11-17T01:01:00Z"), 1), null);
+  assert.equal(Live.bucketForMinute(unix("2026-11-16T09:00:00Z"), 1), null);
+  const bars = [bar("2026-11-16T21:01:00Z"), bar("2026-11-16T21:02:00Z")];
+  assert.equal(Live.aggregate(1, bars, unix("2026-11-16T21:02:00Z")).length, 2);
+  assert.equal(Live.aggregate(1, bars, unix("2026-11-16T21:02:00Z"), -Infinity, false).length, 0);
 });

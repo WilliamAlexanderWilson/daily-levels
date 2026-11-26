@@ -72,6 +72,10 @@
         <option value="60">1H</option>
         <option value="240">4H</option>
       </select>
+      <select id="spy-session-select" class="range-select" aria-label="SPY trading hours" hidden>
+        <option value="extended">Include extended hours</option>
+        <option value="regular">Regular hours · research</option>
+      </select>
       <div class="toggle-group candle-style-toggle" id="candle-style-toggle" role="group" aria-label="Candle style">
         <button type="button" data-candle-style="regular" class="toggle-btn active" aria-pressed="true" title="Actual market open, high, low, and close">Regular</button>
         <button type="button" data-candle-style="heikin-ashi" class="toggle-btn" aria-pressed="false" title="Smoothed Heikin Ashi candles; values are derived, not traded prices">Heikin Ashi</button>
@@ -413,7 +417,7 @@
         </form>
         <p>Use your existing Alpaca market-data access. Keys stay in this tab’s memory and go directly to Alpaca; they are never saved by Range Desk. Reloading or closing the tab disconnects. Alpaca may limit your account to one active stream.</p>
       </details>
-      <p id="spy-live-timing">IEX covers one exchange. Live trades update the price; completed candles update each minute. Dojis appear after a completed bar arrives and may change with provider corrections. Range levels and historical studies remain batch context.</p>
+      <p id="spy-live-timing">IEX covers one exchange and supplies sparse extended-hours prints, not a 24-hour feed. Switching assets disconnects this private stream. Live trades update the price; completed candles update each minute. Dojis appear after a completed bar arrives and may change with provider corrections. Range levels and historical studies remain batch context.</p>
     </section>
 
     <div id="chart-container" class="chart-container">
@@ -900,8 +904,8 @@
   <script src="liquidation-risk.js?v=spy-doji-v1"></script>
   <script src="live-stream.js?v=spy-doji-v1"></script>
   <script src="market-sessions.js?v=deep-history-xau-v1"></script>
-  <script src="spy-live.js?v=private-spy-v1"></script>
-  <script src="spy-stream.js?v=private-spy-v1"></script>
+  <script src="spy-live.js?v=extended-hours-v1"></script>
+  <script src="spy-stream.js?v=extended-hours-v1"></script>
   <script src="paper-trader.js?v=spy-doji-v1"></script>
   <script src="journal-analytics.js?v=deep-history-xau-v1"></script>
   <script src="decision-lock.js?v=spy-doji-v1"></script>
@@ -912,6 +916,6 @@
   <script src="marker-runs.js?v=marker-run-v1"></script>
   <script src="doji-context.js?v=selected-doji-v1"></script>
   <script src="candle-history.js?v=history-viewport-v1"></script>
-  <script src="app.js?v=marker-run-v1"></script>
+  <script src="app.js?v=extended-hours-v1"></script>
 </body>
 </html>
