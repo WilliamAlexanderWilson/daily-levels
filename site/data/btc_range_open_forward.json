@@ -2,7 +2,7 @@
   "schema_version": 1,
   "study_version": "range-open-forward-v1",
   "asset": "btc",
-  "generated_at_utc": "2026-11-26T22:11:30.083452+00:00",
+  "generated_at_utc": "2026-11-27T19:23:20.500447+00:00",
   "forward_start_utc": "2026-11-08T00:00:00+00:00",
   "source": {
     "name": "Coinbase Exchange BTC-USD/ETH-USD candles",
@@ -28,12 +28,12 @@
     ]
   },
   "summary": {
-    "total_events": 98,
+    "total_events": 105,
     "wait_events": 0,
     "pending_events": 0,
-    "resolved_edge_session_rows": 98,
-    "resolved_edge_events": 70,
-    "resolved_lower_edge_events": 70,
+    "resolved_edge_session_rows": 105,
+    "resolved_edge_events": 75,
+    "resolved_lower_edge_events": 75,
     "resolved_upper_edge_events": 0,
     "evidence_gate_passed": false,
     "positive_directional_60m_rate_pct": null
@@ -3468,6 +3468,251 @@
       "max_adverse_excursion_pct": 1.37,
       "sweep_reclaim": false,
       "resolved_at_utc": "2026-11-26T16:30:00+00:00"
+    },
+    {
+      "id": "btc|cme-equity|2026-11-26T23:00:00+00:00",
+      "session_key": "cme-equity",
+      "session_name": "Chicago",
+      "opened_at_utc": "2026-11-26T23:00:00+00:00",
+      "range_start_utc": "2026-09-27T23:00:00+00:00",
+      "range_low": 55106.0,
+      "range_high": 87249.05,
+      "opening_price": 60467.16,
+      "range_position_pct": 16.68,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": -0.1406,
+          "direction_aligned_return_pct": -0.1406
+        },
+        "30": {
+          "raw_return_pct": -0.1415,
+          "direction_aligned_return_pct": -0.1415
+        },
+        "60": {
+          "raw_return_pct": 0.047,
+          "direction_aligned_return_pct": 0.047
+        },
+        "120": {
+          "raw_return_pct": 0.2394,
+          "direction_aligned_return_pct": 0.2394
+        }
+      },
+      "max_favorable_excursion_pct": 0.3457,
+      "max_adverse_excursion_pct": 0.3005,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-27T01:00:00+00:00"
+    },
+    {
+      "id": "btc|sydney|2026-11-26T23:00:00+00:00",
+      "session_key": "sydney",
+      "session_name": "Sydney",
+      "opened_at_utc": "2026-11-26T23:00:00+00:00",
+      "range_start_utc": "2026-09-27T23:00:00+00:00",
+      "range_low": 55106.0,
+      "range_high": 87249.05,
+      "opening_price": 60467.16,
+      "range_position_pct": 16.68,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": -0.1406,
+          "direction_aligned_return_pct": -0.1406
+        },
+        "30": {
+          "raw_return_pct": -0.1415,
+          "direction_aligned_return_pct": -0.1415
+        },
+        "60": {
+          "raw_return_pct": 0.047,
+          "direction_aligned_return_pct": 0.047
+        },
+        "120": {
+          "raw_return_pct": 0.2394,
+          "direction_aligned_return_pct": 0.2394
+        }
+      },
+      "max_favorable_excursion_pct": 0.3457,
+      "max_adverse_excursion_pct": 0.3005,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-27T01:00:00+00:00"
+    },
+    {
+      "id": "btc|tokyo|2026-11-27T00:00:00+00:00",
+      "session_key": "tokyo",
+      "session_name": "Tokyo",
+      "opened_at_utc": "2026-11-27T00:00:00+00:00",
+      "range_start_utc": "2026-09-28T00:00:00+00:00",
+      "range_low": 55106.0,
+      "range_high": 87249.05,
+      "opening_price": 60495.56,
+      "range_position_pct": 16.77,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": -0.0609,
+          "direction_aligned_return_pct": -0.0609
+        },
+        "30": {
+          "raw_return_pct": -0.0412,
+          "direction_aligned_return_pct": -0.0412
+        },
+        "60": {
+          "raw_return_pct": 0.1924,
+          "direction_aligned_return_pct": 0.1924
+        },
+        "120": {
+          "raw_return_pct": 0.2465,
+          "direction_aligned_return_pct": 0.2465
+        }
+      },
+      "max_favorable_excursion_pct": 0.4845,
+      "max_adverse_excursion_pct": 0.1897,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-27T02:00:00+00:00"
+    },
+    {
+      "id": "btc|hong-kong|2026-11-27T01:30:00+00:00",
+      "session_key": "hong-kong",
+      "session_name": "Hong Kong",
+      "opened_at_utc": "2026-11-27T01:30:00+00:00",
+      "range_start_utc": "2026-09-28T01:30:00+00:00",
+      "range_low": 55106.0,
+      "range_high": 87249.05,
+      "opening_price": 60710.41,
+      "range_position_pct": 17.44,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": -0.155,
+          "direction_aligned_return_pct": -0.155
+        },
+        "30": {
+          "raw_return_pct": -0.1083,
+          "direction_aligned_return_pct": -0.1083
+        },
+        "60": {
+          "raw_return_pct": 1.2282,
+          "direction_aligned_return_pct": 1.2282
+        },
+        "120": {
+          "raw_return_pct": 1.3368,
+          "direction_aligned_return_pct": 1.3368
+        }
+      },
+      "max_favorable_excursion_pct": 1.8252,
+      "max_adverse_excursion_pct": 0.3193,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-27T03:30:00+00:00"
+    },
+    {
+      "id": "btc|london|2026-11-27T08:00:00+00:00",
+      "session_key": "london",
+      "session_name": "London",
+      "opened_at_utc": "2026-11-27T08:00:00+00:00",
+      "range_start_utc": "2026-09-28T08:00:00+00:00",
+      "range_low": 55106.0,
+      "range_high": 87249.05,
+      "opening_price": 61578.69,
+      "range_position_pct": 20.14,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": 0.327,
+          "direction_aligned_return_pct": 0.327
+        },
+        "30": {
+          "raw_return_pct": 0.2873,
+          "direction_aligned_return_pct": 0.2873
+        },
+        "60": {
+          "raw_return_pct": 0.1108,
+          "direction_aligned_return_pct": 0.1108
+        },
+        "120": {
+          "raw_return_pct": -0.0489,
+          "direction_aligned_return_pct": -0.0489
+        }
+      },
+      "max_favorable_excursion_pct": 0.912,
+      "max_adverse_excursion_pct": 0.1172,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-27T10:00:00+00:00"
+    },
+    {
+      "id": "btc|xetra|2026-11-27T08:00:00+00:00",
+      "session_key": "xetra",
+      "session_name": "Frankfurt",
+      "opened_at_utc": "2026-11-27T08:00:00+00:00",
+      "range_start_utc": "2026-09-28T08:00:00+00:00",
+      "range_low": 55106.0,
+      "range_high": 87249.05,
+      "opening_price": 61578.69,
+      "range_position_pct": 20.14,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": 0.327,
+          "direction_aligned_return_pct": 0.327
+        },
+        "30": {
+          "raw_return_pct": 0.2873,
+          "direction_aligned_return_pct": 0.2873
+        },
+        "60": {
+          "raw_return_pct": 0.1108,
+          "direction_aligned_return_pct": 0.1108
+        },
+        "120": {
+          "raw_return_pct": -0.0489,
+          "direction_aligned_return_pct": -0.0489
+        }
+      },
+      "max_favorable_excursion_pct": 0.912,
+      "max_adverse_excursion_pct": 0.1172,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-27T10:00:00+00:00"
+    },
+    {
+      "id": "btc|new-york|2026-11-27T14:30:00+00:00",
+      "session_key": "new-york",
+      "session_name": "New York",
+      "opened_at_utc": "2026-11-27T14:30:00+00:00",
+      "range_start_utc": "2026-09-28T14:30:00+00:00",
+      "range_low": 55106.0,
+      "range_high": 87249.05,
+      "opening_price": 61351.05,
+      "range_position_pct": 19.43,
+      "location": "lower-edge",
+      "status": "resolved",
+      "horizons": {
+        "15": {
+          "raw_return_pct": -1.951,
+          "direction_aligned_return_pct": -1.951
+        },
+        "30": {
+          "raw_return_pct": -3.6196,
+          "direction_aligned_return_pct": -3.6196
+        },
+        "60": {
+          "raw_return_pct": -2.6169,
+          "direction_aligned_return_pct": -2.6169
+        },
+        "120": {
+          "raw_return_pct": -2.2334,
+          "direction_aligned_return_pct": -2.2334
+        }
+      },
+      "max_favorable_excursion_pct": 0.0211,
+      "max_adverse_excursion_pct": 4.3211,
+      "sweep_reclaim": false,
+      "resolved_at_utc": "2026-11-27T16:30:00+00:00"
     }
   ]
 }
