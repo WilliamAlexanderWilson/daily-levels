@@ -1,90 +1,24 @@
 {
   "Current week open": {
-    "touches": 240,
-    "resolved": 233,
-    "holds": 110,
+    "touches": 242,
+    "resolved": 232,
+    "holds": 109,
     "breaks": 123,
-    "inconclusive": 7,
-    "hold_rate_pct": 47.21030042918455,
-    "avg_move_after_hold_pct": -1.2018303538881923,
+    "inconclusive": 10,
+    "hold_rate_pct": 46.98275862068966,
+    "avg_move_after_hold_pct": -1.2313119779299802,
     "avg_move_after_break_pct": 0.8178531530462516,
     "low_confidence": false
   },
   "Current month open": {
-    "touches": 125,
-    "resolved": 114,
-    "holds": 39,
+    "touches": 124,
+    "resolved": 113,
+    "holds": 38,
     "breaks": 75,
     "inconclusive": 11,
-    "hold_rate_pct": 34.21052631578947,
-    "avg_move_after_hold_pct": 0.8994851697760975,
+    "hold_rate_pct": 33.6283185840708,
+    "avg_move_after_hold_pct": 0.8702172356473984,
     "avg_move_after_break_pct": -0.4557907904068754,
-    "low_confidence": false
-  },
-  "Round number": {
-    "touches": 594,
-    "resolved": 586,
-    "holds": 338,
-    "breaks": 248,
-    "inconclusive": 8,
-    "hold_rate_pct": 57.67918088737202,
-    "avg_move_after_hold_pct": 0.14737643677360482,
-    "avg_move_after_break_pct": 0.35592689738167943,
-    "low_confidence": false
-  },
-  "Flip support": {
-    "touches": 188,
-    "resolved": 181,
-    "holds": 82,
-    "breaks": 99,
-    "inconclusive": 7,
-    "hold_rate_pct": 45.30386740331492,
-    "avg_move_after_hold_pct": 4.25843843291032,
-    "avg_move_after_break_pct": -3.0969597786732415,
-    "low_confidence": false
-  },
-  "Flip resistance": {
-    "touches": 262,
-    "resolved": 247,
-    "holds": 132,
-    "breaks": 115,
-    "inconclusive": 15,
-    "hold_rate_pct": 53.441295546558706,
-    "avg_move_after_hold_pct": -3.4232703307067913,
-    "avg_move_after_break_pct": 4.479693043211216,
-    "low_confidence": false
-  },
-  "VAL (60d)": {
-    "touches": 81,
-    "resolved": 76,
-    "holds": 45,
-    "breaks": 31,
-    "inconclusive": 5,
-    "hold_rate_pct": 59.210526315789465,
-    "avg_move_after_hold_pct": 0.32058187557578194,
-    "avg_move_after_break_pct": -1.0496760547797948,
-    "low_confidence": false
-  },
-  "Prior week high": {
-    "touches": 156,
-    "resolved": 150,
-    "holds": 73,
-    "breaks": 77,
-    "inconclusive": 6,
-    "hold_rate_pct": 48.66666666666667,
-    "avg_move_after_hold_pct": -1.9992652412491674,
-    "avg_move_after_break_pct": 2.8688072717185498,
-    "low_confidence": false
-  },
-  "Golden pocket": {
-    "touches": 137,
-    "resolved": 131,
-    "holds": 58,
-    "breaks": 73,
-    "inconclusive": 6,
-    "hold_rate_pct": 44.274809160305345,
-    "avg_move_after_hold_pct": -1.5182244257092807,
-    "avg_move_after_break_pct": -0.10297738141307104,
     "low_confidence": false
   },
   "POC (60d)": {
@@ -98,6 +32,61 @@
     "avg_move_after_break_pct": 0.3250335702423424,
     "low_confidence": false
   },
+  "Round number": {
+    "touches": 593,
+    "resolved": 584,
+    "holds": 337,
+    "breaks": 247,
+    "inconclusive": 9,
+    "hold_rate_pct": 57.705479452054796,
+    "avg_move_after_hold_pct": 0.14184441828727523,
+    "avg_move_after_break_pct": 0.3288488947460298,
+    "low_confidence": false
+  },
+  "Flip support": {
+    "touches": 187,
+    "resolved": 180,
+    "holds": 81,
+    "breaks": 99,
+    "inconclusive": 7,
+    "hold_rate_pct": 45.0,
+    "avg_move_after_hold_pct": 4.269030064393607,
+    "avg_move_after_break_pct": -3.0969597786732415,
+    "low_confidence": false
+  },
+  "Flip resistance": {
+    "touches": 261,
+    "resolved": 246,
+    "holds": 132,
+    "breaks": 114,
+    "inconclusive": 15,
+    "hold_rate_pct": 53.65853658536586,
+    "avg_move_after_hold_pct": -3.4232703307067913,
+    "avg_move_after_break_pct": 4.500035098891421,
+    "low_confidence": false
+  },
+  "Prior week high": {
+    "touches": 155,
+    "resolved": 149,
+    "holds": 73,
+    "breaks": 76,
+    "inconclusive": 6,
+    "hold_rate_pct": 48.99328859060403,
+    "avg_move_after_hold_pct": -1.9992652412491674,
+    "avg_move_after_break_pct": 2.8138679786044904,
+    "low_confidence": false
+  },
+  "Golden pocket": {
+    "touches": 136,
+    "resolved": 130,
+    "holds": 58,
+    "breaks": 72,
+    "inconclusive": 6,
+    "hold_rate_pct": 44.61538461538462,
+    "avg_move_after_hold_pct": -1.5182244257092807,
+    "avg_move_after_break_pct": -0.12130342321238875,
+    "low_confidence": false
+  },
   "Prior week low": {
     "touches": 144,
     "resolved": 137,
@@ -107,6 +96,17 @@
     "hold_rate_pct": 30.656934306569344,
     "avg_move_after_hold_pct": 1.6539602664339976,
     "avg_move_after_break_pct": -1.8299740868007919,
+    "low_confidence": false
+  },
+  "VAL (60d)": {
+    "touches": 80,
+    "resolved": 75,
+    "holds": 45,
+    "breaks": 30,
+    "inconclusive": 5,
+    "hold_rate_pct": 60.0,
+    "avg_move_after_hold_pct": 0.32058187557578194,
+    "avg_move_after_break_pct": -1.319471708218691,
     "low_confidence": false
   },
   "VAH (60d)": {
@@ -165,13 +165,13 @@
     "low_confidence": false
   },
   "Exhaustion pattern": {
-    "touches": 13,
-    "resolved": 13,
-    "holds": 7,
+    "touches": 14,
+    "resolved": 14,
+    "holds": 8,
     "breaks": 6,
     "inconclusive": 0,
-    "hold_rate_pct": 53.84615384615385,
-    "avg_move_after_hold_pct": 0.028722357144046664,
+    "hold_rate_pct": 57.14285714285714,
+    "avg_move_after_hold_pct": 0.41799852050834374,
     "avg_move_after_break_pct": 1.6554143033350803,
     "low_confidence": true
   }
