@@ -2,7 +2,7 @@
   "schema_version": 1,
   "study_version": "range-open-forward-v1",
   "asset": "spy",
-  "generated_at_utc": "2026-11-28T12:33:01.834329+00:00",
+  "generated_at_utc": "2026-11-28T15:53:38.027724+00:00",
   "forward_start_utc": "2026-11-08T00:00:00+00:00",
   "source": {
     "name": "Alpaca historical SPY bars (IEX feed)",
